@@ -395,7 +395,7 @@ sub checkDefaults {
 		# Default to standard playlist directory
 		my $dir=Slim::Utils::Prefs::get('playlistdir');
 		debugMsg("Defaulting plugin_sqlplaylist_playlist_directory to:$dir\n");
-		Slim::Utils::Prefs::set('plugin_sqlplaylist_number_of_old_tracks', $dir);
+		Slim::Utils::Prefs::set('plugin_sqlplaylist_playlist_directory', $dir);
 	}
 
 	$prefVal = Slim::Utils::Prefs::get('plugin_sqlplaylist_showmessages');
