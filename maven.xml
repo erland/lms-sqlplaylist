@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project default="dist"
+    xmlns:ant="jelly:ant"
+    xmlns:j="jelly:core">
+
+    <goal name="dist">
+    	<mkdir dir="${maven.build.dir}/${maven.final.name}/${pom.artifactId}"/>
+    	<copy todir="${maven.build.dir}/${maven.final.name}/${pom.artifactId}" file="LICENSE.txt"/>
+    	<copy todir="${maven.build.dir}/${maven.final.name}/${pom.artifactId}" file="README.txt"/>
+    	<copy todir="${maven.build.dir}/${maven.final.name}/${pom.artifactId}">
+    		<fileset dir="${maven.src.dir}">
+    			<includes>**/*</includes>
+    		</fileset>
+    	</copy>
+    	<zip destfile="${maven.build.dir}/${maven.final.name}.zip"
+       		basedir="${maven.build.dir}/${maven.final.name}"/>
+    </goal>
+</project>
