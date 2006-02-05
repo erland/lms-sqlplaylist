@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 2. PREREQUISITES
 ================
-- A slimserver 6.2.* installed and configured
+- A slimserver 6.2.* or 6.5 installed and configured
 
 3. FILES
 ========
@@ -51,7 +51,8 @@ To add a playlist you:
 3. Navigate to the SQLPlayList plugin on the Squeezebox and select the playlist and start playing
 
 The SQLPlayList sql file for a playlist must have the following syntax:
-- First row: The name of the playlist (This text will be shown for the playlist in the Squeezebox menu for SQLPlayList plugin)
+- First row: The name of the playlist (This text will be shown for the playlist in the Squeezebox menu for SQLPlayList plugin). 
+             This first row can also as the examples begin with: -- PlaylistName: 
 - Other rows: SQL queries, all queries will be executed and those starting with SELECT must return a single "url" column and the 
               tracks returned in all SELECT statements will be part of the playlist.
 
@@ -60,17 +61,17 @@ if you run slimserver with the original SQLite database.
 
 Playlist1.sql: (Flac tracks never played)
 -----------------------------------------
-Not played tracks
+-- PlaylistName: Not played tracks
 select url from tracks where ct='flc' and playCount is null order by rand() limit 10;
 
 Playlist2.sql: (Flac tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
-Top rated tracks
+-- PlaylistName: Top rated tracks
 select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.ct='flc' order by rand() limit 10;
 
 Playlist3.sql: (All flac tracks besides those which contains genre=Christmas and some bad albums)
 -------------------------------------------------------------------------------------------------
-Mixed without Christmas
+-- PlaylistName: Mixed without Christmas
 
 create temporary table genre_track_withname (primary key (track,genre)) select genre_track.track,genre_track.genre,genres.namesort from genre_track,genres where genre_track.genre=genres.id;
 create temporary table tracks_nochristmas (primary key (id)) select distinct tracks.id,tracks.title,tracks.url,tracks.album from tracks left join genre_track_withname on tracks.id=genre_track_withname.track and genre_track_withname.namesort='CHRISTMAS' where genre_track_withname.track is null and tracks.ct='flc' order by tracks.title;
