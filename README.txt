@@ -48,7 +48,7 @@ create your smart playlists as described below.
 To add a playlist you:
 1. Create a file with .sql extension (The contents is described below)
 2. Put the sql file in the configured SQLPlayList playlist directory
-3. Navigate to the SQLPlayList plugin on the Squeezebox and select the playlist and start playing
+3. Navigate to the SQLPlayList plugin menu on the Squeezebox and select the playlist and start playing, or use the SQL PlayList plugin menu in the web interface.
 
 The SQLPlayList sql file for a playlist must have the following syntax:
 - First row: The name of the playlist (This text will be shown for the playlist in the Squeezebox menu for SQLPlayList plugin). 
@@ -56,20 +56,31 @@ The SQLPlayList sql file for a playlist must have the following syntax:
 - Other rows: SQL queries, all queries will be executed and those starting with SELECT must return a single "url" column and the 
               tracks returned in all SELECT statements will be part of the playlist.
 
-Some example playlists follows below, observere that these has only been tested with MySQL database so they may have to be modified
-if you run slimserver with the original SQLite database.
+Some example playlists follows below, observere that the SQL statements needs to be different for the standard slimserver database(SQLite) and
+for the MySQL database. So make sure you use the right example based on which database you are using. The main difference for simple queries is
+that SQLite uses "order by random()" while MySQL uses "order by rand()".
 
-Playlist1.sql: (Flac tracks never played)
------------------------------------------
+Playlist1.sql: MySQL (Flac tracks never played)
+-----------------------------------------------
 -- PlaylistName: Not played tracks
 select url from tracks where ct='flc' and playCount is null order by rand() limit 10;
 
-Playlist2.sql: (Flac tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
+Playlist2.sql: SQLite (Flac tracks never played)
+------------------------------------------------
+-- PlaylistName: Not played tracks
+select url from tracks where ct='flc' and playCount is null order by random() limit 10;
+
+Playlist3.sql: MySQL (Flac tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
 -- PlaylistName: Top rated tracks
 select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.ct='flc' order by rand() limit 10;
 
-Playlist3.sql: (All flac tracks besides those which contains genre=Christmas and some bad albums)
+Playlist4.sql: SQLite (Flac tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
+---------------------------------------------------------------------------------
+-- PlaylistName: Top rated tracks
+select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.ct='flc' order by random() limit 10;
+
+Playlist5.sql: MySQL (All flac tracks besides those which contains genre=Christmas and some bad albums)
 -------------------------------------------------------------------------------------------------
 -- PlaylistName: Mixed without Christmas
 
