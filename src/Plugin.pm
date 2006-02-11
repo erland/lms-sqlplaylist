@@ -29,13 +29,22 @@ use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
 use File::Spec::Functions qw(:ALL);
+use Class::Struct;
 
 my %stopcommands = ();
 # Information on each clients sqlplaylist
 my %mixInfo      = ();
 my $htmlTemplate = 'plugins/SQLPlayList/sqlplaylist_list.html';
 my $ds = Slim::Music::Info::getCurrentDataStore();
+my $playLists = undef;
+struct PlayListInfo => {
+	id => '$',
+	name => '$',
+	sql => '$'
+};
 
+my $disable = PlayListInfo->new( id => 'disable', name => '', sql => '');
+	
 sub getDisplayName {
 	return 'PLUGIN_SQLPLAYLIST';
 }
@@ -46,7 +55,8 @@ sub findAndAdd {
 
 	debugMsg("Starting random selection of $limit items for type: $type\n");
 	
-	my $items = getTracksForPlaylist($client,$type,$limit);
+	my $playlist = getPlayList($client,$type);
+	my $items = getTracksForPlaylist($client,$playlist,$limit);
 
 	my $noOfItems = (scalar @$items);
 	debugMsg("Find returned ".$noOfItems." items\n");
@@ -56,7 +66,7 @@ sub findAndAdd {
 
 	if ($item && ref($item)) {
 		my $string = $item->title;
-		debugMsg("".($addOnly ? 'Adding' : 'Playing')."$type: $string, ".($item->id)."\n",
+		debugMsg("".($addOnly ? 'Adding ' : 'Playing ')."$type: $string, ".($item->id)."\n",
 
 		# Replace the current playlist with the first item / track or add it to end
 		my $request = $client->execute(['playlist', $addOnly ? 'addtracks' : 'loadtracks',
@@ -133,7 +143,10 @@ sub playRandom {
 		# String to show with showBriefly
 		my $string = '';
 
-		$string = $type;
+		my $playlist = getPlayList($client,$type);
+		if($playlist) {
+			$string = $playlist->name;
+		}
 
 		# Strings for non-track modes could be long so need some time to scroll
 		my $showTime = 5;
@@ -204,15 +217,21 @@ sub playRandom {
 sub getDisplayText {
 	my ($client, $item) = @_;
 
+	my $id = undef;
+	my $name = '';
+	if($item) {
+		$id = $item->id;
+		$name = $item->name;
+	}
 	# if showing the current mode, show altered string
-	if ($mixInfo{$client} && $item eq $mixInfo{$client}->{'type'}) {
-		return string('PLUGIN_SQLPLAYLIST_PLAYING')." ".$item;
+	if ($mixInfo{$client} && $id eq $mixInfo{$client}->{'type'}) {
+		return string('PLUGIN_SQLPLAYLIST_PLAYING')." ".$name;
 		
 	# if a mode is active, handle the temporarily added disable option
-	} elsif ($item eq 'disable' && $mixInfo{$client}) {
+	} elsif ($id eq 'disable' && $mixInfo{$client}) {
 		return string('PLUGIN_SQLPLAYLIST_PRESS_RIGHT');
 	} else {
-		return $item;
+		return $name;
 	}
 }
 
@@ -221,9 +240,9 @@ sub getOverlay {
 	my ($client, $item) = @_;
 
 	# Put the right arrow by genre filter and notesymbol by mixes
-	if ($item eq 'disable') {
+	if ($item->id eq 'disable') {
 		return [undef, Slim::Display::Display::symbol('rightarrow')];
-	}elsif (!$mixInfo{$client} || $item ne $mixInfo{$client}->{'type'}) {
+	}elsif (!$mixInfo{$client} || $item->id ne $mixInfo{$client}->{'type'}) {
 		return [undef, Slim::Display::Display::symbol('notesymbol')];
 	} else {
 		return [undef, undef];
@@ -243,7 +262,7 @@ sub handlePlayOrAdd {
 		
 	# only add disable option if starting a mode from idle state
 	} elsif (! $mixInfo{$client}) {
-		push @$listRef, 'disable';
+		push @$listRef, $disable;
 	}
 	Slim::Buttons::Common::param($client, 'listRef', $listRef);
 
@@ -254,6 +273,20 @@ sub handlePlayOrAdd {
 	playRandom($client, $item, $add);
 }
 
+sub getPlayList {
+	my $client = shift;
+	my $type = shift;
+	
+	return undef unless $type;
+
+	debugMsg("Get playlist: $type\n");
+	if(!$playLists) {
+		$playLists = getPlayLists($client);
+	}
+	return undef unless $playLists;
+	
+	return $playLists->{$type};
+}
 sub getPlayLists {
 	my $client = shift;
 	
@@ -309,8 +342,8 @@ sub getPlayLists {
         close $fh;
 		
 		if($name && $statement) {
-			$playLists{$name} = $statement;
-			my $tmp = $playLists{$name};
+			debugMsg("Got playlist: $name\n");
+			$playLists{escape($name,"^A-Za-z0-9\-_")} = PlayListInfo->new( id => escape($name,"^A-Za-z0-9\-_"), name => $name, sql => $statement );
 		}
 	}
 	return \%playLists;
@@ -326,9 +359,9 @@ sub setMode {
 	}
 
 	my @listRef = ();
-	my $playLists = getPlayLists($client);
+	$playLists = getPlayLists($client);
 	foreach my $playlist (sort keys %$playLists) {
-		push @listRef, $playlist;
+		push @listRef, $playLists->{$playlist};
 	}
 
 	# use INPUT.Choice to display the list of feeds
@@ -340,16 +373,16 @@ sub setMode {
 		modeName   => 'SQLPLayList',
 		onPlay     => sub {
 			my ($client, $item) = @_;
-			handlePlayOrAdd($client, $item, 0);		
+			handlePlayOrAdd($client, $item->id, 0);		
 		},
 		onAdd      => sub {
 			my ($client, $item) = @_;
-			handlePlayOrAdd($client, $item, 1);
+			handlePlayOrAdd($client, $item->id, 1);
 		},
 		onRight    => sub {
 			my ($client, $item) = @_;
-			if($item eq 'disable') {
-				handlePlayOrAdd($client, $item, 0);
+			if($item->id eq 'disable') {
+				handlePlayOrAdd($client, $item->id, 0);
 			}else {
 				$client->bumpRight();
 			}
@@ -358,11 +391,7 @@ sub setMode {
 
 	# if we have an active mode, temporarily add the disable option to the list.
 	if ($mixInfo{$client}) {
-		my $b=$mixInfo{$client};
-		debugMsg("MixInfo=$b\n");
-		my $a = $mixInfo{$client}->{'type'};
-		debugMsg("MixInfo=$a\n");
-		push @{$params{listRef}},'disable';
+		push @{$params{listRef}},$disable;
 	}
 
 	Slim::Buttons::Common::pushMode($client, 'INPUT.Choice', \%params);
@@ -532,11 +561,17 @@ sub handleWebList {
 	my ($client, $params) = @_;
 
 	# Pass on the current pref values and now playing info
-	$params->{'pluginSQLPlayListPlayLists'} = getPlayLists($client);
+	$playLists = getPlayLists($client);
+	my $playlist = getPlayList($client,$mixInfo{$client}->{'type'});
+	my $name = undef;
+	if($playlist) {
+		$name = $playlist->name;
+	}
+	$params->{'pluginSQLPlayListPlayLists'} = $playLists;
 	$params->{'pluginSQLPlayListNumTracks'} = Slim::Utils::Prefs::get('plugin_sqlplaylist_number_of_tracks');
 	$params->{'pluginSQLPlayListNumOldTracks'} = Slim::Utils::Prefs::get('plugin_sqlplaylist_number_of_old_tracks');
 	$params->{'pluginSQLPlayListContinuousMode'} = Slim::Utils::Prefs::get('plugin_sqlplaylist_keep_adding_tracks');
-	$params->{'pluginSQLPlayListNowPlaying'} = $mixInfo{$client}->{'type'};
+	$params->{'pluginSQLPlayListNowPlaying'} = $name;
 	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
 	
 	return Slim::Web::HTTP::filltemplatefile($htmlTemplate, $params);
@@ -678,10 +713,9 @@ sub setupGroup
 
 sub getTracksForPlaylist {
 	my $client = shift;
-	my $type = shift;
+	my $playlist = shift;
 	my $limit = shift;
-	my $playLists = getPlayLists($client);
-	my $sqlstatements = $playLists->{$type};
+	my $sqlstatements = $playlist->sql;
 	my @result;
 	my $trackno = 0;
 	my $ds = Slim::Music::Info::getCurrentDataStore();
@@ -717,6 +751,22 @@ sub getTracksForPlaylist {
 
 	
 	return \@result;
+}
+
+# other people call us externally.
+*escape   = \&URI::Escape::uri_escape_utf8;
+
+# don't use the external one because it doesn't know about the difference
+# between a param and not...
+#*unescape = \&URI::Escape::unescape;
+sub unescape {
+        my $in      = shift;
+        my $isParam = shift;
+
+        $in =~ s/\+/ /g if $isParam;
+        $in =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+
+        return $in;
 }
 
 # A wrapper to allow us to uniformly turn on & off debug messages
