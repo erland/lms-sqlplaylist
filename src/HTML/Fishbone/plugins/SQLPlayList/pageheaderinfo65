@@ -1,0 +1,15 @@
+<tr>
+        <td></td>
+        <td>
+                <p>
+                <h3>[% "PLUGIN_SQLPLAYLIST" | string %]</h3>
+
+                <p>
+                        /
+                        <a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+                          [% "PLUGIN_SQLPLAYLIST" | string %]
+                        </a>
+                </p>
+		[% pageHeaderInfo %]
+	</td>
+</tr>

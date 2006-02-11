@@ -1,0 +1,190 @@
+[%- FILTER null %]
+[% statusroot = 'status_header.html' %]
+[% noHomeLink = 1 %]
+[% setting_chooser_noHome = 1 %]
+
+[% BLOCK cmdlink %]
+<a [% content %] [% UNLESS noTarget %][% IF target %]target=[% target; ELSE %]target="status"[% END %][% END %]>
+	<img src="[% webroot %]html/images/[% cmdimage %]" border=0 align="middle" height="11"
+	alt='[% cmdtitle | string %]' 
+	title='[% cmdtitle | string %]' 
+	onMouseOver="self.status='[% cmdtitle | string %]';return true"></a>
+[% END %]
+
+[% BLOCK playlink %]
+	[% PROCESS cmdlink
+		cmdtitle = "PLAY"
+		cmdimage = "play.this.gif" %]
+[% END %]
+
+[% BLOCK addlink %]
+	[% PROCESS cmdlink
+		cmdtitle = "ADD_TO_PLAYLIST"
+		cmdimage = "add.gif" %]
+[% END %]
+
+[% BLOCK descendlink %]
+	[% PROCESS cmdlink
+		cmdtitle = "NEXT"
+		cmdimage = "next.gif" %]
+[% END %]
+
+[% BLOCK insertlink %]
+	[% PROCESS cmdlink
+		cmdtitle = "NEXT"
+		cmdimage = "queue.gif" %]
+[% END %]
+
+[% BLOCK removelink %]
+	[% PROCESS cmdlink
+		cmdtitle = "REMOVE_FROM_PLAYLIST"
+		cmdimage = "remove.gif" %]
+[% END %]
+
+[% BLOCK infolink %]
+	[% PROCESS cmdlink
+		cmdtitle = "SONG_INFO"
+		cmdimage = "info.gif"
+		target = "browser" %]
+[% END %]
+
+[% BLOCK listitem %]
+	<td class="listing" align="left">
+		[% IF content == '' %]
+			[% title %]		
+		[% ELSE %]
+			<a [% content %] >[% title %]</a>
+		[% END %]
+	</td>
+[% END %]
+
+[% BLOCK homelink %][% END %]
+
+[% BLOCK moveuplink %]
+	[% PROCESS cmdlink
+		cmdtitle = "MOVEUP"
+		cmdimage = "move.up.gif" %]
+[% END %]
+
+[% BLOCK movedownlink %]
+	[% PROCESS cmdlink
+		cmdtitle = "MOVEDOWN"
+		cmdimage = "move.down.gif" %]
+[% END %]
+
+[% BLOCK scanwarning -%]
+<b>[% "NOTE" | string %]</b> [% "SCAN_WARNING" | string -%]
+	[%- IF audiodir -%]
+		[%- "SCAN_CLICK" | string; %]<a href="browsetree.html?level=0&player=[% playerURI %]">[% "HERE" | string %]</a>.
+	[%- END %]
+[% END %]
+
+[% BLOCK crumblist -%]
+[%- FOREACH item = pwd_list.list -%]
+  [%- IF not loop.first %] / [% END -%]
+  [%- PROCESS crumblistitem -%]
+[%- END -%]
+[%- END %]
+
+[% BLOCK crumblistitem -%]
+ [%- IF item.title -%]
+<a [% PROCESS "${item.hreftype}ItemHRef" %]>[% item.title %]</a>
+ [%- ELSE -%]
+[% item | replace('^\s*/','') %]
+ [%- END -%]
+[%- END %]
+
+[% BLOCK contentcontainer %]
+<div id="[% listid || 'browsedbList' %]">
+	
+		[%- content | indent(4) %]
+	
+</div>
+[%- END %]
+
+[% BLOCK contentitem -%]
+<div class="[% odd ? "odd" : "even" %]">
+	[%- IF anchor %]
+		<a name="[% anchor %]"></a>
+	[%- END -%]
+	
+	<div class="[% lineclass || 'browsedbListItem' %]">
+		[%- content | indent(4) %]
+		[%- IF controls -%]
+			<div class="browsedbControls">
+			[%- PROCESS $controls -%]
+			</div>
+		[%- END %]
+	</div>
+</div>
+[%- END %]
+
+[% BLOCK playlistcontrols %]
+	[% width='9' height='11' target='status' %]
+	[% FOREACH mixer = item.mixerlinks.values.sort %]
+		[% PROCESS $mixer %]
+	[% END %]
+	[% WRAPPER moveuplink   %][% PROCESS cmdHRef cmdType = 'move' moveTo = MoveUp           %][% END %]
+	[% WRAPPER movedownlink %][% PROCESS cmdHRef cmdType = 'move' moveTo = MoveDown         %][% END %]
+	[% WRAPPER insertlink   %][% PROCESS cmdHRef cmdType = 'move' moveTo = item.nextsongind %][% END %]
+	[% WRAPPER removelink   %][% PROCESS cmdHRef cmdType = 'delete'                         %][% END %]
+[% END %]
+
+[% BLOCK browsecontrols %]
+	[% width='9' height='11' target='status' %]
+	[% FOREACH mixer = mixerlinks.values.sort %]
+		[% PROCESS $mixer %]
+	[% END %]
+	[% WRAPPER insertlink %][% PROCESS cmdHRef cmdType='insert' %][% END %]
+	[% WRAPPER playlink   %][% PROCESS cmdHRef cmdType='play'   %][% END %]
+	[% WRAPPER addlink    %][% PROCESS cmdHRef cmdType='add'    %][% END %]
+	[% WRAPPER removelink %][% PROCESS cmdHRef cmdType='remove' %][% END %]
+[% END %]
+
+[% BLOCK trackinfo %]
+	[% IF item.currentsong %]
+		<a name="currentsong"></a>
+	[% END %]
+	[% IF item.num || item.num == 0 %]
+			<b><a [% PROCESS cmdHRef cmdType = 'jump' num = item.num %] target="status">&nbsp;[% item.num + 1 %].&nbsp;</a>
+			<a [% PROCESS songinfoItemHRef %] target="browser">[% item.text | html %]</a></b>
+	[%# browse list items %]
+	[%# no level info means its a music folder item %]
+	[% ELSIF item.item || !item.defined('level') %]
+		<a [% PROCESS songinfoItemHRef %]>[% item.text | html %][% IF showYear && item.year %] ([% item.year %])[% END %]</a>
+	[% ELSIF item.songtitle %]
+		<a [% PROCESS songinfoItemHRef %] target="browser">[% item.songtitle | html %]</a>
+	[% ELSE %]
+		[% item.text | html %]
+	[% END %]
+	
+	[% IF item.includeArtist && item.artist && item.artist != item.noArtist; PROCESS artistsAsHTML.html itemobj = item.itemobj; END %]
+	
+	[% IF item.includeAlbum && item.album && item.album != item.noAlbum && item.album != "" %][% "FROM" | string %]
+	<i><a [% PROCESS albumItemHRef %] target="browser">[% item.itemobj.album.title | html %]</a></i>[% END %]
+[% END %]
+
+[% BLOCK pagebar %]
+[%- IF NOT pageinfo.alphamap; PROCESS pagebarcalc pagesperbar = 15; END %]
+<p>[% IF NOT pageinfo.alphamap %][% "PAGES" | string %][% "COLON" | string %][% END %]
+[% IF pagesstart %]  <a href="[% pageinfo.path %]?start=0&amp;[% pageinfo.otherparams | html %]"><img src="[% webroot %]html/images/b_first.gif" alt="[% "FIRST" | string %]" width="13" height="13" align="top"></a> [% END %]
+[% IF pageprev || pageprev == '0' %] <a href="[% pageinfo.path %]?start=[% pageprev %]&amp;[% pageinfo.otherparams | html %]"><img src="[% webroot %]html/images/b_prev.gif" alt="[% "PREVIOUS" | string %]" width="13" height="13" align="top"></a> [% END %]
+[%- IF pageinfo.alphamap %]
+[%- FOREACH alphakey = pageinfo.alphamap.keys.sort -%]
+ [%- curpage = (pageinfo.alphamap.$alphakey == pageinfo.startitem) -%]
+ <a href="[% pageinfo.path | html %]?[% pageinfo.otherparams | html %]&amp;start=[% pageinfo.alphamap.$alphakey %]#[% alphakey | uri %]">[% IF curpage %]<b>[% END %][% alphakey | html %][% IF curpage %]</b>[% END %]</a> 
+[%- END %]
+[%- ELSE %]
+[%- FOREACH ind=[pagebarstart..pagebarend] -%]
+ [%- IF ind == pageinfo.currentpage %] <b>[% ind + 1 %]</b> 
+ [%- ELSE %] <a href="[% pageinfo.path  | html %]?[% pageinfo.otherparams  | html %]&amp;start=[% ind * pageinfo.itemsperpage %]">[% ind + 1 %]</a> 
+ [%- END %]
+[% END %]
+[%- END %]
+[% IF pagenext %] <a href="[% pageinfo.path %]?start=[% pagenext %]&amp;[% pageinfo.otherparams | html %]"><img src="[% webroot %]html/images/b_next.gif" alt="[% "NEXT" | string %]" width="13" height="13" align="top"></a> [% END %]
+[% IF pagesend %] <a href="[% pageinfo.path %]?start=[% pagesend %]&amp;[% pageinfo.otherparams | html %]"><img src="[% webroot %]html/images/b_last.gif" alt="[% "LAST" | string %]" width="13" height="13" align="top"></a> [% END %]
+[% IF NOT pageinfo.alphamap && addSummary %]&nbsp;|&nbsp;[% "ITEMS" | string %] [% pageinfo.startitem + 1 %] [% "TO" | string %] [% pageinfo.enditem + 1 %] [% "OF" | string %] [% pageinfo.totalitems %][% END %]
+</p>
+[% END %]
+
+[% END -%]
