@@ -68,7 +68,7 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 					[% PROCESS sqlPlayListLink type="$type" addOnly="1" %]
 				[% END %]
 				[%- WRAPPER contentitem controls='controls' %]
-					[% type %]
+					[% pluginSQLPlayListPlayLists.$type.name %]
 				[% END %]
 			[% odd = (not odd) %]
 			[% END %]
