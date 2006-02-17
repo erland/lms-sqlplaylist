@@ -60,32 +60,32 @@ Some example playlists follows below, observere that the SQL statements needs to
 for the MySQL database. So make sure you use the right example based on which database you are using. The main difference for simple queries is
 that SQLite uses "order by random()" while MySQL uses "order by rand()".
 
-Playlist1.sql: MySQL (Flac tracks never played)
+Playlist1.sql: MySQL (Tracks never played)
 -----------------------------------------------
 -- PlaylistName: Not played tracks
-select url from tracks where ct='flc' and playCount is null order by rand() limit 10;
+select url from tracks where audio=1 and playCount is null order by rand() limit 10;
 
-Playlist2.sql: SQLite (Flac tracks never played)
+Playlist2.sql: SQLite (Tracks never played)
 ------------------------------------------------
 -- PlaylistName: Not played tracks
-select url from tracks where ct='flc' and playCount is null order by random() limit 10;
+select url from tracks where audio=1 and playCount is null order by random() limit 10;
 
-Playlist3.sql: MySQL (Flac tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
+Playlist3.sql: MySQL (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
 -- PlaylistName: Top rated tracks
-select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.ct='flc' order by rand() limit 10;
+select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.audio=1 order by rand() limit 10;
 
-Playlist4.sql: SQLite (Flac tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
+Playlist4.sql: SQLite (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
 -- PlaylistName: Top rated tracks
-select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.ct='flc' order by random() limit 10;
+select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.audio=1 order by random() limit 10;
 
-Playlist5.sql: MySQL (All flac tracks besides those which contains genre=Christmas and some bad albums)
+Playlist5.sql: MySQL (All tracks besides those which contains genre=Christmas and some bad albums)
 -------------------------------------------------------------------------------------------------
 -- PlaylistName: Mixed without Christmas
 
 create temporary table genre_track_withname (primary key (track,genre)) select genre_track.track,genre_track.genre,genres.namesort from genre_track,genres where genre_track.genre=genres.id;
-create temporary table tracks_nochristmas (primary key (id)) select distinct tracks.id,tracks.title,tracks.url,tracks.album from tracks left join genre_track_withname on tracks.id=genre_track_withname.track and genre_track_withname.namesort='CHRISTMAS' where genre_track_withname.track is null and tracks.ct='flc' order by tracks.title;
+create temporary table tracks_nochristmas (primary key (id)) select distinct tracks.id,tracks.title,tracks.url,tracks.album from tracks left join genre_track_withname on tracks.id=genre_track_withname.track and genre_track_withname.namesort='CHRISTMAS' where genre_track_withname.track is null and tracks.audio=1 order by tracks.title;
 create temporary table albums_nobad (primary key (id)) select albums.id from albums,tracks_nochristmas,contributor_track where tracks_nochristmas.album=albums.id and tracks_nochristmas.id=contributor_track.track and albums.title not in ('Music Of The Movies - The Love Songs','Piano moods','Love Themes Of The Pan Pipes') group by (albums.id) having count(distinct contributor_track.contributor)<4 order by id;
 
 select tracks_nochristmas.url from tracks_nochristmas,albums_nobad where tracks_nochristmas.album=albums_nobad.id order by rand() limit 10;
