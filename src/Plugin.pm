@@ -39,11 +39,13 @@ my $ds = Slim::Music::Info::getCurrentDataStore();
 my $playLists = undef;
 struct PlayListInfo => {
 	id => '$',
+	file => '$',
 	name => '$',
-	sql => '$'
+	sql => '$',
+	fulltext => '$'
 };
 
-my $disable = PlayListInfo->new( id => 'disable', name => '', sql => '');
+my $disable = PlayListInfo->new( id => 'disable', file => '', name => '', sql => '', fulltext => '');
 	
 sub getDisplayName {
 	return 'PLUGIN_SQLPLAYLIST';
@@ -312,11 +314,15 @@ sub getPlayLists {
 
 		my $name = undef;
 		my $statement = '';
+		my $fulltext = '';
         for my $line (<$fh>) {
+        	if($name) {
+        		$fulltext .= $line;
+        	}
             chomp $line;
 
 			# use "--PlaylistName:" as name of playlist
-			$line =~ s/^-- *PlaylistName *[:=] *//io;
+			$line =~ s/^\s*--\s*PlaylistName\s*[:=]\s*//io;
 			
             # skip and strip comments & empty lines
             $line =~ s/\s*--.*?$//o;
@@ -343,7 +349,7 @@ sub getPlayLists {
 		
 		if($name && $statement) {
 			debugMsg("Got playlist: $name\n");
-			$playLists{escape($name,"^A-Za-z0-9\-_")} = PlayListInfo->new( id => escape($name,"^A-Za-z0-9\-_"), name => $name, sql => $statement );
+			$playLists{escape($name,"^A-Za-z0-9\-_")} = PlayListInfo->new( id => escape($name,"^A-Za-z0-9\-_"), file => $item, name => $name, sql => $statement , fulltext => $fulltext);
 		}
 	}
 	return \%playLists;
@@ -468,7 +474,6 @@ sub commandCallback65 {
 
 		if ($::d_plugins) {
 			debugMsg("No client!\n");
-			bt();
 		}
 		return;
 	}
@@ -542,6 +547,12 @@ sub webPages {
 		"sqlplaylist_list\.(?:htm|xml)"     => \&handleWebList,
 		"sqlplaylist_mix\.(?:htm|xml)"      => \&handleWebMix,
 		"sqlplaylist_settings\.(?:htm|xml)" => \&handleWebSettings,
+		"sqlplaylist_editplaylist\.(?:htm|xml)"      => \&handleWebEditPlaylist,
+		"sqlplaylist_newplaylist\.(?:htm|xml)"      => \&handleWebNewPlaylist,
+		"sqlplaylist_saveplaylist\.(?:htm|xml)"      => \&handleWebSavePlaylist,
+		"sqlplaylist_savenewplaylist\.(?:htm|xml)"      => \&handleWebSaveNewPlaylist,
+		"sqlplaylist_removeplaylist\.(?:htm|xml)"      => \&handleWebRemovePlaylist,
+		"sqlplaylist_generatenewplaylist\.(?:htm|xml)"      => \&handleWebGenerateNewPlaylist,
 	);
 
 	my $value = $htmlTemplate;
@@ -575,6 +586,309 @@ sub handleWebList {
 	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
 	
 	return Slim::Web::HTTP::filltemplatefile($htmlTemplate, $params);
+}
+
+# Draws the plugin's edit playlist web page
+sub handleWebEditPlaylist {
+	my ($client, $params) = @_;
+
+	if ($params->{'type'}) {
+		my $playlist = getPlayList($client,$params->{'type'});
+		if($playlist) {
+			$params->{'pluginSQLPlayListEditPlayListFile'} = escape($playlist->file);
+			$params->{'pluginSQLPlayListEditPlayListName'} = $playlist->name;
+			$params->{'pluginSQLPlayListEditPlayListText'} = $playlist->fulltext;
+			$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'pluginSQLPlayListEditPlayListFile'});
+		}else {
+			warn "Cannot find: ".$params->{'type'};
+		}
+	}
+
+	$params->{'pluginSQLPlayListError'} = undef;
+	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_editplaylist.html', $params);
+}
+
+# Returns a hash whose keys are the genres in the db
+sub getGenres {
+	my ($client) = @_;
+
+	# Should use genre.name in following find, but a bug in find() doesn't allow this	
+   	my $items = $ds->find({
+		'field'  => 'genre',
+		'cache'  => 0,
+	});
+	
+	# Extract each genre name into a hash
+	my %clientGenres = ();
+	foreach my $item (@$items) {
+		$clientGenres{$item->{'name'}} = {
+		                                 # Put the name here as well so the hash can be passed to
+		                                 # INPUT.Choice as part of listRef later on
+		                                 name    => $item->{'name'},
+		                                 id      => $item->{'id'},
+		                                 enabled => 0,
+									 };
+	}
+
+	return %clientGenres;
+}
+
+
+# Draws the plugin's edit playlist web page
+sub handleWebNewPlaylist {
+	my ($client, $params) = @_;
+
+	$params->{'pluginSQLPlayListError'} = undef;
+	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	$params->{'pluginSQLPlayListGenreList'} = {getGenres($client)};
+	
+	my $driver = Slim::Utils::Prefs::get('dbsource');
+    $driver =~ s/dbi:(.*?):(.*)$/$1/;
+    
+    if($driver eq 'mysql') {
+		$params->{'pluginSQLPlayListDatabase'} = "mysql";
+    }else {
+		$params->{'pluginSQLPlayListDatabase'} = "sqlite";
+    }
+
+	my $trackStat;
+	if ($::VERSION ge '6.5') {
+		$trackStat = Slim::Utils::PluginManager::enabledPlugin("TrackStat",$client);
+	}else {
+		$trackStat = grep(/TrackStat/,Slim::Buttons::Plugins::enabledPlugins($client));
+    }
+	if($trackStat) {
+		$params->{'pluginSQLPlayListTrackStat'} = 1;
+	}
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_templatenewplaylist.html', $params);
+}
+
+# Draws the plugin's edit playlist web page
+sub handleWebGenerateNewPlaylist {
+	my ($client, $params) = @_;
+
+	my $driver = Slim::Utils::Prefs::get('dbsource');
+    $driver =~ s/dbi:(.*?):(.*)$/$1/;
+    
+    my $orderBy;
+    if($driver eq 'mysql') {
+    	$orderBy = "rand()";
+    }else {
+    	$orderBy = "random()";
+    }
+
+	$params->{'pluginSQLPlayListError'} = undef;
+	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	my $genreListString = getGenreListString($client,$params);
+	if($params->{'type'} eq "random") {
+		$params->{'pluginSQLPlayListEditPlayListText'} = "select url from tracks order by $orderBy limit 10;";
+	}elsif($params->{'type'} eq "includinggenres") {
+		my $sql = "select url from tracks,genre_track,genres \n\twhere tracks.id=genre_track.track and \n\t\tgenre_track.genre=genres.id and\n\t\ttracks.audio=1";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenres.name in (";
+			$sql .= $genreListString;
+			$sql .= ")";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedincludinggenres") {
+		my $sql = "select tracks.url from tracks,genre_track,genres,track_statistics \n\twhere tracks.id=genre_track.track and \n\t\tgenre_track.genre=genres.id and\n\t\ttracks.url=track_statistics.url and\n\t\ttrack_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenres.name in (";
+			$sql .= $genreListString;
+			$sql .= ")";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "excludinggenres") {
+		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
+		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenre_track_withname.name in(";
+			$sql .= $genreListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "genre_track_withname.track is null and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 \n\torder by $orderBy limit 10;\n\n";
+		$sql .= "drop temporary table genre_track_withname;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedexcludinggenres") {
+		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
+		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenre_track_withname.name in(";
+			$sql .= $genreListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "genre_track_withname.track is null and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
+		$sql .= "drop temporary table genre_track_withname;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "toprated") {
+		my $sql = "select tracks.url from tracks,track_statistics\n\t";
+		$sql .= "where tracks.url = track_statistics.url and\n\t\t";
+		$sql .= "track_statistics.rating>=80\n\t";
+		$sql .= "order by $orderBy limit 10\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}
+
+		
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylist.html', $params);
+}
+
+sub getGenreListString {
+	my ($client,$params) = @_;
+	
+	my %genres = getGenres($client);
+	my $first = 1;
+	my $sql = '';
+	foreach my $genre (keys %genres) {
+		my $genreid = "genre_".$genres{$genre}{'id'};
+		if($params->{$genreid}) {
+			if(!$first) {
+				$sql .= ","
+			}
+			$first = undef;
+			$sql .= "'".$genres{$genre}{'name'}."'";
+		}
+	}
+	return $sql;
+}	
+# Draws the plugin's edit playlist web page
+sub handleWebSavePlaylist {
+	my ($client, $params) = @_;
+
+	$params->{'pluginSQLPlayListError'} = undef;
+	
+	if (!$params->{'text'} || !$params->{'file'} || !$params->{'name'}) {
+		$params->{'pluginSQLPlayListError'} = 'All fields are mandatory';
+	}
+
+	my $playlistDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
+	
+	if (!defined $playlistDir || !-d $playlistDir) {
+		$params->{'pluginSQLPlayListError'} = 'No playlist dir defined';
+	}
+	my $url = catfile($playlistDir, unescape($params->{'file'}));
+	if (!-e $url) {
+		$params->{'pluginSQLPlayListError'} = 'File already exist';
+	}
+	
+	my $playlist = getPlayList($client,escape($params->{'name'},"^A-Za-z0-9\-_"));
+	if($playlist && $playlist->file ne unescape($params->{'file'})) {
+		$params->{'pluginSQLPlayListError'} = 'Playlist with that name already exists';
+	}
+	if(!savePlaylist($client,$params,$url)) {
+		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_editplaylist.html', $params);
+	}else {
+		return handleWebList($client,$params)
+	}
+
+}
+
+# Draws the plugin's edit playlist web page
+sub handleWebSaveNewPlaylist {
+	my ($client, $params) = @_;
+
+	$params->{'pluginSQLPlayListError'} = undef;
+	
+	if (!$params->{'text'} || !$params->{'file'} || !$params->{'name'}) {
+		$params->{'pluginSQLPlayListError'} = 'All fields are mandatory';
+	}
+
+	my $playlistDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
+	
+	if (!defined $playlistDir || !-d $playlistDir) {
+		$params->{'pluginSQLPlayListError'} = 'No playlist dir defined';
+	}
+	debugMsg("Got file: ".$params->{'file'}."\n");
+	if($params->{'file'} !~ /.*\.sql$/) {
+		$params->{'pluginSQLPlayListError'} = 'File name must end with .sql';
+	}
+	
+	if($params->{'file'} !~ /^[0-9A-Za-z\._\- ]*$/) {
+		$params->{'pluginSQLPlayListError'} = 'File name is only allowed to contain characters a-z , A-Z , 0-9 , - , _ , . , and space';
+	}
+
+	my $url = catfile($playlistDir, unescape($params->{'file'}));
+	if (-e $url) {
+		$params->{'pluginSQLPlayListError'} = 'File already exist';
+	}
+	my $playlist = getPlayList($client,escape($params->{'name'},"^A-Za-z0-9\-_"));
+	if($playlist) {
+		$params->{'pluginSQLPlayListError'} = 'Playlist with that name already exists';
+	}
+
+	if(!savePlaylist($client,$params,$url)) {
+		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylist.html', $params);
+	}else {
+		return handleWebList($client,$params)
+	}
+
+}
+
+sub handleWebRemovePlaylist {
+	my ($client, $params) = @_;
+
+	if ($params->{'type'}) {
+		my $playlist = getPlayList($client,$params->{'type'});
+		if($playlist) {
+			my $playlistDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
+			
+			if (!defined $playlistDir || !-d $playlistDir) {
+				warn "No playlist dir defined\n"
+			}else {
+				debugMsg("Deleteing playlist: ".$playlist->file."\n");
+				my $url = catfile($playlistDir, unescape($playlist->file));
+				unlink($url) or do {
+					warn "Unable to delete file: ".$url.": $! \n";
+				}
+			}
+		}else {
+			warn "Cannot find: ".$params->{'type'}."\n";
+		}
+	}
+
+	return handleWebList($client,$params)
+}
+
+sub savePlaylist 
+{
+	my ($client, $params, $url) = @_;
+	my $fh;
+	if(!($params->{'pluginSQLPlayListError'})) {
+		debugMsg("Opening playlist file: $url\n");
+	    open($fh,"> $url") or do {
+	            $params->{'pluginSQLPlayListError'} = 'Error saving playlist';
+	    };
+	}
+	if(!($params->{'pluginSQLPlayListError'})) {
+
+		debugMsg("Writing to file: $url\n");
+		print $fh "-- PlaylistName: ".$params->{'name'}."\n";
+		print $fh $params->{'text'};
+		debugMsg("Writing to file succeeded\n");
+		close $fh;
+	}
+	
+	if($params->{'pluginSQLPlayListError'}) {
+		$params->{'pluginSQLPlayListEditPlayListFile'} = $params->{'file'};
+		$params->{'pluginSQLPlayListEditPlayListText'} = $params->{'text'};
+		$params->{'pluginSQLPlayListEditPlayListName'} = $params->{'name'};
+		$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'pluginSQLPlayListEditPlayListFile'});
+		return undef;
+	}else {
+		return 1;
+	}
 }
 
 # Handles play requests from plugin's web page
@@ -855,6 +1169,54 @@ PLUGIN_SQLPLAYLIST_CONTINUOUS_MODE
 
 PLUGIN_SQLPLAYLIST_NOW_PLAYING_FAILED
 	EN	Failed 
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST
+	EN	Edit
+
+PLUGIN_SQLPLAYLIST_NEW_PLAYLIST
+	EN	Create new playlist
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_QUERY
+	EN	SQL Query
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_NAME
+	EN	Playlist Name
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_FILENAME
+	EN	Filename
+
+PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST
+	EN	Delete
+
+PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION
+	EN	Are you sure you want to delete this playlist ?
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_NONE
+	EN	None
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_ALL
+	EN	All
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_CUSTOM
+	EN	Blank playlist
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES
+	EN	Playlist including songs for selected genres only
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES
+	EN	Playlist excluding all songs for selected genres
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_RANDOM
+	EN	Random playlist with all songs
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED
+	EN	Random playlist with all top rated songs (4 and 5)
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES
+	EN	Random playlist with all top rated songs (4 and 5) for the selected genres
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES
+	EN	Random playlist with all top rated songs (4 and 5) excluding songs in selected genres
 
 EOF
 

@@ -10,7 +10,7 @@
 [% END -%]
 [%- pageHeaderInfo = BLOCK %]
 	[% IF pluginSQLPlayListNowPlaying != '' %]
-		<strong>[% "NOW_PLAYING" | string %]:<strong>
+		<strong>[% "NOW_PLAYING" | string %]:</strong>
 		<span class="exboldnowplaying">[% pluginSQLPlayListNowPlaying %]</span>
 	[% END %]
 [% END -%]
@@ -66,6 +66,10 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 				[% BLOCK controls %]
 					[% PROCESS sqlPlayListLink type="$type" addOnly="0" %]
 					[% PROCESS sqlPlayListLink type="$type" addOnly="1" %]
+					&nbsp;&nbsp;&nbsp;
+					<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST" | string %]</a>
+					&nbsp;
+					<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_removeplaylist.html?type=[% type |uri %]&player=[% player | uri %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST" | string %]</a>
 				[% END %]
 				[%- WRAPPER contentitem controls='controls' %]
 					[% pluginSQLPlayListPlayLists.$type.name %]
@@ -104,7 +108,7 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 		</tr>
 
 		<tr>
-			<td>&nbsp;</td>
+			<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylist.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a></td>
 		</tr>
 
 		[%- WRAPPER contentitem %]

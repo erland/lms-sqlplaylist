@@ -1,0 +1,134 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF pluginSQLPlayListVersion < '6.5' %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+	[% IF pluginSQLPlayListNowPlaying != '' %]
+		<strong>[% "NOW_PLAYING" | string %]:</strong>
+		<span class="exboldnowplaying">[% pluginSQLPlayListNowPlaying %]</span>
+	[% END %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF pluginSQLPlayListVersion < '6.5' %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+[% BLOCK href %]
+href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type=[% type %]&player=[% player | uri %]"
+		 onclick='document.editForm.type.value = "[% type %]";
+							document.editForm.submit();
+							return false;'
+[% END %]
+
+<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html" name="editForm" accept-charset="iso8859-1">
+	<input type="hidden" name="type" value="">
+	<table border="0">[% USE table pluginSQLPlayListGenreList.keys.sort, cols=2, pad=0 %]
+		[%- FOREACH genrerow = table.rows %]
+			<tr>
+			[%- FOREACH genre = genrerow %]
+			[%- genreid = "genre_" _ pluginSQLPlayListGenreList.$genre.id %]
+				[%- IF not loop.first %]
+				<td>[% nbsp = "&nbsp"; nbsp.repeat(10) %]</td>
+				[%- END %]
+				<td><input type="checkbox" name="[% genreid %]" id="[% genreid %]" value="1" [% pluginSQLPlayListGenreList.$genre.enabled ? "checked" : "" %] onclick="changeNumSelected(this)">
+				<label for="[% genreid %]">[% genre | html %]</label></td>
+			[%- END %]
+			</tr>
+		[%- END %]
+	</table>
+	<script type="text/javascript">
+	<!--
+		var f = document.editForm;
+		var numSelected = 0;
+		var numCheckBoxes = 0;
+		var selectAllString = '[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_ALL" | string %]';
+		var selectNoneString = '[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_NONE" | string %]';
+
+		// Work out how many checkboxes are initially selected
+		for (var i=0; i < f.elements.length; i++) {
+			if (f.elements[i].type == 'checkbox') {
+				numCheckBoxes++;
+				if (f.elements[i].checked) {
+					numSelected++;
+				}
+			}
+		}
+
+		// Select none if all are selected, else select all
+		function selectAll() {
+			var newState = numSelected != numCheckBoxes;
+
+			for (var i=0; i < f.elements.length; i++) {
+				if (f.elements[i].type == 'checkbox') {
+					f.elements[i].checked = newState;
+				}
+			}
+			if (newState) {
+				numSelected = numCheckBoxes;
+				f.selectAllButton.value = selectNoneString;
+			} else {
+				numSelected = 0;
+				f.selectAllButton.value = selectAllString;
+			}
+		}
+
+		// Increase/decrease num selected every time a checkbox changes
+		function changeNumSelected(checkBox) {
+			if (checkBox.checked) {
+				numSelected++;
+			} else {
+				numSelected--;
+			}
+
+			if (numSelected == numCheckBoxes) {
+			  f.selectAllButton.value = selectNoneString;
+			} else {
+				f.selectAllButton.value = selectAllString;
+			}
+		}
+
+		// Write the button using js, so it won't appear if js isn't enabled/available
+		document.write('<input type="button" value="'
+					   + (numSelected == numCheckBoxes ? selectNoneString : selectAllString)
+									 + '" id="selectAllButton" onclick="selectAll()">');
+	// -->
+	</script>
+
+	<table>
+	<tr><td>&nbsp;</td></tr>
+	<tr><td>
+	<a [% PROCESS href type="custom" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_CUSTOM" | string %]</a>
+	</td></tr>
+	<tr><td>
+	<a [% PROCESS href type="random" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_RANDOM" | string %]</a>
+	</td></tr>
+	<tr><td>
+	<a [% PROCESS href type="includinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES" | string %]</a>
+	</td></tr>
+	[% IF pluginSQLPlayListDatabase == "mysql" %]
+		<tr><td>
+		<a [% PROCESS href type="excludinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES" | string %]</a>
+		</td></tr>
+	[% END %]
+	[% IF pluginSQLPlayListTrackStat %]
+		<tr><td>
+		<a [% PROCESS href type="toprated" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedincludinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES" | string %]</a>
+		</td></tr>
+		[% IF pluginSQLPlayListDatabase == "mysql" %]
+			<tr><td>
+			<a [% PROCESS href type="topratedexcludinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES" | string %]</a>
+			</td></tr>
+		[% END %]
+	[% END %]
+	</table>
+</form>
+[% PROCESS pagefooter.html %]

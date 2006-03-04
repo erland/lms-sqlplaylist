@@ -1,0 +1,50 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF pluginSQLPlayListVersion < '6.5' %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+	[% IF pluginSQLPlayListNowPlaying != '' %]
+		<strong>[% "NOW_PLAYING" | string %]:</strong>
+		<span class="exboldnowplaying">[% pluginSQLPlayListNowPlaying %]</span>
+	[% END %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF pluginSQLPlayListVersion < '6.5' %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_saveplaylist.html" name="editForm" accept-charset="iso8859-1">
+	<input type="hidden" name="file" value="[% pluginSQLPlayListEditPlayListFile %]">
+	<table>
+	<tr><td>
+	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_FILENAME" | string %]: 
+	</td><td>
+	[% pluginSQLPlayListEditPlayListFileUnescaped %]
+	</td></tr>
+	<tr><td>
+	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_NAME" | string %]: 
+	</td><td>
+	<input type="text" name="name" value="[% pluginSQLPlayListEditPlayListName %]">
+	</td></tr>
+	<tr valign="top"><td>
+	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_QUERY" | string %]: 
+	</td><td>
+	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off">[% pluginSQLPlayListEditPlayListText %]</textarea>
+	</td></tr>
+	[% IF pluginSQLPlayListError %]
+	<tr><td colspan="2">
+	<br>Error: [% pluginSQLPlayListError %]<br>
+	</td></tr>
+	[% END %]
+	<tr><td></td><td>
+	<input type="submit" value="[% "SAVE" | string %]">
+	</td></tr>
+	</table>
+</form>
+[% PROCESS pagefooter.html %]
