@@ -76,7 +76,7 @@ sub findAndAdd {
 		
 		if ($::VERSION ge '6.5') {
 			# indicate request source
-			$request->source('PLUGIN_TRACKSTAT');
+			$request->source('PLUGIN_DYNAMICPLAYLIST');
 		}
 
 		# Add the remaining items to the end
@@ -84,7 +84,7 @@ sub findAndAdd {
 			debugMsg("Adding ".(scalar @$items)." tracks to end of playlist\n");
 			$client->execute(['playlist', 'addtracks', 'listRef', $items]);
 			if ($::VERSION ge '6.5') {
-				$request->source('PLUGIN_TRACKSTAT');
+				$request->source('PLUGIN_DYNAMICPLAYLIST');
 			}
 		}
 	} 
@@ -461,7 +461,7 @@ sub commandCallback65 {
 	
 	my $client = $request->client();
 
-	if ($request->source() eq 'PLUGIN_TRACKSTAT') {
+	if ($request->source() eq 'PLUGIN_DYNAMICPLAYLIST') {
 		return;
 	}
 
@@ -500,7 +500,7 @@ sub commandCallback65 {
 			# Delete tracks before this one on the playlist
 			for (my $i = 0; $i < $songIndex - $songsToKeep; $i++) {
 				my $request = $client->execute(['playlist', 'delete', 0]);
-				$request->source('PLUGIN_TRACKSTAT');
+				$request->source('PLUGIN_DYNAMICPLAYLIST');
 			}
 		}
 
@@ -1016,7 +1016,7 @@ sub setupGroup
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_number_of_tracks"); }
 		},
 	plugin_sqlplaylist_number_of_old_tracks => {
-			'validate' => \&Slim::Web::Setup::validateInt
+			'validate' => \&validateIntOrEmpty
 			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS')
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_number_of_old_tracks"); }
@@ -1065,6 +1065,43 @@ sub getTracksForPlaylist {
 
 	
 	return \@result;
+}
+
+sub getDynamicPlayLists {
+	my ($client) = @_;
+
+	my $playLists = getPlayLists($client);
+	
+	my %result = ();
+	
+	foreach my $playlist (sort keys %$playLists) {
+		my $playlistid = "sqlplaylist_".$playlist;
+		my $current = $playLists->{$playlist};
+		my %currentResult = (
+			'id' => $playlist,
+			'name' => $current->name
+		);
+		$result{$playlistid} = \%currentResult;
+	}
+	
+	return \%result;
+}
+
+sub getNextDynamicPlayListTracks {
+	my ($client,$dynamicplaylist,$limit) = @_;
+	
+	debugMsg("Getting tracks for: ".$dynamicplaylist->{'id'}."\n");
+	my $playlist = getPlayList($client,$dynamicplaylist->{'id'});
+	my $result = getTracksForPlaylist($client,$playlist,$limit);
+	
+	return \@{$result};
+}
+sub validateIntOrEmpty {
+	my $arg = shift;
+	if(!$arg || $arg eq '' || $arg =~ /^\d+$/) {
+		return $arg;
+	}
+	return undef;
 }
 
 # other people call us externally.
