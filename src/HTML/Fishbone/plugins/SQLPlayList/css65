@@ -1,0 +1,103 @@
+<STYLE type="text/css">
+.songtitle
+{
+	margin:0px;
+	color:white;
+	font-size:14px ! important;
+	font-weight:bold;
+	line-height: 100%;
+}	
+
+.artistname
+{
+	margin:0px;
+	font-size:11px;
+	font-weight:normal;
+	color:white;
+	line-height: 100%;
+}
+
+.listing A, .listing2 A, .odd A, .even A
+{
+	color : white ! important;
+}
+
+#currentListItem
+{
+	background:#333;
+	border-top:solid 1px #EE3823;
+	border-bottom:solid 1px #EE3823;
+}
+
+.listinghead
+{
+	background:#333;
+	font-size: 10px;
+	border-bottom:solid 1px #333;
+	font-weight:bold;
+	color:#999;
+}
+
+div#browsedbList {
+	position: relative;
+	clear: left;
+	width: auto;
+	height: auto;
+}
+
+div#browsedbHeader {
+	margin-left:0px;
+}
+
+.browsedbListItem {
+	position: relative;
+	padding-right: 60px;
+}
+
+.browsedbControls {
+	position: absolute;
+	top: 0px;
+	right: 4px;
+}
+
+.playlistControls {
+	position: absolute;
+	top: 0px;
+	right: 4px;
+}
+
+.browsedbControls img, .playlistControls img {
+	vertical-align: middle;
+}
+
+.songInfo ul {
+	/* the list of song info items */
+	background-color: #000;
+	padding: 0px;
+	list-style: none;
+	margin: 8px;
+}
+
+.songInfo li {
+	position: relative;
+	padding-top: 5px;
+	margin: 0px;
+	clear: left;
+}
+
+.songInfoTitle {
+	float: left;
+	right: 0px;
+	padding: 0px;
+	width: 25%;
+}
+
+.songInfoText {
+	right: 0px;
+	padding: 0px;
+	margin: 0px;
+	width: 75%;
+	margin-left: 25%;
+}
+
+</STYLE>

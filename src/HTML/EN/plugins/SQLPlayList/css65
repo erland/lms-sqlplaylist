@@ -1,0 +1,31 @@
+<STYLE type="text/css">
+
+div#browsedbList {
+	position: relative;
+	clear: left;
+	width: auto;
+	height: auto;
+}
+
+.browsedbListItem {
+	position: relative;
+	padding-right: 100px;
+}
+
+.playlistControls {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+}
+
+.browsedbControls {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+}
+
+div#browsedbHeader {
+	margin-left:0px;
+}
+
+</STYLE>
