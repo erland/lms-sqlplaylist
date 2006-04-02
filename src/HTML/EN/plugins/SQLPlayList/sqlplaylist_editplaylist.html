@@ -20,6 +20,7 @@
 [% END %]
 
 <form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_saveplaylist.html" name="editForm" accept-charset="iso8859-1">
+	<input type="hidden" name="testonly" value=""/>
 	<input type="hidden" name="file" value="[% pluginSQLPlayListEditPlayListFile %]">
 	<table>
 	<tr><td>
@@ -44,7 +45,21 @@
 	[% END %]
 	<tr><td></td><td>
 	<input type="submit" value="[% "SAVE" | string %]">
+	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_TESTPLAYLIST" | string %]" onclick='document.editForm.testonly.value = "1";document.editForm.submit();'>
 	</td></tr>
 	</table>
 </form>
+[% IF pluginSQLPlayListEditPlayListTestResult %]
+	[% WRAPPER contentcontainer %]
+		[% odd = 1 %]
+			[% FOREACH item = pluginSQLPlayListEditPlayListTestResult %]
+			[%- WRAPPER contentitem %]
+				<div style="width:100%">
+				[% PROCESS trackinfo %]
+				</div>
+			[% END %]
+			[% odd = (not odd) %]
+		[% END %]
+	[% END %]
+[% END %]
 [% PROCESS pagefooter.html %]
