@@ -1085,8 +1085,8 @@ sub getArtistListString {
 	if($query) {
         foreach my $param (split /\&/, $query) {
             if ($param =~ /([^=]+)=(.*)/) {
-                my $name  = Slim::Utils::Misc::unescape($1, 1);
-                my $value = Slim::Utils::Misc::unescape($2, 1);
+                my $name  = unescape($1);
+                my $value = unescape($2);
                 debugMsg("Got $name=$value\n");
                 if($name eq 'artistList') {
                     # We need to turn perl's internal
