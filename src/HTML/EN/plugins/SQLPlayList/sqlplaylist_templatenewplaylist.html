@@ -28,7 +28,8 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 
 <form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html" name="editForm" accept-charset="iso8859-1">
 	<input type="hidden" name="type" value="">
-	<table border="0">[% USE table pluginSQLPlayListGenreList.keys.sort, cols=2, pad=0 %]
+	<table border="0">[% USE table pluginSQLPlayListGenreList.keys.sort, cols=3, pad=0 %]
+		<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_TITLE" | string %]</b></td></tr>
 		[%- FOREACH genrerow = table.rows %]
 			<tr>
 			[%- FOREACH genre = genrerow %]
@@ -47,8 +48,8 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 		var f = document.editForm;
 		var numSelected = 0;
 		var numCheckBoxes = 0;
-		var selectAllString = '[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_ALL" | string %]';
-		var selectNoneString = '[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_NONE" | string %]';
+		var selectAllGenresString = '[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_ALL" | string %]';
+		var selectNoneGenresString = '[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_NONE" | string %]';
 
 		// Work out how many checkboxes are initially selected
 		for (var i=0; i < f.elements.length; i++) {
@@ -61,20 +62,20 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 		}
 
 		// Select none if all are selected, else select all
-		function selectAll() {
+		function selectAllGenres() {
 			var newState = numSelected != numCheckBoxes;
 
 			for (var i=0; i < f.elements.length; i++) {
-				if (f.elements[i].type == 'checkbox') {
+				if (f.elements[i].type == 'checkbox' && String(f.elements[i].name).substring(0,5) == 'genre' ) {
 					f.elements[i].checked = newState;
 				}
 			}
 			if (newState) {
 				numSelected = numCheckBoxes;
-				f.selectAllButton.value = selectNoneString;
+				f.selectAllGenresButton.value = selectNoneGenresString;
 			} else {
 				numSelected = 0;
-				f.selectAllButton.value = selectAllString;
+				f.selectAllGenresButton.value = selectAllGenresString;
 			}
 		}
 
@@ -87,18 +88,29 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 			}
 
 			if (numSelected == numCheckBoxes) {
-			  f.selectAllButton.value = selectNoneString;
+			  f.selectAllGenresButton.value = selectNoneGenresString;
 			} else {
-				f.selectAllButton.value = selectAllString;
+				f.selectAllGenresButton.value = selectAllGenresString;
 			}
 		}
 
 		// Write the button using js, so it won't appear if js isn't enabled/available
 		document.write('<input type="button" value="'
-					   + (numSelected == numCheckBoxes ? selectNoneString : selectAllString)
-									 + '" id="selectAllButton" onclick="selectAll()">');
+					   + (numSelected == numCheckBoxes ? selectNoneGenresString : selectAllGenresString)
+									 + '" id="selectAllGenresButton" onclick="selectAllGenres()">');
 	// -->
 	</script>
+	<table border="0">
+		<tr><td><b>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_TITLE" | string %]</b></td></tr>
+		<tr><td>
+			<select name="artistList" multiple size="10">
+			[%- FOREACH artist = pluginSQLPlayListArtistList.keys.sort %]
+			[%- artistid = pluginSQLPlayListArtistList.$artist.id %]
+				<option name="[% artistid %]" id="[% artistid %]" value="[% artistid %]">[% pluginSQLPlayListArtistList.$artist.name | html %]</option>
+			[%- END %]
+			</select>
+		</td></tr>
+	</table>
 
 	<table>
 	<tr><td>&nbsp;</td></tr>
@@ -111,9 +123,31 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 	<tr><td>
 	<a [% PROCESS href type="includinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES" | string %]</a>
 	</td></tr>
+	<tr><td>
+	<a [% PROCESS href type="includingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_ARTISTS" | string %]</a>
+	</td></tr>
+	<tr><td>
+	<a [% PROCESS href type="includinggenresincludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES_INCLUDING_ARTISTS" | string %]</a>
+	</td></tr>
 	[% IF pluginSQLPlayListDatabase == "mysql" %]
 		<tr><td>
 		<a [% PROCESS href type="excludinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="excludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_ARTISTS" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="excludinggenresexcludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES_EXCLUDING_ARTISTS" | string %]</a>
+		</td></tr>
+	[% ELSE %]
+		<tr><td>
+		<a [% PROCESS href type="excludinggenressqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="excludingartistssqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_ARTISTS" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="excludinggenresexcludingartistssqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES_EXCLUDING_ARTISTS" | string %]</a>
 		</td></tr>
 	[% END %]
 	[% IF pluginSQLPlayListTrackStat %]
@@ -123,9 +157,31 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 		<tr><td>
 		<a [% PROCESS href type="topratedincludinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES" | string %]</a>
 		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedincludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_ARTISTS" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedincludinggenresincludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES_INCLUDING_ARTISTS" | string %]</a>
+		</td></tr>
 		[% IF pluginSQLPlayListDatabase == "mysql" %]
 			<tr><td>
 			<a [% PROCESS href type="topratedexcludinggenres" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES" | string %]</a>
+			</td></tr>
+			<tr><td>
+			<a [% PROCESS href type="topratedexcludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_ARTISTS" | string %]</a>
+			</td></tr>
+			<tr><td>
+			<a [% PROCESS href type="topratedexcludinggenresexcludingartists" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES_EXCLUDING_ARTISTS" | string %]</a>
+			</td></tr>
+		[% ELSE %]
+			<tr><td>
+			<a [% PROCESS href type="topratedexcludinggenressqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES" | string %]</a>
+			</td></tr>
+			<tr><td>
+			<a [% PROCESS href type="topratedexcludingartistssqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_ARTISTS" | string %]</a>
+			</td></tr>
+			<tr><td>
+			<a [% PROCESS href type="topratedexcludinggenresexcludingartistssqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES_EXCLUDING_ARTISTS" | string %]</a>
 			</td></tr>
 		[% END %]
 	[% END %]
