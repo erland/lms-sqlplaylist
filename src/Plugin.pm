@@ -37,6 +37,7 @@ my %mixInfo      = ();
 my $htmlTemplate = 'plugins/SQLPlayList/sqlplaylist_list.html';
 my $ds = Slim::Music::Info::getCurrentDataStore();
 my $playLists = undef;
+my $sqlerrors = '';
 struct PlayListInfo => {
 	id => '$',
 	file => '$',
@@ -349,7 +350,7 @@ sub getPlayLists {
 		
 		if($name && $statement) {
 			debugMsg("Got playlist: $name\n");
-			$playLists{escape($name,"^A-Za-z0-9\-_")} = PlayListInfo->new( id => escape($name,"^A-Za-z0-9\-_"), file => $item, name => $name, sql => $statement , fulltext => $fulltext);
+			$playLists{escape($name,"^A-Za-z0-9\-_")} = PlayListInfo->new( id => escape($name,"^A-Za-z0-9\-_"), file => $item, name => $name, sql => Slim::Utils::Unicode::utf8decode($statement,'utf8') , fulltext => Slim::Utils::Unicode::utf8decode($fulltext,'utf8'));
 		}
 	}
 	return \%playLists;
@@ -597,7 +598,7 @@ sub handleWebEditPlaylist {
 		if($playlist) {
 			$params->{'pluginSQLPlayListEditPlayListFile'} = escape($playlist->file);
 			$params->{'pluginSQLPlayListEditPlayListName'} = $playlist->name;
-			$params->{'pluginSQLPlayListEditPlayListText'} = $playlist->fulltext;
+			$params->{'pluginSQLPlayListEditPlayListText'} = Slim::Utils::Unicode::utf8decode($playlist->fulltext,'utf8');
 			$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'pluginSQLPlayListEditPlayListFile'});
 		}else {
 			warn "Cannot find: ".$params->{'type'};
@@ -608,6 +609,62 @@ sub handleWebEditPlaylist {
 	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
 	
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_editplaylist.html', $params);
+}
+
+# Draws the plugin's edit playlist web page
+sub handleWebTestNewPlaylist {
+	my ($client, $params) = @_;
+
+	handleWebTestPlaylist($client,$params);
+	
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylist.html', $params);
+}
+
+# Draws the plugin's edit playlist web page
+sub handleWebTestEditPlaylist {
+	my ($client, $params) = @_;
+
+	handleWebTestPlaylist($client,$params);
+	
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_editplaylist.html', $params);
+}
+
+sub handleWebTestPlaylist {
+	my ($client, $params) = @_;
+	$params->{'pluginSQLPlayListEditPlayListFile'} = $params->{'file'};
+	$params->{'pluginSQLPlayListEditPlayListName'} = $params->{'name'};
+	$params->{'pluginSQLPlayListEditPlayListText'} = $params->{'text'};
+	$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'file'});
+	my $ds = Slim::Music::Info::getCurrentDataStore();
+	if($params->{'text'}) {
+		my $sql = createSQL(Slim::Utils::Unicode::utf8decode($params->{'text'},'utf8'));
+		if($sql) {
+			my $tracks = executeSQLForPlaylist($sql);
+			my @resultTracks;
+			my $itemNumber = 0;
+			foreach my $track (@$tracks) {
+			  	my %trackInfo = ();
+				my $fieldInfo = Slim::DataStores::Base->fieldInfo;
+	            my $levelInfo = $fieldInfo->{'track'};
+				
+	            &{$levelInfo->{'listItem'}}($ds, \%trackInfo, $track);
+			  	$trackInfo{'title'} = Slim::Music::Info::standardTitle(undef,$track);
+			  	$trackInfo{'odd'} = ($itemNumber+1) % 2;
+	            $trackInfo{'itemobj'}          = $track;
+			  	push @resultTracks,\%trackInfo;
+			}
+			if(defined(@resultTracks) && scalar(@resultTracks)>0) {
+				$params->{'pluginSQLPlayListEditPlayListTestResult'} = \@resultTracks;
+			}
+		}
+	}
+
+	if($sqlerrors && $sqlerrors ne '') {
+		$params->{'pluginSQLPlayListError'} = $sqlerrors;
+	}else {
+		$params->{'pluginSQLPlayListError'} = undef;
+	}
+	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
 }
 
 # Returns a hash whose keys are the genres in the db
@@ -635,14 +692,38 @@ sub getGenres {
 	return %clientGenres;
 }
 
+sub getArtists {
+	my ($client) =@_;
+	
+	my $items = $ds->find({
+		'field'  => 'artist',
+		'sortBy' => 'name',
+		'cache'  => 0,
+	});
+	
+	my %clientArtists = ();
+	for my $item (@$items) {
+		$clientArtists{escape($item->{'name'})} = {
+			name => $item->{'name'},
+			id => $item->{'id'},
+		};
+	}
+	
+	return %clientArtists;
+}
 
 # Draws the plugin's edit playlist web page
 sub handleWebNewPlaylist {
 	my ($client, $params) = @_;
 
+	foreach my $param (keys %$params) {
+		debugMsg("Got: $param = ".$params->{$param}."\n");
+	}
+
 	$params->{'pluginSQLPlayListError'} = undef;
 	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
 	$params->{'pluginSQLPlayListGenreList'} = {getGenres($client)};
+	$params->{'pluginSQLPlayListArtistList'} = {getArtists($client)};
 	
 	my $driver = Slim::Utils::Prefs::get('dbsource');
     $driver =~ s/dbi:(.*?):(.*)$/$1/;
@@ -681,7 +762,10 @@ sub handleWebGenerateNewPlaylist {
 
 	$params->{'pluginSQLPlayListError'} = undef;
 	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
-	my $genreListString = getGenreListString($client,$params);
+	my $genreListString = Slim::Utils::Unicode::utf8decode(getGenreListString($client,$params),'utf8');
+	my $artistListString = Slim::Utils::Unicode::utf8decode(getArtistListString($client,$params),'utf8');
+	debugMsg("Genres = ".$genreListString."\n");
+	debugMsg("Artists = ".$artistListString."\n");
 	if($params->{'type'} eq "random") {
 		$params->{'pluginSQLPlayListEditPlayListText'} = "select url from tracks order by $orderBy limit 10;";
 	}elsif($params->{'type'} eq "includinggenres") {
@@ -693,11 +777,57 @@ sub handleWebGenerateNewPlaylist {
 		}
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "includinggenresincludingartists") {
+		my $sql = "select url from tracks,genre_track,genres,contributor_track,contributors \n\twhere tracks.id=genre_track.track and \n\t\tgenre_track.genre=genres.id and \n\t\ttracks.id=contributor_track.track and \n\t\tcontributor_track.contributor=contributors.id and\n\t\ttracks.audio=1";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenres.name in (";
+			$sql .= $genreListString;
+			$sql .= ")";
+		}
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributors.name in (";
+			$sql .= $artistListString;
+			$sql .= ")";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "includingartists") {
+		my $sql = "select url from tracks,contributor_track,contributors \n\twhere tracks.id=contributor_track.track and \n\t\tcontributor_track.contributor=contributors.id and\n\t\ttracks.audio=1";
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributors.name in (";
+			$sql .= $artistListString;
+			$sql .= ")";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedincludinggenres") {
 		my $sql = "select tracks.url from tracks,genre_track,genres,track_statistics \n\twhere tracks.id=genre_track.track and \n\t\tgenre_track.genre=genres.id and\n\t\ttracks.url=track_statistics.url and\n\t\ttrack_statistics.rating>=80 and\n\t\ttracks.audio=1";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenres.name in (";
 			$sql .= $genreListString;
+			$sql .= ")";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedincludingartists") {
+		my $sql = "select tracks.url from tracks,contributor_track,contributors,track_statistics \n\twhere tracks.id=contributor_track.track and \n\t\tcontributor_track.contributor=contributors.id and\n\t\ttracks.url=track_statistics.url and\n\t\ttrack_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributors.name in (";
+			$sql .= $artistListString;
+			$sql .= ")";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedincludinggenresincludingartists") {
+		my $sql = "select tracks.url from tracks,genre_track,genres,contributor_track,contributors,track_statistics \n\twhere tracks.id=genre_track.track and \n\t\tgenre_track.genre=genres.id and \n\ttracks.id=contributor_track.track and \n\t\tcontributor_track.contributor=contributors.id and\n\t\ttracks.url=track_statistics.url and\n\t\ttrack_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenres.name in (";
+			$sql .= $genreListString;
+			$sql .= ")";
+		}
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributors.name in (";
+			$sql .= $artistListString;
 			$sql .= ")";
 		}
 		$sql .= "\n\t order by $orderBy limit 10;\n";
@@ -717,6 +847,94 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\t\ttracks.audio=1 \n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "excludingartists") {
+		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		$sql .= "select distinct tracks.url from tracks \n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributor_track_withname.name in(";
+			$sql .= $artistListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\twhere ";
+		if($artistListString ne "") {
+			$sql .= "contributor_track_withname.track is null and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 \n\torder by $orderBy limit 10;\n\n";
+		$sql .= "drop temporary table contributor_track_withname;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "excludinggenresexcludingartists") {
+		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
+		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenre_track_withname.name in(";
+			$sql .= $genreListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributor_track_withname.name in(";
+			$sql .= $artistListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "genre_track_withname.track is null and ";
+		}
+		if($artistListString ne "") {
+			$sql .= "contributor_track_withname.track is null and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 \n\torder by $orderBy limit 10;\n\n";
+		$sql .= "drop temporary table contributor_track_withname;\n";
+		$sql .= "drop temporary table genre_track_withname;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "excludinggenressqlite") {
+		my $sql = "select tracks.url from tracks";
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
+			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $genreListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1\n\t\torder by $orderBy limit 10;\n\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "excludingartistssqlite") {
+		my $sql = "select tracks.url from tracks";
+		$sql .= "\n\twhere ";
+		if($artistListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
+			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $artistListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1\n\t\torder by $orderBy limit 10;\n\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "excludinggenresexcludingartistssqlite") {
+		my $sql = "select tracks.url from tracks";
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
+			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $genreListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		if($artistListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
+			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $artistListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1\n\t\torder by $orderBy limit 10;\n\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludinggenres") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
 		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
@@ -733,14 +951,106 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedexcludingartists") {
+		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		$sql .= "select distinct tracks.url from tracks \n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributor_track_withname.name in(";
+			$sql .= $artistListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
+		$sql .= "\n\twhere ";
+		if($artistListString ne "") {
+			$sql .= "contributor_track_withname.track is null and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
+		$sql .= "drop temporary table contributor_track_withname;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedexcludinggenresexcludingartists") {
+		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
+		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		if($genreListString ne "") {
+			$sql .= " and \n\t\tgenre_track_withname.name in(";
+			$sql .= $genreListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
+		if($artistListString ne "") {
+			$sql .= " and \n\t\tcontributor_track_withname.name in(";
+			$sql .= $artistListString;
+			$sql .= ")"
+		}
+		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "genre_track_withname.track is null and ";
+		}
+		if($artistListString ne "") {
+			$sql .= "contributor_track_withname.track is null and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
+		$sql .= "drop temporary table contributor_track_withname;\n";
+		$sql .= "drop temporary table genre_track_withname;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedexcludinggenressqlite") {
+		my $sql = "select tracks.url from tracks";
+		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
+			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $genreListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedexcludingartistssqlite") {
+		my $sql = "select tracks.url from tracks";
+		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
+		$sql .= "\n\twhere ";
+		if($artistListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
+			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $artistListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedexcludinggenresexcludingartistssqlite") {
+		my $sql = "select tracks.url from tracks";
+		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
+		$sql .= "\n\twhere ";
+		if($genreListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
+			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $genreListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		if($artistListString ne "") {
+			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
+			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tname in(";
+			$sql .= $artistListString;
+			$sql .= ") and ";
+			$sql .= "\n\t\t\ttrack=tracks.id) and ";
+		}
+		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80\n\torder by $orderBy limit 10;\n\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "toprated") {
 		my $sql = "select tracks.url from tracks,track_statistics\n\t";
 		$sql .= "where tracks.url = track_statistics.url and\n\t\t";
 		$sql .= "track_statistics.rating>=80\n\t";
-		$sql .= "order by $orderBy limit 10\n";
+		$sql .= "order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}
-
 		
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylist.html', $params);
 }
@@ -763,11 +1073,66 @@ sub getGenreListString {
 	}
 	return $sql;
 }	
+
+sub getArtistListString {
+	my ($client,$params) = @_;
+	
+	
+	my %artists = getArtists($client);
+	my %selectedArtists;
+	my $query = $params->{url_query};
+	debugMsg("url_query = $query\n");
+	if($query) {
+        foreach my $param (split /\&/, $query) {
+            if ($param =~ /([^=]+)=(.*)/) {
+                my $name  = Slim::Utils::Misc::unescape($1, 1);
+                my $value = Slim::Utils::Misc::unescape($2, 1);
+                debugMsg("Got $name=$value\n");
+                if($name eq 'artistList') {
+                    # We need to turn perl's internal
+                    # representation of the unescaped
+                    # UTF-8 string into a "real" UTF-8
+                    # string with the appropriate magic set.
+                    if ($value ne '*' && $value ne '') {
+
+                            $value = Slim::Utils::Unicode::utf8on($value);
+                            $value = Slim::Utils::Unicode::utf8encode_locale($value);
+                    }
+
+					debugMsg("Adding $value\n");
+                    $selectedArtists{$value}=$value;
+                }
+            }
+        }
+	}
+	my $first = 1;
+	my $sql = '';
+	my $ds = Slim::Music::Info::getCurrentDataStore();
+	my $dbh = $ds->dbh();
+	foreach my $artist (keys %artists) {
+		my $artistid = $artists{$artist}{'id'};
+		if($selectedArtists{$artistid}) {
+			if(!$first) {
+				$sql .= ","
+			}
+			$first = undef;
+			$sql .= $dbh->quote($artists{$artist}{'name'});
+		}
+	}
+	return $sql;
+}	
+
 # Draws the plugin's edit playlist web page
 sub handleWebSavePlaylist {
 	my ($client, $params) = @_;
 
 	$params->{'pluginSQLPlayListError'} = undef;
+
+	if($params->{'testonly'} eq "1") {
+		return handleWebTestEditPlaylist($client,$params);
+	}
+
+	handleWebTestPlaylist($client,$params);
 	
 	if (!$params->{'text'} || !$params->{'file'} || !$params->{'name'}) {
 		$params->{'pluginSQLPlayListError'} = 'All fields are mandatory';
@@ -800,6 +1165,12 @@ sub handleWebSaveNewPlaylist {
 	my ($client, $params) = @_;
 
 	$params->{'pluginSQLPlayListError'} = undef;
+	
+	if($params->{'testonly'} eq "1") {
+		return handleWebTestNewPlaylist($client,$params);
+	}
+
+	handleWebTestPlaylist($client,$params);
 	
 	if (!$params->{'text'} || !$params->{'file'} || !$params->{'name'}) {
 		$params->{'pluginSQLPlayListError'} = 'All fields are mandatory';
@@ -1031,9 +1402,44 @@ sub getTracksForPlaylist {
 	my $limit = shift;
 	my $sqlstatements = $playlist->sql;
 	my @result;
-	my $trackno = 0;
+	@result = executeSQLForPlaylist($sqlstatements,$limit);
+	
+	return \@result;
+}
+
+sub createSQL {
+	my $sqlstatements = shift;
+	my $sql = '';
+    for my $line (split(/[\n\r]/,$sqlstatements)) {
+        chomp $line;
+
+        # skip and strip comments & empty lines
+        $line =~ s/\s*--.*?$//o;
+        $line =~ s/^\s*//o;
+
+        next if $line =~ /^--/;
+        next if $line =~ /^\s*$/;
+
+		$line =~ s/\s+$//;
+		if($sql) {
+			if( $sql =~ /;$/ ) {
+				$sql .= "\n";
+			}else {
+				$sql .= " ";
+			}
+		}
+		$sql .= $line;
+    }
+    return $sql;
+}
+sub executeSQLForPlaylist {
+	my $sqlstatements = shift;
+	my $limit = shift;
+	my @result;
 	my $ds = Slim::Music::Info::getCurrentDataStore();
 	my $dbh = $ds->dbh();
+	my $trackno = 0;
+	$sqlerrors = "";
     for my $sql (split(/[\n\r]/,$sqlstatements)) {
     	eval {
 			my $sth = $dbh->prepare( $sql );
@@ -1059,14 +1465,12 @@ sub getTracksForPlaylist {
 			$sth->finish();
 		};
 		if( $@ ) {
+			$sqlerrors .= $DBI::errstr."<br>";
 		    warn "Database error: $DBI::errstr\n";
 		}		
 	}
-
-	
 	return \@result;
 }
-
 sub getDynamicPlayLists {
 	my ($client) = @_;
 
@@ -1228,32 +1632,71 @@ PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST
 PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION
 	EN	Are you sure you want to delete this playlist ?
 
+PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_TITLE
+	EN	Genres
+
 PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_NONE
-	EN	None
+	EN	No Genres
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_ALL
-	EN	All
+	EN	All Genres
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_SELECT_NONE
+	EN	No Artists
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_SELECT_ALL
+	EN	All Artists
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_CUSTOM
 	EN	Blank playlist
 
+PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_TITLE
+	EN	Artists
+
 PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES
 	EN	Playlist including songs for selected genres only
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_ARTISTS
+	EN	Playlist including songs for selected artists only
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES_INCLUDING_ARTISTS
+	EN	Playlist including songs for selected genres and selected artists only
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES
 	EN	Playlist excluding all songs for selected genres
 
+PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_ARTISTS
+	EN	Playlist excluding all songs for selected aritsts
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES_EXCLUDING_ARTISTS
+	EN	Playlist excluding all songs for selected aritsts and excluding all songs for selected genres
+
 PLUGIN_SQLPLAYLIST_TEMPLATE_RANDOM
-	EN	Random playlist with all songs
+	EN	Playlist with all songs
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED
-	EN	Random playlist with all top rated songs (4 and 5)
+	EN	Playlist with all top rated songs (4 and 5)
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES
-	EN	Random playlist with all top rated songs (4 and 5) for the selected genres
+	EN	Playlist with all top rated songs (4 and 5) for the selected genres
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES_INCLUDING_ARTISTS
+	EN	Playlist with all top rated songs (4 and 5) for the selected genres and selected artists only
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_ARTISTS
+	EN	Playlist with all top rated songs (4 and 5) for the selected artists
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES
-	EN	Random playlist with all top rated songs (4 and 5) excluding songs in selected genres
+	EN	Playlist with all top rated songs (4 and 5) excluding songs in selected genres
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_ARTISTS
+	EN	Playlist with all top rated songs (4 and 5) excluding songs in selected artists
+
+PLUGIN_SQLPLAYLIST_TESTPLAYLIST
+	EN	Test
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES_EXCLUDING_ARTISTS
+	EN	Playlist with all top rated songs (4 and 5) excluding all songs for selected aritsts and excluding all songs for selected genres
 
 EOF
 
