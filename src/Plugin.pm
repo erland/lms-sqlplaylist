@@ -1401,10 +1401,9 @@ sub getTracksForPlaylist {
 	my $playlist = shift;
 	my $limit = shift;
 	my $sqlstatements = $playlist->sql;
-	my @result;
-	@result = executeSQLForPlaylist($sqlstatements,$limit);
+	my $result= executeSQLForPlaylist($sqlstatements,$limit);
 	
-	return \@result;
+	return $result;
 }
 
 sub createSQL {
