@@ -848,7 +848,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludingartists") {
-		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
 		$sql .= "select distinct tracks.url from tracks \n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
 		if($artistListString ne "") {
 			$sql .= " and \n\t\tcontributor_track_withname.name in(";
@@ -864,7 +864,7 @@ sub handleWebGenerateNewPlaylist {
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludinggenresexcludingartists") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
-		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
 		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenre_track_withname.name in(";
@@ -893,7 +893,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\twhere ";
 		if($genreListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
-			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tgenre=genres.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $genreListString;
 			$sql .= ") and ";
@@ -906,7 +906,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\twhere ";
 		if($artistListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
-			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tcontributor=contributors.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $artistListString;
 			$sql .= ") and ";
@@ -919,7 +919,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\twhere ";
 		if($genreListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
-			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tgenre=genres.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $genreListString;
 			$sql .= ") and ";
@@ -927,7 +927,7 @@ sub handleWebGenerateNewPlaylist {
 		}
 		if($artistListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
-			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tcontributor=contributors.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $artistListString;
 			$sql .= ") and ";
@@ -952,7 +952,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludingartists") {
-		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
 		$sql .= "select distinct tracks.url from tracks \n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
 		if($artistListString ne "") {
 			$sql .= " and \n\t\tcontributor_track_withname.name in(";
@@ -969,7 +969,7 @@ sub handleWebGenerateNewPlaylist {
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludinggenresexcludingartists") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
-		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
+		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
 		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenre_track_withname.name in(";
@@ -1000,7 +1000,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\twhere ";
 		if($genreListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
-			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tgenre=genres.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $genreListString;
 			$sql .= ") and ";
@@ -1014,7 +1014,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\twhere ";
 		if($artistListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
-			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tcontributor=contributors.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $artistListString;
 			$sql .= ") and ";
@@ -1028,7 +1028,7 @@ sub handleWebGenerateNewPlaylist {
 		$sql .= "\n\twhere ";
 		if($genreListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from genre_track,genres where";
-			$sql .= "\n\t\t\tgenre=id and";
+			$sql .= "\n\t\t\tgenre=genres.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $genreListString;
 			$sql .= ") and ";
@@ -1036,7 +1036,7 @@ sub handleWebGenerateNewPlaylist {
 		}
 		if($artistListString ne "") {
 			$sql .= "\n\t\tnot exists (select * from contributor_track,contributors where";
-			$sql .= "\n\t\t\tcontributor=id and";
+			$sql .= "\n\t\t\tcontributor=contributors.id and";
 			$sql .= "\n\t\t\tname in(";
 			$sql .= $artistListString;
 			$sql .= ") and ";
@@ -1364,7 +1364,7 @@ sub setupGroup
 	my %setupPrefs =
 	(
 	plugin_sqlplaylist_showmessages => {
-			'validate'     => \&Slim::Web::Setup::validateTrueFalse
+			'validate'     => \&validateTrueFalseWrapper
 			,'PrefChoose'  => string('PLUGIN_SQLPLAYLIST_SHOW_MESSAGES')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_SHOW_MESSAGES')
 			,'options' => {
@@ -1374,14 +1374,14 @@ sub setupGroup
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_showmessages"); }
 		},		
 	plugin_sqlplaylist_playlist_directory => {
-			'validate' => \&Slim::Web::Setup::validateIsDir
+			'validate' => \&validateIsDirWrapper
 			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
 			,'PrefSize' => 'large'
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"); }
 		},
 	plugin_sqlplaylist_number_of_tracks => {
-			'validate' => \&Slim::Web::Setup::validateInt
+			'validate' => \&validateIntWrapper
 			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS')
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_number_of_tracks"); }
@@ -1505,6 +1505,33 @@ sub validateIntOrEmpty {
 		return $arg;
 	}
 	return undef;
+}
+
+sub validateIsDirWrapper {
+	my $arg = shift;
+	if ($::VERSION ge '6.5') {
+		return Slim::Utils::Validate::isDir($arg);
+	}else {
+		return Slim::Web::Setup::validateIsDir($arg);
+	}
+}
+
+sub validateIntWrapper {
+	my $arg = shift;
+	if ($::VERSION ge '6.5') {
+		return Slim::Utils::Validate::isInt($arg);
+	}else {
+		return Slim::Web::Setup::validateInt($arg);
+	}
+}
+
+sub validateTrueFalseWrapper {
+	my $arg = shift;
+	if ($::VERSION ge '6.5') {
+		return Slim::Utils::Validate::trueFalse($arg);
+	}else {
+		return Slim::Web::Setup::validateTrueFalse($arg);
+	}
 }
 
 # other people call us externally.
