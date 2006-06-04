@@ -31,11 +31,15 @@ use Slim::Utils::Strings qw(string);
 use File::Spec::Functions qw(:ALL);
 use Class::Struct;
 
+if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	eval "use Slim::Schema";
+}
+
 my %stopcommands = ();
 # Information on each clients sqlplaylist
 my %mixInfo      = ();
 my $htmlTemplate = 'plugins/SQLPlayList/sqlplaylist_list.html';
-my $ds = Slim::Music::Info::getCurrentDataStore();
+my $ds = getCurrentDS();
 my $playLists = undef;
 my $sqlerrors = '';
 struct PlayListInfo => {
@@ -73,19 +77,19 @@ sub findAndAdd {
 
 		# Replace the current playlist with the first item / track or add it to end
 		my $request = $client->execute(['playlist', $addOnly ? 'addtracks' : 'loadtracks',
-		                  sprintf('track=%d', $item->id)]));
+		                  sprintf('%s=%d', getLinkAttribute('track'), $item->id)]));
 		
 		if ($::VERSION ge '6.5') {
 			# indicate request source
-			$request->source('PLUGIN_DYNAMICPLAYLIST');
+			$request->source('PLUGIN_SQLPLAYLIST');
 		}
 
 		# Add the remaining items to the end
 		if (! defined $limit || $limit > 1) {
 			debugMsg("Adding ".(scalar @$items)." tracks to end of playlist\n");
-			$client->execute(['playlist', 'addtracks', 'listRef', $items]);
+			$request = $client->execute(['playlist', 'addtracks', 'listRef', $items]);
 			if ($::VERSION ge '6.5') {
-				$request->source('PLUGIN_DYNAMICPLAYLIST');
+				$request->source('PLUGIN_SQLPLAYLIST');
 			}
 		}
 	} 
@@ -462,7 +466,7 @@ sub commandCallback65 {
 	
 	my $client = $request->client();
 
-	if ($request->source() eq 'PLUGIN_DYNAMICPLAYLIST') {
+	if ($request->source() eq 'PLUGIN_SQLPLAYLIST') {
 		return;
 	}
 
@@ -501,7 +505,7 @@ sub commandCallback65 {
 			# Delete tracks before this one on the playlist
 			for (my $i = 0; $i < $songIndex - $songsToKeep; $i++) {
 				my $request = $client->execute(['playlist', 'delete', 0]);
-				$request->source('PLUGIN_DYNAMICPLAYLIST');
+				$request->source('PLUGIN_SQLPLAYLIST');
 			}
 		}
 
@@ -584,7 +588,9 @@ sub handleWebList {
 	$params->{'pluginSQLPlayListNumOldTracks'} = Slim::Utils::Prefs::get('plugin_sqlplaylist_number_of_old_tracks');
 	$params->{'pluginSQLPlayListContinuousMode'} = Slim::Utils::Prefs::get('plugin_sqlplaylist_keep_adding_tracks');
 	$params->{'pluginSQLPlayListNowPlaying'} = $name;
-	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	if ($::VERSION ge '6.5') {
+		$params->{'pluginSQLPlayListSlimserver65'} = 1;
+	}
 	
 	return Slim::Web::HTTP::filltemplatefile($htmlTemplate, $params);
 }
@@ -606,7 +612,9 @@ sub handleWebEditPlaylist {
 	}
 
 	$params->{'pluginSQLPlayListError'} = undef;
-	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	if ($::VERSION ge '6.5') {
+		$params->{'pluginSQLPlayListSlimserver65'} = 1;
+	}
 	
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_editplaylist.html', $params);
 }
@@ -635,7 +643,7 @@ sub handleWebTestPlaylist {
 	$params->{'pluginSQLPlayListEditPlayListName'} = $params->{'name'};
 	$params->{'pluginSQLPlayListEditPlayListText'} = $params->{'text'};
 	$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'file'});
-	my $ds = Slim::Music::Info::getCurrentDataStore();
+	my $ds = getCurrentDS();
 	if($params->{'text'}) {
 		my $sql = createSQL(Slim::Utils::Unicode::utf8decode($params->{'text'},'utf8'));
 		if($sql) {
@@ -644,16 +652,13 @@ sub handleWebTestPlaylist {
 			my $itemNumber = 0;
 			foreach my $track (@$tracks) {
 			  	my %trackInfo = ();
-				my $fieldInfo = Slim::DataStores::Base->fieldInfo;
-	            my $levelInfo = $fieldInfo->{'track'};
-				
-	            &{$levelInfo->{'listItem'}}($ds, \%trackInfo, $track);
+	            displayAsHTML('track', \%trackInfo, $track);
 			  	$trackInfo{'title'} = Slim::Music::Info::standardTitle(undef,$track);
 			  	$trackInfo{'odd'} = ($itemNumber+1) % 2;
 	            $trackInfo{'itemobj'}          = $track;
 			  	push @resultTracks,\%trackInfo;
 			}
-			if(defined(@resultTracks) && scalar(@resultTracks)>0) {
+			if(@resultTracks && scalar(@resultTracks)>0) {
 				$params->{'pluginSQLPlayListEditPlayListTestResult'} = \@resultTracks;
 			}
 		}
@@ -664,49 +669,76 @@ sub handleWebTestPlaylist {
 	}else {
 		$params->{'pluginSQLPlayListError'} = undef;
 	}
-	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	if ($::VERSION ge '6.5') {
+		$params->{'pluginSQLPlayListSlimserver65'} = 1;
+	}
 }
 
 # Returns a hash whose keys are the genres in the db
 sub getGenres {
 	my ($client) = @_;
-
-	# Should use genre.name in following find, but a bug in find() doesn't allow this	
-   	my $items = $ds->find({
-		'field'  => 'genre',
-		'cache'  => 0,
-	});
-	
-	# Extract each genre name into a hash
 	my %clientGenres = ();
-	foreach my $item (@$items) {
-		$clientGenres{$item->{'name'}} = {
-		                                 # Put the name here as well so the hash can be passed to
-		                                 # INPUT.Choice as part of listRef later on
-		                                 name    => $item->{'name'},
-		                                 id      => $item->{'id'},
-		                                 enabled => 0,
-									 };
-	}
 
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+		# Should use genre.name in following find, but a bug in find() doesn't allow this
+        # XXXX - how does the above comment translate into DBIx::Class world?
+        my $rs = Slim::Schema->search('Genre');
+
+        # Extract each genre name into a hash
+        for my $genre ($rs->all) {
+                $clientGenres{$genre->name} = {
+		                # Put the name here as well so the hash can be passed to
+		                # INPUT.Choice as part of listRef later on
+                        'id'      => $genre->id,
+                        'name'    => $genre->name,
+                };
+        }
+	}else {
+		# Should use genre.name in following find, but a bug in find() doesn't allow this	
+	   	my $items = $ds->find({
+			'field'  => 'genre',
+			'cache'  => 0,
+		});
+		
+		# Extract each genre name into a hash
+		foreach my $item (@$items) {
+			$clientGenres{$item->{'name'}} = {
+			                                 # Put the name here as well so the hash can be passed to
+			                                 # INPUT.Choice as part of listRef later on
+			                                 name    => $item->{'name'},
+			                                 id      => $item->{'id'},
+										 };
+		}
+	}
 	return %clientGenres;
 }
 
 sub getArtists {
 	my ($client) =@_;
-	
-	my $items = $ds->find({
-		'field'  => 'artist',
-		'sortBy' => 'name',
-		'cache'  => 0,
-	});
-	
 	my %clientArtists = ();
-	for my $item (@$items) {
-		$clientArtists{escape($item->{'name'})} = {
-			name => $item->{'name'},
-			id => $item->{'id'},
-		};
+	
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+        my $rs = Slim::Schema->search('Contributor',undef,{'order_by' => 'name'});
+
+		for my $item ($rs->all) {
+			$clientArtists{escape($item->name)} = {
+				name => $item->name,
+				id => $item->id,
+			};
+        }
+	}else {
+		my $items = $ds->find({
+			'field'  => 'artist',
+			'sortBy' => 'name',
+			'cache'  => 0,
+		});
+		
+		for my $item (@$items) {
+			$clientArtists{escape($item->{'name'})} = {
+				name => $item->{'name'},
+				id => $item->{'id'},
+			};
+		}
 	}
 	
 	return %clientArtists;
@@ -721,9 +753,11 @@ sub handleWebNewPlaylist {
 	}
 
 	$params->{'pluginSQLPlayListError'} = undef;
-	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
 	$params->{'pluginSQLPlayListGenreList'} = {getGenres($client)};
 	$params->{'pluginSQLPlayListArtistList'} = {getArtists($client)};
+	if ($::VERSION ge '6.5') {
+		$params->{'pluginSQLPlayListSlimserver65'} = 1;
+	}
 	
 	my $driver = Slim::Utils::Prefs::get('dbsource');
     $driver =~ s/dbi:(.*?):(.*)$/$1/;
@@ -761,7 +795,9 @@ sub handleWebGenerateNewPlaylist {
     }
 
 	$params->{'pluginSQLPlayListError'} = undef;
-	$params->{'pluginSQLPlayListVersion'} = $::VERSION;
+	if ($::VERSION ge '6.5') {
+		$params->{'pluginSQLPlayListSlimserver65'} = 1;
+	}
 	my $genreListString = Slim::Utils::Unicode::utf8decode(getGenreListString($client,$params),'utf8');
 	my $artistListString = Slim::Utils::Unicode::utf8decode(getArtistListString($client,$params),'utf8');
 	debugMsg("Genres = ".$genreListString."\n");
@@ -1107,8 +1143,8 @@ sub getArtistListString {
 	}
 	my $first = 1;
 	my $sql = '';
-	my $ds = Slim::Music::Info::getCurrentDataStore();
-	my $dbh = $ds->dbh();
+	my $ds = getCurrentDS();
+	my $dbh = getCurrentDBH();
 	foreach my $artist (keys %artists) {
 		my $artistid = $artists{$artist}{'id'};
 		if($selectedArtists{$artistid}) {
@@ -1435,8 +1471,8 @@ sub executeSQLForPlaylist {
 	my $sqlstatements = shift;
 	my $limit = shift;
 	my @result;
-	my $ds = Slim::Music::Info::getCurrentDataStore();
-	my $dbh = $ds->dbh();
+	my $ds = getCurrentDS();
+	my $dbh = getCurrentDBH();
 	my $trackno = 0;
 	$sqlerrors = "";
     for my $sql (split(/[\n\r]/,$sqlstatements)) {
@@ -1453,7 +1489,7 @@ sub executeSQLForPlaylist {
 				my $url;
 				$sth->bind_columns( undef, \$url);
 				while( $sth->fetch() ) {
-				  my $track = $ds->objectForUrl($url);
+				  my $track = objectForUrl($url);
 				  $trackno++;
 				  if(!$limit || $trackno<=$limit) {
 					debugMsg("Adding: ".($track->url)."\n");
@@ -1532,6 +1568,73 @@ sub validateTrueFalseWrapper {
 	}else {
 		return Slim::Web::Setup::validateTrueFalse($arg);
 	}
+}
+
+sub objectForUrl {
+	my $url = shift;
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+		return Slim::Schema->objectForUrl({
+			'url' => $url
+		});
+	}else {
+		return getCurrentDS()->objectForUrl($url,undef,undef,1);
+	}
+}
+
+sub getCurrentDBH {
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+		return Slim::Schema->storage->dbh();
+	}else {
+		return Slim::Music::Info::getCurrentDataStore()->dbh();
+	}
+}
+
+sub getCurrentDS {
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+		return 'Slim::Schema';
+	}else {
+		return Slim::Music::Info::getCurrentDataStore();
+	}
+}
+
+sub commit {
+	my $dbh = shift;
+	if (!$dbh->{'AutoCommit'}) {
+		$dbh->commit();
+	}
+}
+
+sub rollback {
+	my $dbh = shift;
+	if (!$dbh->{'AutoCommit'}) {
+		$dbh->rollback();
+	}
+}
+
+sub displayAsHTML {
+	my $type = shift;
+	my $form = shift;
+	my $item = shift;
+	
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+		$item->displayAsHTML($form);
+	}else {
+		my $ds = Plugins::TrackStat::Storage::getCurrentDS();
+		my $fieldInfo = Slim::DataStores::Base->fieldInfo;
+        my $levelInfo = $fieldInfo->{$type};
+        &{$levelInfo->{'listItem'}}($ds, $form, $item);
+	}
+}
+
+sub getLinkAttribute {
+	my $attr = shift;
+	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+		if($attr eq 'artist') {
+			$attr = 'contributor';
+		}
+		return $attr.'.id';
+	}
+	return $attr;
 }
 
 # other people call us externally.

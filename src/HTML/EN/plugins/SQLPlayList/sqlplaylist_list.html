@@ -1,5 +1,5 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF pluginSQLPlayListVersion < '6.5' %]
+[% IF !pluginSQLPlayListSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
 	[% PROCESS plugins/SQLPlayList/css65 %]
@@ -18,7 +18,7 @@
 	[% END %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF pluginSQLPlayListVersion < '6.5' %]
+[% IF !pluginSQLPlayListSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
 
@@ -67,7 +67,7 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 			[% odd = 1 %]
 			[% FOREACH type IN pluginSQLPlayListPlayLists.keys %]
 				[% BLOCK controls %]
-					[% IF pluginSQLPlayListVersion >= '6.5' %]
+					[% IF pluginSQLPlayListSlimserver65 %]
 						<div id="sqlplaylist_resultlist_controls">
 						<div id="sqlplaylist_resultlist_controls_inner">
 						[% PROCESS sqlPlayListLink type="$type" addOnly="0" %]
@@ -77,7 +77,7 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 					<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST" | string %]</a>
 					<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_removeplaylist.html?type=[% type |uri %]&player=[% player | uri %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST" | string %]</a>
 					&nbsp;&nbsp;
-					[% IF pluginSQLPlayListVersion >= '6.5' %]
+					[% IF pluginSQLPlayListSlimserver65 %]
 						</div>
 					[% ELSE %]
 						[% PROCESS sqlPlayListLink type="$type" addOnly="0" %]
