@@ -123,32 +123,9 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 		<tr>
 			<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylist.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a></td>
 		</tr>
-
-		[%- WRAPPER contentitem %]
-			<label>
-				<input class="stdedit" type="checkbox" name="continuousMode" value="1"
-				[% IF pluginSQLPlayListContinuousMode %]checked[% END %]>
-				[% "PLUGIN_SQLPLAYLIST_CONTINUOUS_MODE" | string %]
-			</label>
+		[% IF pluginSQLPlayListError %]
+			<tr><td colspan="4"><br><br><strong>[% pluginSQLPlayListError %]</strong></td></tr>
 		[% END %]
-
-		<tr>
-			<td>&nbsp;</td>
-		</tr>
-
-		[%- WRAPPER contentitem %]
-			[% "PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS" | string %]
-			<input class="stdedit" type="text" size="2" name="numTracks" value="[% pluginSQLPlayListNumTracks %]">
-			[% "PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS" | string %]
-			<input class="stdedit" type="text" size="2" name="numOldTracks" value="[% pluginSQLPlayListNumOldTracks %]">
-			[% "PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS" | string %]
-		[% END %]
-
-		<tr>
-			<td>&nbsp;</td>
-		</tr>
-
-		[%- WRAPPER contentitem %]<input type="submit" value="[% "SAVE" | string %]">[% END %]
 	[% END %]
 </form>
 [% PROCESS pagefooter.html %]
