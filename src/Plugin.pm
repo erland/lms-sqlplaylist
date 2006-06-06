@@ -1212,7 +1212,8 @@ sub getDynamicPlayLists {
 		my $current = $playLists->{$playlist};
 		my %currentResult = (
 			'id' => $playlist,
-			'name' => $current->name
+			'name' => $current->name,
+			'url' => "plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=".escape($playlist)
 		);
 		$result{$playlistid} = \%currentResult;
 	}
