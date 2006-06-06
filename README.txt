@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 2. PREREQUISITES
 ================
 - A slimserver 6.2.* or 6.5 installed and configured
+- The DynamicPlayList plugin must installed
 
 3. FILES
 ========
