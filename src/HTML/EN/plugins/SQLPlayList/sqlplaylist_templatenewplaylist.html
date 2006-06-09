@@ -30,6 +30,14 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 
 <form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html" name="editForm" accept-charset="iso8859-1">
 	<input type="hidden" name="type" value="">
+	<table border="0">
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_MINTRACKLENGTH" | string %]</td><td><input type="text" name="mintracklength" value=""></td></tr>
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_MAXTRACKLENGTH" | string %]</td><td><input type="text" name="maxtracklength" value=""></td></tr>
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_MINTRACKYEAR" | string %]</td><td><input type="text" name="mintrackyear" value=""></td></tr>
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_MAXTRACKYEAR" | string %]</td><td><input type="text" name="maxtrackyear" value=""></td></tr>
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_NOTREPEAT" | string %]</td><td><input type="checkbox" name="notrepeat" value="1"></td></tr>
+	</table>
+		
 	<table border="0">[% USE table pluginSQLPlayListGenreList.keys.sort, cols=3, pad=0 %]
 		<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_TITLE" | string %]</b></td></tr>
 		[%- FOREACH genrerow = table.rows %]
