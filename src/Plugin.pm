@@ -1706,7 +1706,7 @@ sub displayAsHTML {
 	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
 		$item->displayAsHTML($form);
 	}else {
-		my $ds = Plugins::TrackStat::Storage::getCurrentDS();
+		my $ds = getCurrentDS();
 		my $fieldInfo = Slim::DataStores::Base->fieldInfo;
         my $levelInfo = $fieldInfo->{$type};
         &{$levelInfo->{'listItem'}}($ds, $form, $item);
