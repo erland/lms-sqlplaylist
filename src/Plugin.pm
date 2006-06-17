@@ -29,7 +29,6 @@ use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
 use File::Spec::Functions qw(:ALL);
-use Class::Struct;
 
 if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
 	eval "use Slim::Schema";
@@ -40,15 +39,14 @@ my $htmlTemplate = 'plugins/SQLPlayList/sqlplaylist_list.html';
 my $ds = getCurrentDS();
 my $playLists = undef;
 my $sqlerrors = '';
-struct PlayListInfo => {
-	id => '$',
-	file => '$',
-	name => '$',
-	sql => '$',
-	fulltext => '$'
-};
 
-my $disable = PlayListInfo->new( id => 'disable', file => '', name => '', sql => '', fulltext => '');
+my %disable = (
+	'id' => 'disable', 
+	'file' => '', 
+	'name' => '', 
+	'sql' => '', 
+	'fulltext' => ''
+);
 	
 sub getDisplayName {
 	return 'PLUGIN_SQLPLAYLIST';
@@ -64,7 +62,7 @@ sub getCurrentPlayList {
 		$currentPlaying =~ s/^sqlplaylist_//;
 		my $playlist = getPlayList($client,$currentPlaying);
 		if(defined($playlist)) {
-			$currentPlaying = $playlist->id;
+			$currentPlaying = $playlist->{'id'};
 		}else {
 			$currentPlaying = undef;
 		}
@@ -79,8 +77,8 @@ sub getDisplayText {
 	my $id = undef;
 	my $name = '';
 	if($item) {
-		$id = $item->id;
-		$name = $item->name;
+		$id = $item->{'id'};
+		$name = $item->{'name'};
 	}
 	my $currentPlaying = getCurrentPlayList($client);
 	# if showing the current mode, show altered string
@@ -101,9 +99,9 @@ sub getOverlay {
 
 	my $currentPlaying = getCurrentPlayList($client);
 	# Put the right arrow by genre filter and notesymbol by mixes
-	if ($item->id eq 'disable') {
+	if ($item->{'id'} eq 'disable') {
 		return [undef, Slim::Display::Display::symbol('rightarrow')];
-	}elsif (!$currentPlaying || $item->id ne $currentPlaying) {
+	}elsif (!$currentPlaying || $item->{'id'} ne $currentPlaying) {
 		return [undef, Slim::Display::Display::symbol('notesymbol')];
 	} else {
 		return [undef, undef];
@@ -125,7 +123,7 @@ sub handlePlayOrAdd {
 		
 	# only add disable option if starting a mode from idle state
 	} elsif (! $currentPlaying) {
-		push @$listRef, $disable;
+		push @$listRef, \%disable;
 	}
 	Slim::Buttons::Common::param($client, 'listRef', $listRef);
 
@@ -182,8 +180,9 @@ sub getPlayLists {
 		my $name = undef;
 		my $statement = '';
 		my $fulltext = '';
+    	my @groups = ();
         for my $line (<$fh>) {
-        	if($name) {
+        	if($name && $line !~ /^\s*--\s*PlaylistGroups\s*[:=]\s*/) {
         		$fulltext .= $line;
         	}
             chomp $line;
@@ -191,7 +190,22 @@ sub getPlayLists {
 			# use "--PlaylistName:" as name of playlist
 			$line =~ s/^\s*--\s*PlaylistName\s*[:=]\s*//io;
 			
-            # skip and strip comments & empty lines
+			if($line =~ /^\s*--\s*PlaylistGroups\s*[:=]\s*/) {
+				$line =~ s/^\s*--\s*PlaylistGroups\s*[:=]\s*//io;
+				if($line) {
+					my @stringGroups = split(/\,/,$line);
+					foreach my $item (@stringGroups) {
+						# Remove all white spaces
+						$item =~ s/^\s+//;
+						$item =~ s/\s+$//;
+						my @subGroups = split(/\//,$item);
+						push @groups,\@subGroups;
+					}
+				}
+				$line = "";
+			}
+			
+			# skip and strip comments & empty lines
             $line =~ s/\s*--.*?$//o;
             $line =~ s/^\s*//o;
 
@@ -215,8 +229,18 @@ sub getPlayLists {
         close $fh;
 		
 		if($name && $statement) {
-			debugMsg("Got playlist: $name\n");
-			$playLists{escape($name,"^A-Za-z0-9\-_")} = PlayListInfo->new( id => escape($name,"^A-Za-z0-9\-_"), file => $item, name => $name, sql => Slim::Utils::Unicode::utf8decode($statement,'utf8') , fulltext => Slim::Utils::Unicode::utf8decode($fulltext,'utf8'));
+			my $playlistid = escape($name,"^A-Za-z0-9\-_");
+			my %playlist = (
+				'id' => $playlistid, 
+				'file' => $item, 
+				'name' => $name, 
+				'sql' => Slim::Utils::Unicode::utf8decode($statement,'utf8') , 
+				'fulltext' => Slim::Utils::Unicode::utf8decode($fulltext,'utf8')
+			);
+			if(scalar(@groups)>0) {
+				$playlist{'groups'} = \@groups;
+			}
+			$playLists{$playlistid} = \%playlist;
 		}
 	}
 	return \%playLists;
@@ -246,16 +270,16 @@ sub setMode {
 		modeName   => 'SQLPLayList',
 		onPlay     => sub {
 			my ($client, $item) = @_;
-			handlePlayOrAdd($client, $item->id, 0);		
+			handlePlayOrAdd($client, $item->{'id'}, 0);		
 		},
 		onAdd      => sub {
 			my ($client, $item) = @_;
-			handlePlayOrAdd($client, $item->id, 1);
+			handlePlayOrAdd($client, $item->{'id'}, 1);
 		},
 		onRight    => sub {
 			my ($client, $item) = @_;
-			if($item->id eq 'disable') {
-				handlePlayOrAdd($client, $item->id, 0);
+			if($item->{'id'} eq 'disable') {
+				handlePlayOrAdd($client, $item->{'id'}, 0);
 			}else {
 				$client->bumpRight();
 			}
@@ -266,7 +290,7 @@ sub setMode {
 
 	# if we have an active mode, temporarily add the disable option to the list.
 	if ($currentPlaying) {
-		push @{$params{listRef}},$disable;
+		push @{$params{listRef}},\%disable;
 	}
 
 	Slim::Buttons::Common::pushMode($client, 'INPUT.Choice', \%params);
@@ -318,7 +342,7 @@ sub handleWebList {
 	my $playlist = getPlayList($client,$currentPlaying);
 	my $name = undef;
 	if($playlist) {
-		$name = $playlist->name;
+		$name = $playlist->{'name'};
 	}
 	$params->{'pluginSQLPlayListPlayLists'} = $playLists;
 	$params->{'pluginSQLPlayListNowPlaying'} = $name;
@@ -339,9 +363,10 @@ sub handleWebEditPlaylist {
 	if ($params->{'type'}) {
 		my $playlist = getPlayList($client,$params->{'type'});
 		if($playlist) {
-			$params->{'pluginSQLPlayListEditPlayListFile'} = escape($playlist->file);
-			$params->{'pluginSQLPlayListEditPlayListName'} = $playlist->name;
-			$params->{'pluginSQLPlayListEditPlayListText'} = Slim::Utils::Unicode::utf8decode($playlist->fulltext,'utf8');
+			$params->{'pluginSQLPlayListEditPlayListFile'} = escape($playlist->{'file'});
+			$params->{'pluginSQLPlayListEditPlayListName'} = $playlist->{'name'};
+			$params->{'pluginSQLPlayListEditPlayListGroups'} = getGroupString($playlist);
+			$params->{'pluginSQLPlayListEditPlayListText'} = Slim::Utils::Unicode::utf8decode($playlist->{'fulltext'},'utf8');
 			$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'pluginSQLPlayListEditPlayListFile'});
 		}else {
 			warn "Cannot find: ".$params->{'type'};
@@ -354,6 +379,32 @@ sub handleWebEditPlaylist {
 	}
 	
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_editplaylist.html', $params);
+}
+
+sub getGroupString {
+	my $playlist = shift;
+
+	my $result = undef;
+	if(defined($playlist->{'groups'})) {
+		foreach my $group (@{$playlist->{'groups'}}) {
+			if(defined($result)) {
+				$result .= ",";
+			}else {
+				$result = "";
+			}
+			my $subresult = undef;
+			foreach my $subgroup (@$group) {
+				if(defined($subresult)) {
+					$subresult .= "/";
+				}else {
+					$subresult = "";
+				}
+				$subresult .= $subgroup;
+			}
+			$result .= $subresult;
+		}
+	}
+	return $result;
 }
 
 # Draws the plugin's edit playlist web page
@@ -1316,7 +1367,7 @@ sub handleWebSavePlaylist {
 	handleWebTestPlaylist($client,$params);
 	
 	if (!$params->{'text'} || !$params->{'file'} || !$params->{'name'}) {
-		$params->{'pluginSQLPlayListError'} = 'All fields are mandatory';
+		$params->{'pluginSQLPlayListError'} = 'All fields besides groups are mandatory';
 	}
 
 	my $playlistDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
@@ -1330,7 +1381,7 @@ sub handleWebSavePlaylist {
 	}
 	
 	my $playlist = getPlayList($client,escape($params->{'name'},"^A-Za-z0-9\-_"));
-	if($playlist && $playlist->file ne unescape($params->{'file'})) {
+	if($playlist && $playlist->{'file'} ne unescape($params->{'file'})) {
 		$params->{'pluginSQLPlayListError'} = 'Playlist with that name already exists';
 	}
 	if(!savePlaylist($client,$params,$url)) {
@@ -1354,7 +1405,7 @@ sub handleWebSaveNewPlaylist {
 	handleWebTestPlaylist($client,$params);
 	
 	if (!$params->{'text'} || !$params->{'file'} || !$params->{'name'}) {
-		$params->{'pluginSQLPlayListError'} = 'All fields are mandatory';
+		$params->{'pluginSQLPlayListError'} = 'All fields besides groups are mandatory';
 	}
 
 	my $playlistDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
@@ -1399,8 +1450,8 @@ sub handleWebRemovePlaylist {
 			if (!defined $playlistDir || !-d $playlistDir) {
 				warn "No playlist dir defined\n"
 			}else {
-				debugMsg("Deleteing playlist: ".$playlist->file."\n");
-				my $url = catfile($playlistDir, unescape($playlist->file));
+				debugMsg("Deleteing playlist: ".$playlist->{'file'}."\n");
+				my $url = catfile($playlistDir, unescape($playlist->{'file'}));
 				unlink($url) or do {
 					warn "Unable to delete file: ".$url.": $! \n";
 				}
@@ -1427,6 +1478,9 @@ sub savePlaylist
 
 		debugMsg("Writing to file: $url\n");
 		print $fh "-- PlaylistName: ".$params->{'name'}."\n";
+		if($params->{'groups'}) {
+			print $fh "-- PlaylistGroups: ".$params->{'groups'}."\n";
+		}
 		print $fh $params->{'text'};
 		debugMsg("Writing to file succeeded\n");
 		close $fh;
@@ -1436,6 +1490,7 @@ sub savePlaylist
 		$params->{'pluginSQLPlayListEditPlayListFile'} = $params->{'file'};
 		$params->{'pluginSQLPlayListEditPlayListText'} = $params->{'text'};
 		$params->{'pluginSQLPlayListEditPlayListName'} = $params->{'name'};
+		$params->{'pluginSQLPlayListEditPlayListGroups'} = $params->{'groups'};
 		$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'pluginSQLPlayListEditPlayListFile'});
 		return undef;
 	}else {
@@ -1538,7 +1593,7 @@ sub getTracksForPlaylist {
 	my $client = shift;
 	my $playlist = shift;
 	my $limit = shift;
-	my $sqlstatements = $playlist->sql;
+	my $sqlstatements = $playlist->{'sql'};
 	my $result= executeSQLForPlaylist($sqlstatements,$limit);
 	
 	return $result;
@@ -1620,9 +1675,13 @@ sub getDynamicPlayLists {
 		my $current = $playLists->{$playlist};
 		my %currentResult = (
 			'id' => $playlist,
-			'name' => $current->name,
+			'name' => $current->{'name'},
 			'url' => "plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=".escape($playlist)
 		);
+		if($current->{'groups'} && scalar($current->{'groups'})>0) {
+			debugMsg("Setting groups = ".$current->{'groups'}."\n");
+			$currentResult{'groups'} = $current->{'groups'};
+		}
 		$result{$playlistid} = \%currentResult;
 	}
 	
@@ -1841,6 +1900,9 @@ PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_NAME
 
 PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_FILENAME
 	EN	Filename
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_GROUPS
+	EN	Groups
 
 PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST
 	EN	Delete
