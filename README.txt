@@ -46,7 +46,9 @@ First you will have to configure a SQLPlayList playlist directory in the plugins
 section of the slimserver settings web interface. After this is done you are ready to
 create your smart playlists as described below.
 
-To add a playlist you:
+The easiest way to create a playlist is from the SQLPlayList web userinterface, but you can also create it manually as described below.
+
+To create a playlist manually you:
 1. Create a file with .sql extension (The contents is described below)
 2. Put the sql file in the configured SQLPlayList playlist directory
 3. Navigate to the SQLPlayList plugin menu on the Squeezebox and select the playlist and start playing, or use the SQL PlayList plugin menu in the web interface.
@@ -54,6 +56,9 @@ To add a playlist you:
 The SQLPlayList sql file for a playlist must have the following syntax:
 - First row: The name of the playlist (This text will be shown for the playlist in the Squeezebox menu for SQLPlayList plugin). 
              This first row can also as the examples begin with: -- PlaylistName: 
+- Groups row: The groups where the playlist should be in the navigation tree in the DynamicPlayList plugin. For example the following
+              will put the playlist both below "Albums/Pop" and "Good playlists":
+              -- PlaylistGroups: Albums/Pop,Good playlists
 - Other rows: SQL queries, all queries will be executed and those starting with SELECT must return a single "url" column and the 
               tracks returned in all SELECT statements will be part of the playlist.
 
@@ -74,11 +79,13 @@ select url from tracks where audio=1 and playCount is null order by random() lim
 Playlist3.sql: MySQL (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
 -- PlaylistName: Top rated tracks
+-- PlaylistGroups: Top rated
 select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.audio=1 order by rand() limit 10;
 
 Playlist4.sql: SQLite (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
 -- PlaylistName: Top rated tracks
+-- PlaylistGroups: Top rated
 select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.audio=1 order by random() limit 10;
 
 Playlist5.sql: MySQL (All tracks besides those which contains genre=Christmas and some bad albums)
