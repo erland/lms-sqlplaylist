@@ -25,15 +25,10 @@
 [%# Following block generates links that submit the form if javascript is enabled.  This allows
      users to make setting changes then click on a new mix without having to press the submit button. %]
 [% BLOCK href %]
-href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&player=[% player | uri %]&addOnly=[% addOnly %][% IF playlisttype and sqlplaylist_mixparameter_1 %]&sqlplaylist_mixparameter_1=[% sqlplaylist_mixparameter_1 %][% END %]"
-		 onclick='document.genreForm.type.value = "[% type %]";
-							document.genreForm.addOnly.value = [% addOnly %]
-							[% IF playlisttype and sqlplaylist_mixparameter_1 %]document.genreForm.sqlplaylist_mixparameter_1.value = [% sqlplaylist_mixparameter_1 %][% END %]
-							document.genreForm.submit();
-							return false;'
+href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplaylist_[% type |uri %]&player=[% player | uri %]&addOnly=[% addOnly %]"
 [% END %]
 
-[% BLOCK sqlPlayListLink %]
+[% BLOCK dynamicPlayListLink %]
 	[% IF addOnly;link='addlink';ELSE;link='playlink';END %]
 	[% IF type == 'disable' %]
 		<a [% PROCESS href %] >[% "PLUGIN_SQLPLAYLIST_DISABLE" | string %]</a>
@@ -48,18 +43,11 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 	<input type="hidden" name="type" value="">
 	<input type="hidden" name="addOnly" value="0">
 	<input type="hidden" name="player" value="[% player %]">
-	[% IF playlisttype and sqlplaylist_mixparameter_1 %]
-		<input type="hidden" name="sqlplaylist_mixparameter_1" value="">
-	[% END %]
 
 	[% IF player == '' %]
 		[% "NO_PLAYER_FOUND" | string %]
 	[% ELSE %]
-		[% IF pluginSQLPlayListContextName %]
-			[% "PLUGIN_SQLPLAYLIST_CONTEXT_CHOOSE_BELOW" | string %]: <strong>[% pluginSQLPlayListContextName %]</strong>
-		[% ELSE %]
-			[% "PLUGIN_SQLPLAYLIST_CHOOSE_BELOW" | string %]
-		[% END %]
+		[% "PLUGIN_SQLPLAYLIST_CHOOSE_BELOW" | string %]
 		[% WRAPPER contentcontainer %]
 
 			<tr>
@@ -72,8 +60,8 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 						[% IF pluginSQLPlayListSlimserver65 %]
 							<div id="sqlplaylist_resultlist_controls">
 							<div id="sqlplaylist_resultlist_controls_inner">
-							[% PROCESS sqlPlayListLink type="$type" addOnly="0" %]
-							[% PROCESS sqlPlayListLink type="$type" addOnly="1" %]
+							[% PROCESS dynamicPlayListLink type="$type" addOnly="0" %]
+							[% PROCESS dynamicPlayListLink type="$type" addOnly="1" %]
 							</div>
 						[% END %]
 						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST" | string %]</a>
@@ -82,8 +70,8 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 						[% IF pluginSQLPlayListSlimserver65 %]
 							</div>
 						[% ELSE %]
-							[% PROCESS sqlPlayListLink type="$type" addOnly="0" %]
-							[% PROCESS sqlPlayListLink type="$type" addOnly="1" %]
+							[% PROCESS dynamicPlayListLink type="$type" addOnly="0" %]
+							[% PROCESS dynamicPlayListLink type="$type" addOnly="1" %]
 						[% END %]
 					[% END %]
 					[%- WRAPPER contentitem controls='controls' %]
@@ -108,7 +96,7 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_mix.html?type=[% type %]&play
 					[%- WRAPPER contentitem %]
 							<em>
 								[% "PLUGIN_SQLPLAYLIST_GENERAL_HELP" | string %]
-								[% PROCESS sqlPlayListLink type="disable" addOnly="0" %]
+								[% PROCESS dynamicPlayListLink type="disable" addOnly="0" %]
 							</em>
 					[% END %]
 
