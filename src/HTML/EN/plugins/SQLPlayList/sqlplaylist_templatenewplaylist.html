@@ -194,6 +194,33 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 			<a [% PROCESS href type="topratedexcludinggenresexcludingartistssqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES_EXCLUDING_ARTISTS" | string %]</a>
 			</td></tr>
 		[% END %]
+		<tr><td>
+		&nbsp;
+		</td></tr>
+		<tr><td>
+		<strong>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_PARAMETER_PLAYLISTS" | string %]</strong>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedforyear" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORYEAR" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedforgenre" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORGENRE" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedforartist" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORARTIST" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedforalbum" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORALBUM" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="topratedforplaylist" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORPLAYLIST" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="withspecificrating" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATING" | string %]</a>
+		</td></tr>
+		<tr><td>
+		<a [% PROCESS href type="withspecificratingforartist" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATINGFORARTIST" | string %]</a>
+		</td></tr>
 	[% END %]
 	</table>
 </form>
