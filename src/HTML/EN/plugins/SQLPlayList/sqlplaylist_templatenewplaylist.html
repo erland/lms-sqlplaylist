@@ -160,7 +160,14 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 		<a [% PROCESS href type="excludinggenresexcludingartistssqlite" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES_EXCLUDING_ARTISTS" | string %]</a>
 		</td></tr>
 	[% END %]
-	[% IF pluginSQLPlayListTrackStat %]
+	[% IF !pluginSQLPlayListTrackStat %]
+		<tr><td>
+		&nbsp;
+		</td></tr>
+		<tr><td>
+		<strong>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TRACKSTAT_PLAYLISTS" | string %]</strong>
+		</td></tr>
+	[% END %]
 		<tr><td>
 		<a [% PROCESS href type="toprated" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED" | string %]</a>
 		</td></tr>
@@ -221,7 +228,6 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 		<tr><td>
 		<a [% PROCESS href type="withspecificratingforartist" %]>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATINGFORARTIST" | string %]</a>
 		</td></tr>
-	[% END %]
 	</table>
 </form>
 [% PROCESS pagefooter.html %]
