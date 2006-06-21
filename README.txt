@@ -56,15 +56,40 @@ To create a playlist manually you:
 The SQLPlayList sql file for a playlist must have the following syntax:
 - First row: The name of the playlist (This text will be shown for the playlist in the Squeezebox menu for SQLPlayList plugin). 
              This first row can also as the examples begin with: -- PlaylistName: 
+
 - Groups row: The groups where the playlist should be in the navigation tree in the DynamicPlayList plugin. For example the following
               will put the playlist both below "Albums/Pop" and "Good playlists":
               -- PlaylistGroups: Albums/Pop,Good playlists
+
+- Parameter rows: The parameters that should be requested from the user, up to 9 parameters are supported. The parameter row are optional, 
+                  the id must start with 1 and increase with 1 for each parameter in the playlist. The syntax is:
+              -- PlaylistParameter[id]:[type]:[name]:[definition]
+
+              id: A number between 1-9
+              type: One of: album,artist,genre,year,playlist,list,custom
+              name: The text shown to the user when requesting parameter
+              definition: Valid for type=list and type=custom
+              type=list: Specify each value separated with : in definition parameter, for each item the value for the
+                         parameter is specified first and the value shown to the user next and they are separated with
+                         a ,. See examples below.
+              type=custom: Specify the SQL which returns parameter value (for parameter) and parameter value (shown to user).
+                           See examples below
+
+              Some examples:
+              -- PlaylistParameter1:album:Choose album:
+              -- PlaylistParameter2:genre:Choose genre:
+              -- PlaylistParameter3:year:Choose year:
+              -- PlaylistParameter4:playlist:Choose playlist:
+              -- PlaylistParameter5:artist:Choose artist:
+              -- PlaylistParameter6:list:Choose rating:20:*,40:**,60:***,80:****,100:*****
+              -- PlaylistParameter7:custom:Choose artist:select id,name from contributors where name like 'A%'
+
 - Other rows: SQL queries, all queries will be executed and those starting with SELECT must return a single "url" column and the 
               tracks returned in all SELECT statements will be part of the playlist.
 
 Some example playlists follows below, observere that the SQL statements needs to be different for the standard slimserver database(SQLite) and
 for the MySQL database. So make sure you use the right example based on which database you are using. The main difference for simple queries is
-that SQLite uses "order by random()" while MySQL uses "order by rand()".
+that SQLite uses "order by random()" while MySQL uses "order by rand()". See also the playlist templates available in the web ui for more examples.
 
 Playlist1.sql: MySQL (Tracks never played)
 -----------------------------------------------
