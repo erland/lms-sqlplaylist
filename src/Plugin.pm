@@ -71,68 +71,6 @@ sub getCurrentPlayList {
 	return $currentPlaying;
 }
 
-# Returns the display text for the currently selected item in the menu
-sub getDisplayText {
-	my ($client, $item) = @_;
-
-	my $id = undef;
-	my $name = '';
-	if($item) {
-		$id = $item->{'id'};
-		$name = $item->{'name'};
-	}
-	my $currentPlaying = getCurrentPlayList($client);
-	# if showing the current mode, show altered string
-	if ($currentPlaying && ($id eq $currentPlaying)) {
-		return string('PLUGIN_SQLPLAYLIST_PLAYING')." ".$name;
-		
-	# if a mode is active, handle the temporarily added disable option
-	} elsif ($id eq 'disable' && $currentPlaying) {
-		return string('PLUGIN_SQLPLAYLIST_PRESS_RIGHT');
-	} else {
-		return $name;
-	}
-}
-
-# Returns the overlay to be display next to items in the menu
-sub getOverlay {
-	my ($client, $item) = @_;
-
-	my $currentPlaying = getCurrentPlayList($client);
-	# Put the right arrow by genre filter and notesymbol by mixes
-	if ($item->{'id'} eq 'disable') {
-		return [undef, Slim::Display::Display::symbol('rightarrow')];
-	}elsif (!$currentPlaying || $item->{'id'} ne $currentPlaying) {
-		if(defined($item->{'parameters'})) {
-			return [Slim::Display::Display::symbol('notesymbol'), Slim::Display::Display::symbol('rightarrow')];
-		}else {
-			return [undef, Slim::Display::Display::symbol('notesymbol')];
-		}
-	} elsif(defined($item->{'parameters'})) {
-			return [undef, Slim::Display::Display::symbol('rightarrow')];
-	} else {
-		return [undef, undef];
-	}
-}
-
-# Returns the display text for the currently selected item in the menu
-sub getChooseParametersDisplayText {
-	my ($client, $item) = @_;
-
-	my $name = '';
-	if($item) {
-		$name = $item->{'name'};
-	}
-	return $name;
-}
-
-# Returns the overlay to be display next to items in the menu
-sub getChooseParametersOverlay {
-	my ($client, $item) = @_;
-
-	return [undef, Slim::Display::Display::symbol('rightarrow')];
-}
-
 # Do what's necessary when play or add button is pressed
 sub handlePlayOrAdd {
 	my ($client, $item, $add) = @_;
@@ -190,7 +128,7 @@ sub initPlayListTypes {
 		if(defined($parameters)) {
 			my $parameter1 = $parameters->{'1'};
 			if(defined($parameter1)) {
-				if($parameter1->{'type'} eq 'album' || $parameter1->{'type'} eq 'artist' || $parameter1->{'type'} eq 'year' || $parameter1->{'type'} eq 'genre') {
+				if($parameter1->{'type'} eq 'album' || $parameter1->{'type'} eq 'artist' || $parameter1->{'type'} eq 'year' || $parameter1->{'type'} eq 'genre' || $parameter1->{'type'} eq 'playlist') {
 					$localPlayListTypes{$parameter1->{'type'}} = 1;
 				}
 			}
@@ -234,6 +172,7 @@ sub initPlayLists {
 			# use "--PlaylistName:" as name of playlist
 			$line =~ s/^\s*--\s*PlaylistName\s*[:=]\s*//io;
 			
+			my $parameter = parseParameter($line);
 			if($line =~ /^\s*--\s*PlaylistGroups\s*[:=]\s*/) {
 				$line =~ s/^\s*--\s*PlaylistGroups\s*[:=]\s*//io;
 				if($line) {
@@ -247,35 +186,8 @@ sub initPlayLists {
 					}
 				}
 				$line = "";
-			}elsif($line =~ /^\s*--\s*PlaylistParameter\s*\d\s*[:=]\s*/) {
-				$line =~ m/^\s*--\s*PlaylistParameter\s*(\d)\s*[:=]\s*([^:]+):\s*([^:]*):\s*(.*)$/;
-				my $parameterId = $1;
-				my $parameterType = $2;
-				my $parameterName = $3;
-				my $parameterValue = $4;
-
-				$parameterType =~ s/^\s+//;
-				$parameterType =~ s/\s+$//;
-
-				$parameterName =~ s/^\s+//;
-				$parameterName =~ s/\s+$//;
-
-				$parameterValue =~ s/^\s+//;
-				$parameterValue =~ s/\s+$//;
-
-				if($parameterId && $parameterName && $parameterType) {
-					my %parameter = (
-						'id' => $parameterId,
-						'type' => $parameterType,
-						'name' => $parameterName,
-						'valuedefinition' => $parameterValue
-					);
-					$parameters{$parameterId} = \%parameter;
-					debugMsg("Adding parameter: $parameterId, $parameterType, $parameterName, $parameterValue\n");
-				}else {
-					debugMsg("Error in parameter: $line\n");
-					debugMsg("Parameter values: Id=$parameterId, Type=$parameterType, Name=$parameterName, Value=$parameterValue\n");
-				}
+			}elsif($parameter) {
+				$parameters{$parameter->{'id'}} = $parameter;
 			}
 			
 			# skip and strip comments & empty lines
@@ -335,446 +247,9 @@ sub initPlayLists {
 	initPlayListTypes();
 }
 
-sub addParameterValues {
-	my $client = shift;
-	my $listRef = shift;
-	my $parameter = shift;
-	
-	debugMsg("Getting values for ".$parameter->{'name'}." of type ".$parameter->{'type'}."\n");
-	my $sql = undef;
-	if(lc($parameter->{'type'}) eq 'album') {
-		$sql = "select id,title from albums order by titlesort";
-	}elsif(lc($parameter->{'type'}) eq 'artist') {
-		$sql = "select id,name from contributors where namesort is not null order by namesort";
-	}elsif(lc($parameter->{'type'}) eq 'genre') {
-		$sql = "select id,name from genres order by namesort";
-	}elsif(lc($parameter->{'type'}) eq 'year') {
-		$sql = "select year,year from tracks where year is not null group by year order by year";
-	}elsif(lc($parameter->{'type'}) eq 'list') {
-		my $value = $parameter->{'valuedefinition'};
-		if(defined($value) && $value ne "" ) {
-			my @values = split(/,/,$value);
-			if(@values) {
-				for my $valueItem (@values) {
-					my @valueItemArray = split(/:/,$valueItem);
-					my $id = shift @valueItemArray;
-					my $name = shift @valueItemArray;
-					
-					if(defined($id)) {
-						my %listitem = (
-							'id' => $id
-						);
-						if(defined($name)) {
-							$listitem{'name'}=$name;
-						}else {
-							$listitem{'name'}=$id;
-						}
-					  	push @$listRef, \%listitem;
-					}
-				}
-			}else {
-				debugMsg("Error, invalid parameter value: $value\n");
-			}
-		}
-	}elsif(lc($parameter->{'type'}) eq 'custom') {
-		if(defined($parameter->{'valuedefinition'}) && lc($parameter->{'valuedefinition'}) =~ /^select/ ) {
-			$sql = $parameter->{'valuedefinition'};
-			for (my $i=1;$i<$parameter->{'id'};$i++) {
-				my $parameter = $client->param('sqlplaylist_mixparameter_'.$i);
-				my $value = $parameter->{'id'};
-				my $parameterid = "\'PlaylistParameter".$i."\'";
-				debugMsg("Replacing ".$parameterid." with ".$value."\n");
-				$sql =~ s/$parameterid/$value/g;
-			}
-		}
-	}
-	
-	if(defined($sql)) {
-		my $dbh = getCurrentDBH();
-    	eval {
-			my $sth = $dbh->prepare( $sql );
-			debugMsg("Executing value list: $sql\n");
-			$sth->execute() or do {
-	            debugMsg("Error executing: $sql\n");
-	            $sql = undef;
-			};
-			if(defined($sql)) {
-				my $id;
-				my $name;
-				$sth->bind_columns( undef, \$id,\$name);
-				while( $sth->fetch() ) {
-					my %listitem = (
-						'id' => $id,
-						'name' => Slim::Utils::Unicode::utf8decode($name,'utf8')
-					);
-				  	push @$listRef, \%listitem;
-			  	}
-			  	debugMsg("Added ".scalar(@$listRef)." items to value list\n");
-			}
-			$sth->finish();
-		};
-		if( $@ ) {
-			$sqlerrors .= $DBI::errstr."<br>";
-		    warn "Database error: $DBI::errstr\n";
-		}		
-	}
-}
-sub setChooseParametersMode {
-	my $client = shift;
-	my $method = shift;
-	
-	if ($method eq 'pop') {
-		Slim::Buttons::Common::popMode($client);
-		return;
-	}
-
-	my $parameterId = $client->param('sqlplaylist_nextparameter');
-	my $playlist = $client->param('sqlplaylist_selectedplaylist');
-	
-	my $parameter= $playlist->{'parameters'}->{$parameterId};
-
-	my @listRef = ();
-	addParameterValues($client,\@listRef, $parameter);
-
-	my $name = $parameter->{'name'};
-	my %params = (
-		header     => "$name {count}",
-		listRef    => \@listRef,
-		name       => \&getChooseParametersDisplayText,
-		overlayRef => \&getChooseParametersOverlay,
-		modeName   => 'PLUGIN.SQLPLayList.ChooseParameters',
-		onRight    => sub {
-			my ($client, $item) = @_;
-			requestNextParameterAndPlayOrAdd($client,$item,$parameterId,$playlist);
-		},
-		onPlay    => sub {
-			my ($client, $item) = @_;
-			requestNextParameterAndPlayOrAdd($client,$item,$parameterId,$playlist,0);
-		},
-		onAdd    => sub {
-			my ($client, $item) = @_;
-			requestNextParameterAndPlayOrAdd($client,$item,$parameterId,$playlist,1);
-		},
-		sqlplaylist_nextparameter => $parameterId,
-		sqlplaylist_selectedplaylist => $playlist,
-		sqlplaylist_addonly => $client->param('sqlplaylist_addonly')
-	);
-	for(my $i=1;$i<$parameterId;$i++) {
-		my $item = $client->param('sqlplaylist_mixparameter_'.$i);
-		$params{'sqlplaylist_mixparameter_'.$i} = $item;
-	}
-
-	Slim::Buttons::Common::pushMode($client, 'INPUT.Choice', \%params);
-}
-
-sub requestNextParameterAndPlayOrAdd {
-	my $client = shift;
-	my $item = shift;
-	my $parameterId = shift;
-	my $playlist = shift;
-	my $addOnly = shift;
-	
-	if(!defined($addOnly)) {
-		$addOnly = $client->param('sqlplaylist_addonly');
-	}
-	$client->param('sqlplaylist_mixparameter_'.$parameterId,$item);
-	if(defined($playlist->{'parameters'}->{$parameterId+1})) {
-		my %nextParameter = (
-			'sqlplaylist_nextparameter' => $parameterId+1,
-			'sqlplaylist_selectedplaylist' => $playlist,
-			'sqlplaylist_addonly' => $addOnly
-		);
-		my $i;
-		for($i=1;$i<=$parameterId;$i++) {
-			my $item = $client->param('sqlplaylist_mixparameter_'.$i);
-			$nextParameter{'sqlplaylist_mixparameter_'.$i} = $item;
-		}
-		Slim::Buttons::Common::pushModeLeft($client,'PLUGIN.SQLPlayList.ChooseParameters',\%nextParameter);
-	}else {
-		for(my $i=1;$i<=$parameterId;$i++) {
-			$playlist->{'parameters'}->{$i}->{'value'} = $client->param('sqlplaylist_mixparameter_'.$i)->{'id'};
-		}
-		handlePlayOrAdd($client, $playlist->{'id'}, $addOnly);
-		for(my $i=1;$i<=$parameterId;$i++) {
-			Slim::Buttons::Common::popMode($client);
-		}
-		$client->update();
-	}
-}
-sub requestParametersAndPlayOrAdd {
-	my $client = shift;
-	my $item = shift;
-	my $addOnly = shift;
-	my $parameter1 = shift;
-
-	my %nextParameter = (
-		'sqlplaylist_nextparameter' => 1,
-		'sqlplaylist_selectedplaylist' => $item,
-		'sqlplaylist_addonly' => $addOnly
-	);
-	if(defined($parameter1)) {
-		$nextParameter{'sqlplaylist_nextparameter'}=2;
-		$nextParameter{'sqlplaylist_mixparameter_1'}=$parameter1;
-		debugMsg("Setting parameter 1 = ".$parameter1->{'name'}."(".$parameter1->{'id'}.")\n");
-	}
-	if(defined($item->{'parameters'}) && defined($item->{'parameters'}->{$nextParameter{'sqlplaylist_nextparameter'}})) {
-		Slim::Buttons::Common::pushModeLeft($client,'PLUGIN.SQLPlayList.ChooseParameters',\%nextParameter);
-	}else {
-		if($nextParameter{'sqlplaylist_nextparameter'}>1) {
-			$item->{'parameters'}->{'1'}->{'value'} = $parameter1->{'id'};
-		}
-		handlePlayOrAdd($client, $item->{'id'}, $addOnly);
-		for(my $i=1;$i<$nextParameter{'sqlplaylist_nextparameter'};$i++) {
-			Slim::Buttons::Common::popMode($client);
-		}
-		$client->update();
-	}
-}
-
-sub setMode {
-	my $client = shift;
-	my $method = shift;
-
-	if ($method eq 'pop') {
-		Slim::Buttons::Common::popMode($client);
-		return;
-	}
-
-	my @listRef = ();
-	initPlayLists();
-	my $playlisttype = $client->param('playlisttype');
-	foreach my $pk (sort keys %$playLists) {
-		my $playlist = $playLists->{$pk};
-		if(!defined($playlisttype)) {
-			push @listRef, $playlist;
-		}else {
-			if(defined($playlist->{'parameters'}) && defined($playlist->{'parameters'}->{'1'}) && $playlist->{'parameters'}->{'1'}->{'type'} eq $playlisttype) {
-				debugMsg("Adding ".$playlist->{'name'}."\n");
-				push @listRef, $playlist;
-			}
-		}
-	}
-
-	# use INPUT.Choice to display the list of feeds
-	my %params = (
-		header     => '{PLUGIN_SQLPLAYLIST} {count}',
-		listRef    => \@listRef,
-		name       => \&getDisplayText,
-		overlayRef => \&getOverlay,
-		modeName   => 'PLUGIN.SQLPlayList',
-		onPlay     => sub {
-			my ($client, $item) = @_;
-			if(defined($item->{'parameters'})) {
-				requestParametersAndPlayOrAdd($client,$item,0,$client->param('sqlplaylist_mixparameter_1'));
-			}else {
-				handlePlayOrAdd($client, $item->{'id'}, 0);		
-			}
-		},
-		onAdd      => sub {
-			my ($client, $item) = @_;
-			if(defined($item->{'parameters'})) {
-				requestParametersAndPlayOrAdd($client,$item,1,$client->param('sqlplaylist_mixparameter_1'));
-			}else {
-				handlePlayOrAdd($client, $item->{'id'}, 1);
-			}
-		},
-		onRight    => sub {
-			my ($client, $item) = @_;
-			if($item->{'id'} eq 'disable') {
-				handlePlayOrAdd($client, $item->{'id'}, 0);
-			}elsif(defined($item->{'parameters'})) {
-				requestParametersAndPlayOrAdd($client,$item,0,$client->param('sqlplaylist_mixparameter_1'));
-			}else {
-				$client->bumpRight();
-			}
-		},
-	);
-	if(defined($client->param('sqlplaylist_mixparameter_1'))) {
-		$params{'sqlplaylist_mixparameter_1'} = $client->param('sqlplaylist_mixparameter_1');
-	}
-
-	my $currentPlaying = getCurrentPlayList($client);
-
-	# if we have an active mode, temporarily add the disable option to the list.
-	if ($currentPlaying) {
-		push @{$params{listRef}},\%disable;
-	}
-
-	Slim::Buttons::Common::pushMode($client, 'INPUT.Choice', \%params);
-}
 
 sub initPlugin {
-	my $class = shift;
 	checkDefaults();
-	Slim::Buttons::Common::addMode('PLUGIN.SQLPlayList.ChooseParameters', getFunctions(), \&setChooseParametersMode);
-	Slim::Buttons::Common::addMode('PLUGIN.SQLPlayList', getFunctions(), \&setMode);
-	if(Slim::Utils::Prefs::get("plugin_sqlplaylist_web_show_mixerlinks")) {
-		if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
-			Slim::Music::Import::addImporter($class,'SQLPLAYLIST', {
-				'mixer'     => \&mixerFunction,
-	            'mixerlink' => \&mixerlink});
-	    	Slim::Music::Import::useImporter($class, 1);
-	    }else {
-			Slim::Music::Import::addImporter('SQLPLAYLIST', {
-				'mixer'     => \&mixerFunction,
-	            'mixerlink' => \&mixerlink});
-	    	Slim::Music::Import::useImporter('SQLPLAYLIST', 1);
-	    }
-	}
-}
-
-sub mixerlink {
-    my $item = shift;
-    my $form = shift;
-    my $descend = shift;
-#		debugMsg("***********************************\n");
-#		for my $it (keys %$form) {
-#			debugMsg("form{$it}=".$form->{$it}."\n");
-#		}
-#		debugMsg("***********************************\n");
-	
-	my $levelName = $form->{'levelName'};
-	if(!$playListTypes) {
-		initPlayListTypes();
-	}
-	if($form->{'noSQLPlayListButton'}) {
-		if ($::VERSION lt '6.5') {
-    		Slim::Web::Pages::addLinks("mixer", {'SQLPLAYLIST' => undef});
-    	}
-	}elsif(defined($levelName) && ($levelName eq 'artist' || $levelName eq 'contributor' || $levelName eq 'album' || $levelName eq 'genre')) {
-		if($levelName eq 'contributor') {
-			$levelName = 'artist';
-		}
-		if($playListTypes->{$levelName}) {
-			$form->{'sqlplaylist_playlisttype'} = $levelName;
-			if ($::VERSION ge '6.5') {
-	        	$form->{'mixerlinks'}{'SQLPLAYLIST'} = "plugins/SQLPlayList/mixerlink65.html";
-	        }else {
-	    			Slim::Web::Pages::addLinks("mixer", {'SQLPLAYLIST' => "plugins/SQLPlayList/mixerlink.html"}, 1);
-	        }
-	    }else {
-	    	if ($::VERSION lt '6.5') {
-	    		Slim::Web::Pages::addLinks("mixer", {'SQLPLAYLIST' => undef});
-	    	}
-	    }
-    }elsif(defined($levelName) && $levelName eq 'year') {
-		$form->{'sqlplaylist_playlisttype'} = $levelName;
-    	$form->{'yearid'} = $item->year;
-    	if(defined($form->{'yearid'})) {
-			if($playListTypes->{$levelName}) {
-				if ($::VERSION ge '6.5') {
-	    			$form->{'mixerlinks'}{'SQLPlayList'} = "plugins/SQLPlayList/mixerlink65.html";
-	    		}else {
-	    			Slim::Web::Pages::addLinks("mixer", {'SQLPlayList' => "plugins/SQLPlayList/mixerlink.html"}, 1);
-	    		}
-		    }else {
-		    	if ($::VERSION lt '6.5') {
-		    		Slim::Web::Pages::addLinks("mixer", {'SQLPLAYLIST' => undef});
-		    	}
-		    }
-    	}
-    }else {
-    	my $attributes = $form->{'attributes'};
-		my $album;
-		if(defined($form->{'levelName'}) && $form->{'levelName'} eq 'age') {
-			$album = $item;
-		}
-		if(defined($album)) {
-			$form->{'sqlplaylist_playlisttype'} = 'album';
-			$form->{'albumid'} = $album->id;
-		}
-    	
-    	if(defined($form->{'albumid'})) {
-			if($playListTypes->{$form->{'sqlplaylist_playlisttype'}}) {
-				if ($::VERSION ge '6.5') {
-	    			$form->{'mixerlinks'}{'SQLPLAYLIST'} = "plugins/SQLPlayList/mixerlink65.html";
-	    		}else {
-	    			Slim::Web::Pages::addLinks("mixer", {'SQLPLAYLIST' => "plugins/SQLPlayList/mixerlink.html"}, 1);
-	    		}
-	    	}else {
-		    	if ($::VERSION lt '6.5') {
-		    		Slim::Web::Pages::addLinks("mixer", {'SQLPLAYLIST' => undef});
-		    	}
-	    	}
-    	}
-    }
-    return $form;
-}
-
-sub mixerFunction {
-	my ($client, $noSettings) = @_;
-	# look for parentParams (needed when multiple mixers have been used)
-	my $paramref = defined $client->param('parentParams') ? $client->param('parentParams') : $client->modeParameterStack(-1);
-	if(defined($paramref)) {
-		if(!$playListTypes) {
-			initPlayListTypes();
-		}
-
-		my $listIndex = $paramref->{'listIndex'};
-		my $items     = $paramref->{'listRef'};
-		my $currentItem = $items->[$listIndex];
-		my $hierarchy = $paramref->{'hierarchy'};
-		my @levels    = split(",", $hierarchy);
-		my $level     = $paramref->{'level'} || 0;
-		if($playListTypes->{$levels[$level]}) { 
-			if($levels[$level] eq 'album' || $levels[$level] eq 'age') {
-				my %p = (
-					'id' => $currentItem->id,
-					'name' => $currentItem->title
-				);
-				my %params = (
-					'sqlplaylist_mixparameter_1' => \%p,
-					'playlisttype' => 'album'
-				);
-				debugMsg("Calling album playlists with ".$params{'sqlplaylist_mixparameter_1'}->{'name'}."(".$params{'sqlplaylist_mixparameter_1'}->{'id'}.")\n");
-				Slim::Buttons::Common::pushModeLeft($client,'PLUGIN.SQLPlayList',\%params);
-				$client->update();
-			}elsif($levels[$level] eq 'year') {
-				my %p = (
-					'id' => $currentItem,
-					'name' => $currentItem
-				);
-				my %params = (
-					'sqlplaylist_mixparameter_1' => \%p,
-					'playlisttype' => 'year'
-				);
-				debugMsg("Calling year playlists with ".$params{'sqlplaylist_mixparameter_1'}->{'name'}."(".$params{'sqlplaylist_mixparameter_1'}->{'id'}.")\n");
-				Slim::Buttons::Common::pushModeLeft($client,'PLUGIN.SQLPlayList',\%params);
-				$client->update();
-			}elsif($levels[$level] eq 'artist') {
-				my %p = (
-					'id' => $currentItem->id,
-					'name' => $currentItem->name
-				);
-				my %params = (
-					'sqlplaylist_mixparameter_1' => \%p,
-					'playlisttype' => 'artist'
-				);
-				debugMsg("Calling artist playlists with ".$params{'sqlplaylist_mixparameter_1'}->{'name'}."(".$params{'sqlplaylist_mixparameter_1'}->{'id'}.")\n");
-				Slim::Buttons::Common::pushModeLeft($client,'PLUGIN.SQLPlayList',\%params);
-				$client->update();
-			}elsif($levels[$level] eq 'genre') {
-				my %p = (
-					'id' => $currentItem->id,
-					'name' => $currentItem->name
-				);
-				my %params = (
-					'sqlplaylist_mixparameter_1' => \%p,
-					'playlisttype' => 'genre'
-				);
-				debugMsg("Calling album playlists with ".$params{'sqlplaylist_mixparameter_1'}->{'name'}."(".$params{'sqlplaylist_mixparameter_1'}->{'id'}.")\n");
-				Slim::Buttons::Common::pushModeLeft($client,'PLUGIN.SQLPlayList',\%params);
-				$client->update();
-			}else {
-				debugMsg("Unknown playlisttype = ".$levels[$level]."\n");
-			}
-		}else {
-			debugMsg("No playlist found for ".$levels[$level]."\n");
-		}
-	}else {
-		debugMsg("No parent parameter found\n");
-	}
-
 }
 
 sub webPages {
@@ -782,7 +257,6 @@ sub webPages {
 	my %pages = (
 		"sqlplaylist_list\.(?:htm|xml)"     => \&handleWebList,
 		"sqlplaylist_mix\.(?:htm|xml)"      => \&handleWebMix,
-		"sqlplaylist_mixparameters\.(?:htm|xml)"      => \&handleWebMixParameters,
 		"sqlplaylist_settings\.(?:htm|xml)" => \&handleWebSettings,
 		"sqlplaylist_editplaylist\.(?:htm|xml)"      => \&handleWebEditPlaylist,
 		"sqlplaylist_newplaylist\.(?:htm|xml)"      => \&handleWebNewPlaylist,
@@ -822,41 +296,7 @@ sub handleWebList {
 	if($playlist) {
 		$name = $playlist->{'name'};
 	}
-	my $localPlayLists = ();
-	if(defined($params->{'playlisttype'})) {
-		my %tempPlayLists;
-		for my $pk (keys %$playLists) {
-			my $pl = $playLists->{$pk};
-			if(defined($pl->{'parameters'}) && defined($pl->{'parameters'}->{'1'}) && $pl->{'parameters'}->{'1'}->{'type'} eq $params->{'playlisttype'}) {
-				$tempPlayLists{$pk} = $playLists->{$pk};
-			}
-		}
-		$localPlayLists = \%tempPlayLists;
-		my $parameter1 = $params->{'sqlplaylist_mixparameter_1'};
-		if(defined($parameter1)) {
-			if($params->{'playlisttype'} eq 'album') {
-				my $album = objectForId('album',$parameter1);
-				if(defined($album)) {
-					$params->{'pluginSQLPlayListContextName'} = $album->title;
-				}
-			}elsif($params->{'playlisttype'} eq 'artist') {
-				my $artist = objectForId('artist',$parameter1);
-				if(defined($artist)) {
-					$params->{'pluginSQLPlayListContextName'} = $artist->name;
-				}
-			}elsif($params->{'playlisttype'} eq 'genre') {
-				my $genre = objectForId('genre',$parameter1);
-				if(defined($genre)) {
-					$params->{'pluginSQLPlayListContextName'} = $genre->name;
-				}
-			}elsif($params->{'playlisttype'} eq 'year') {
-				$params->{'pluginSQLPlayListContextName'} = $parameter1;
-			}
-		}
-	}else {
-		$localPlayLists = $playLists;
-	}
-	$params->{'pluginSQLPlayListPlayLists'} = $localPlayLists;
+	$params->{'pluginSQLPlayListPlayLists'} = $playLists;
 	$params->{'pluginSQLPlayListNowPlaying'} = $name;
 	if ($::VERSION ge '6.5') {
 		$params->{'pluginSQLPlayListSlimserver65'} = 1;
@@ -945,21 +385,27 @@ sub handleWebTestPlaylist {
 	$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($params->{'file'});
 	my $ds = getCurrentDS();
 	if($params->{'text'}) {
-		my $sql = createSQL(Slim::Utils::Unicode::utf8decode($params->{'text'},'utf8'));
-		if($sql) {
-			my $tracks = executeSQLForPlaylist($sql);
-			my @resultTracks;
-			my $itemNumber = 0;
-			foreach my $track (@$tracks) {
-			  	my %trackInfo = ();
-	            displayAsHTML('track', \%trackInfo, $track);
-			  	$trackInfo{'title'} = Slim::Music::Info::standardTitle(undef,$track);
-			  	$trackInfo{'odd'} = ($itemNumber+1) % 2;
-	            $trackInfo{'itemobj'}          = $track;
-			  	push @resultTracks,\%trackInfo;
-			}
-			if(@resultTracks && scalar(@resultTracks)>0) {
-				$params->{'pluginSQLPlayListEditPlayListTestResult'} = \@resultTracks;
+		my $playlist = createSQLPlayList(Slim::Utils::Unicode::utf8decode($params->{'text'},'utf8'));
+		if($playlist) {
+			if(handleWebTestParameters($client,$params,$playlist)) {
+				my $sql = $playlist->{'sql'};
+				if(defined($playlist->{'parameters'})) {
+					$sql = replaceParametersInSQL($sql,$playlist->{'parameters'});
+				}
+				my $tracks = executeSQLForPlaylist($sql);
+				my @resultTracks;
+				my $itemNumber = 0;
+				foreach my $track (@$tracks) {
+				  	my %trackInfo = ();
+		            displayAsHTML('track', \%trackInfo, $track);
+				  	$trackInfo{'title'} = Slim::Music::Info::standardTitle(undef,$track);
+				  	$trackInfo{'odd'} = ($itemNumber+1) % 2;
+		            $trackInfo{'itemobj'}          = $track;
+				  	push @resultTracks,\%trackInfo;
+				}
+				if(@resultTracks && scalar(@resultTracks)>0) {
+					$params->{'pluginSQLPlayListEditPlayListTestResult'} = \@resultTracks;
+				}
 			}
 		}
 	}
@@ -971,6 +417,141 @@ sub handleWebTestPlaylist {
 	}
 	if ($::VERSION ge '6.5') {
 		$params->{'pluginSQLPlayListSlimserver65'} = 1;
+	}
+}
+
+sub handleWebTestParameters {
+	my ($client,$params,$playlist) = @_;
+	my $parameterId = 1;
+	my @parameters = ();
+	
+	my $i=1;
+	while(defined($params->{'sqlplaylist_parameter_'.$i})) {
+		$parameterId = $parameterId +1;
+		if($params->{'sqlplaylist_parameter_changed'} eq $i) {
+			last;
+		}
+		$i++;
+	}
+	if(defined($playlist->{'parameters'}->{$parameterId})) {
+		for(my $i=1;$i<$parameterId;$i++) {
+			my @parameterValues = ();
+			my $parameter = $playlist->{'parameters'}->{$i};
+			addParameterValues($client,\@parameterValues,$parameter);
+			my %webParameter = (
+				'parameter' => $parameter,
+				'values' => \@parameterValues,
+				'value' => $params->{'sqlplaylist_parameter_'.$i}
+			);
+			my %value = (
+				'id' => $params->{'sqlplaylist_parameter_'.$i}
+			);
+			$client->param('sqlplaylist_parameter_'.$i,\%value);
+			push @parameters,\%webParameter;
+		}
+		
+		my $parameter = $playlist->{'parameters'}->{$parameterId};
+		debugMsg("Getting values for: ".$parameter->{'name'}."\n");
+		my @parameterValues = ();
+		addParameterValues($client,\@parameterValues,$parameter);
+		my %currentParameter = (
+			'parameter' => $parameter,
+			'values' => \@parameterValues
+		);
+		push @parameters,\%currentParameter;
+		$params->{'pluginSQLPlayListTestParameters'} = \@parameters;
+		return 0;
+	}else {
+		for(my $i=1;$i<$parameterId;$i++) {
+			$playlist->{'parameters'}->{$i}->{'value'} = $params->{'sqlplaylist_parameter_'.$i};
+		}
+		return 1;
+	}
+}
+
+sub addParameterValues {
+	my $client = shift;
+	my $listRef = shift;
+	my $parameter = shift;
+	
+	debugMsg("Getting values for ".$parameter->{'name'}." of type ".$parameter->{'type'}."\n");
+	my $sql = undef;
+	if(lc($parameter->{'type'}) eq 'album') {
+		$sql = "select id,title from albums order by titlesort";
+	}elsif(lc($parameter->{'type'}) eq 'artist') {
+		$sql = "select id,name from contributors where namesort is not null order by namesort";
+	}elsif(lc($parameter->{'type'}) eq 'genre') {
+		$sql = "select id,name from genres order by namesort";
+	}elsif(lc($parameter->{'type'}) eq 'year') {
+		$sql = "select year,year from tracks where year is not null group by year order by year";
+	}elsif(lc($parameter->{'type'}) eq 'playlist') {
+		$sql = "select playlist_track.playlist,tracks.title from tracks, playlist_track where tracks.id=playlist_track.playlist group by playlist_track.playlist order by titlesort";
+	}elsif(lc($parameter->{'type'}) eq 'list') {
+		my $value = $parameter->{'definition'};
+		if(defined($value) && $value ne "" ) {
+			my @values = split(/,/,$value);
+			if(@values) {
+				for my $valueItem (@values) {
+					my @valueItemArray = split(/:/,$valueItem);
+					my $id = shift @valueItemArray;
+					my $name = shift @valueItemArray;
+					
+					if(defined($id)) {
+						my %listitem = (
+							'id' => $id
+						);
+						if(defined($name)) {
+							$listitem{'name'}=$name;
+						}else {
+							$listitem{'name'}=$id;
+						}
+					  	push @$listRef, \%listitem;
+					}
+				}
+			}else {
+				debugMsg("Error, invalid parameter value: $value\n");
+			}
+		}
+	}elsif(lc($parameter->{'type'}) eq 'custom') {
+		if(defined($parameter->{'definition'}) && lc($parameter->{'definition'}) =~ /^select/ ) {
+			$sql = $parameter->{'definition'};
+			for (my $i=1;$i<$parameter->{'id'};$i++) {
+				my $parameter = $client->param('sqlplaylist_parameter_'.$i);
+				my $value = $parameter->{'id'};
+				my $parameterid = "\'PlaylistParameter".$i."\'";
+				debugMsg("Replacing ".$parameterid." with ".$value."\n");
+				$sql =~ s/$parameterid/$value/g;
+			}
+		}
+	}
+	
+	if(defined($sql)) {
+		my $dbh = getCurrentDBH();
+    	eval {
+			my $sth = $dbh->prepare( $sql );
+			debugMsg("Executing value list: $sql\n");
+			$sth->execute() or do {
+	            debugMsg("Error executing: $sql\n");
+	            $sql = undef;
+			};
+			if(defined($sql)) {
+				my $id;
+				my $name;
+				$sth->bind_columns( undef, \$id,\$name);
+				while( $sth->fetch() ) {
+					my %listitem = (
+						'id' => $id,
+						'name' => Slim::Utils::Unicode::utf8decode($name,'utf8')
+					);
+				  	push @$listRef, \%listitem;
+			  	}
+			  	debugMsg("Added ".scalar(@$listRef)." items to value list\n");
+			}
+			$sth->finish();
+		};
+		if( $@ ) {
+		    warn "Database error: $DBI::errstr\n";
+		}		
 	}
 }
 
@@ -1795,6 +1376,156 @@ sub handleWebGenerateNewPlaylist {
 		}
 		$sql .= "\n\torder by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "withspecificrating") {
+		my $sql = "-- PlaylistParameter1:list:Select rating:20:*,40:**,60:***,80:****,100:*****";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "track_statistics.rating=\'PlaylistParameter1\'";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		if($maxYear>0) {
+			$sql .= " and\n\t\ttracks.year<=$maxYear";
+		}
+		if($minYear>0) {
+			$sql .= " and\n\t\ttracks.year>=$minYear";
+		}
+		$sql .= "\n\torder by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedforyear") {
+		my $sql = "-- PlaylistParameter1:year:Select year:";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "tracks.year=\'PlaylistParameter1\' and\n\t\ttrack_statistics.rating>=80";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		$sql .= "\n\torder by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedforalbum") {
+		my $sql = "-- PlaylistParameter1:album:Select album:";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "tracks.album=\'PlaylistParameter1\' and\n\t\ttrack_statistics.rating>=80";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		$sql .= "\n\torder by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedforgenre") {
+		my $sql = "-- PlaylistParameter1:genre:Select genre:";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin genre_track on\n\t\ttracks.id=genre_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		$sql .= " and \n\t\tgenre_track.genre=\'PlaylistParameter1\'";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		if($maxYear>0) {
+			$sql .= " and\n\t\ttracks.year<=$maxYear";
+		}
+		if($minYear>0) {
+			$sql .= " and\n\t\ttracks.year>=$minYear";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedforartist") {
+		my $sql = "-- PlaylistParameter1:artist:Select artist:";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		$sql .= " and \n\t\tcontributor_track.contributor=\'PlaylistParameter1\'";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "topratedforplaylist") {
+		my $sql = "-- PlaylistParameter1:playlist:Select playlist:";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin playlist_track on\n\t\ttracks.id=playlist_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		$sql .= " and \n\t\tplaylist_track.playlist=\'PlaylistParameter1\'";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
+	}elsif($params->{'type'} eq "withspecificratingforartist") {
+		my $sql = "-- PlaylistParameter1:list:Select rating:20:*,40:**,60:***,80:****,100:*****";
+		$sql .= "\n-- PlaylistParameter2:custom:Select artist:select contributors.id,contributors.name from tracks join contributor_track on tracks.id=contributor_track.track join contributors on contributor_track.contributor=contributors.id left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating=\'PlaylistParameter1\' group by contributors.id order by contributors.namesort";
+		$sql .= "\nselect tracks.url from tracks\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($notRepeat) {
+			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
+			$sql .= "\n\twhere dynamicplaylist_history.id is null";
+			$sql .= " and\n\t\t";
+		}else {
+			$sql .= "\n\twhere ";
+		}
+		$sql .= "track_statistics.rating=\'PlaylistParameter1\' and\n\t\ttracks.audio=1";
+		$sql .= " and \n\t\tcontributor_track.contributor=\'PlaylistParameter2\'";
+		if($maxLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
+		}
+		if($minLengthValue>0) {
+			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		$sql .= "\n\t order by $orderBy limit 10;\n";
+		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylist.html', $params);
 }
@@ -2014,90 +1745,11 @@ sub savePlaylist
 sub handleWebMix {
 	my ($client, $params) = @_;
 	if (defined $client && $params->{'type'}) {
-		my $playlist = getPlayList($client,$params->{'type'});
-		if(!defined($playlist)) {
-			debugMsg("Playlist not found received:"..$params->{'type'}."\n");
-			foreach my $p (keys %$playLists) {
-				debugMsg("Got: $p\n");
-			}
-		}
-		if(defined($playlist->{'parameters'})) {
-			return handleWebMixParameters($client,$params);
-		}else {
-			handlePlayOrAdd($client, $params->{'type'}, $params->{'addOnly'});
-		}
+		handlePlayOrAdd($client, $params->{'type'}, $params->{'addOnly'});
 	}
 	return handleWebList($client, $params);
 }
 
-sub handleWebMixParameters {
-	my ($client,$params) = @_;
-	debugMsg("Entering handleWebMixParameters\n");
-	my $parameterId = 1;
-	my @parameters = ();
-	my $playlist = getPlayList($client,$params->{'type'});
-	
-	for (my $i=1;$i<10;$i++) {
-		if(defined($params->{'sqlplaylist_mixparameter_'.$i})) {
-			$parameterId = $parameterId +1;
-			my %value = (
-				'id' => $params->{'sqlplaylist_mixparameter_'.$i}
-			);
-			$client->param('sqlplaylist_mixparameter_'.$i,\%value);
-			debugMsg("Storing parameter $i=".$value{'id'}."\n");
-		}
-		if($params->{'changedParameter'} eq $i) {
-			$i=10;
-		}
-	}
-	if(defined($playlist->{'parameters'}->{$parameterId})) {
-		for(my $i=1;$i<$parameterId;$i++) {
-			my @parameterValues = ();
-			my $parameter = $playlist->{'parameters'}->{$i};
-			addParameterValues($client,\@parameterValues,$parameter);
-			my %webParameter = (
-				'parameter' => $parameter,
-				'values' => \@parameterValues,
-				'value' => $params->{'sqlplaylist_mixparameter_'.$i}
-			);
-			push @parameters,\%webParameter;
-		}
-		
-		my $parameter = $playlist->{'parameters'}->{$parameterId};
-		debugMsg("Getting values for: ".$parameter->{'name'}."\n");
-		my @parameterValues = ();
-		addParameterValues($client,\@parameterValues,$parameter);
-		my %currentParameter = (
-			'parameter' => $parameter,
-			'values' => \@parameterValues
-		);
-		push @parameters,\%currentParameter;
-		$params->{'pluginSQLPlayListPlaylist'} = $playlist;
-		$params->{'pluginSQLPlayListAddOnly'} = $params->{'addOnly'};
-		$params->{'pluginSQLPlayListMixParameters'} = \@parameters;
-		my $currentPlaylistId = getCurrentPlayList($client);
-		if(defined($currentPlaylistId)) {
-			debugMsg("Setting current playlist id to ".$currentPlaylistId."\n");
-			my $currentPlaylist = getPlayList($client,$currentPlaylistId);
-			if(defined($currentPlaylist)) {
-				debugMsg("Setting current playlist to ".$currentPlaylist->{'name'}."\n");
-				$params->{'pluginSQLPlayListNowPlaying'} = $currentPlaylist->{'name'};
-			}
-		}
-		if ($::VERSION ge '6.5') {
-			$params->{'pluginSQLPlayListSlimserver65'} = 1;
-		}
-		debugMsg("Exiting handleWebMixParameters\n");
-		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_mixparameters.html', $params);
-	}else {
-		for(my $i=1;$i<$parameterId;$i++) {
-			$playlist->{'parameters'}->{$i}->{'value'} = $client->param('sqlplaylist_mixparameter_'.$i)->{'id'};
-		}
-		handlePlayOrAdd($client, $params->{'type'}, $params->{'addOnly'});
-		debugMsg("Exiting handleWebMixParameters\n");
-		return handleWebList($client,$params);
-	}
-}
 
 # Handles settings changes from plugin's web page
 sub handleWebSettings {
@@ -2144,19 +1796,13 @@ sub checkDefaults {
 		debugMsg("Defaulting plugin_sqlplaylist_showmessages to 0\n");
 		Slim::Utils::Prefs::set('plugin_sqlplaylist_showmessages', 0);
 	}
-	# enable mixer links by default
-	if(!defined(Slim::Utils::Prefs::get("plugin_sqlplaylist_web_show_mixerlinks"))) {
-		# Default to show mixer links
-		debugMsg("Defaulting plugin_sqlplaylist_web_show_mixerlinks to 1\n");
-		Slim::Utils::Prefs::set("plugin_sqlplaylist_web_show_mixerlinks",1);
-	}
 }
 
 sub setupGroup
 {
 	my %setupGroup =
 	(
-	 PrefOrder => ['plugin_sqlplaylist_playlist_directory','plugin_sqlplaylist_showmessages','plugin_sqlplaylist_web_show_mixerlinks'],
+	 PrefOrder => ['plugin_sqlplaylist_playlist_directory','plugin_sqlplaylist_showmessages'],
 	 GroupHead => string('PLUGIN_SQLPLAYLIST_SETUP_GROUP'),
 	 GroupDesc => string('PLUGIN_SQLPLAYLIST_SETUP_GROUP_DESC'),
 	 GroupLine => 1,
@@ -2176,16 +1822,6 @@ sub setupGroup
 				}
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_showmessages"); }
 		},		
-	plugin_sqlplaylist_web_show_mixerlinks => {
-			'validate'     => \&validateTrueFalseWrapper
-			,'PrefChoose'  => string('PLUGIN_SQLPLAYLIST_WEB_SHOW_MIXERLINKS')
-			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_WEB_SHOW_MIXERLINKS')
-			,'options' => {
-					 '1' => string('ON')
-					,'0' => string('OFF')
-				}
-			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_web_show_mixerlinks"); }
-		},		
 	plugin_sqlplaylist_playlist_directory => {
 			'validate' => \&validateIsDirWrapper
 			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
@@ -2196,34 +1832,84 @@ sub setupGroup
 	);
 	return (\%setupGroup,\%setupPrefs);
 }
-
+sub replaceParametersInSQL {
+	my $sql = shift;
+	my $parameters = shift;
+	
+	if(defined($parameters)) {
+		foreach my $key (keys %$parameters) {
+			my $parameter = $parameters->{$key};
+			my $value = $parameter->{'value'};
+			my $parameterid = "\'PlaylistParameter".$parameter->{'id'}."\'";
+			debugMsg("Replacing ".$parameterid." with ".$value."\n");
+			$sql =~ s/$parameterid/$value/g;
+		}
+	}
+	return $sql;
+}
 sub getTracksForPlaylist {
 	my $client = shift;
 	my $playlist = shift;
 	my $limit = shift;
+	my $parameters = shift;
+
 	my $sqlstatements = $playlist->{'sql'};
 	my $dbh = getCurrentDBH();
-	if(defined($playlist->{'parameters'})) {
-		my $parameters = $playlist->{'parameters'};
-		foreach my $i (keys %$parameters) {
-			my $value = $parameters->{$i}->{'value'};
-			my $parameterid = "\'PlaylistParameter".$parameters->{$i}->{'id'}."\'";
-			debugMsg("Replacing ".$parameterid." with ".$value."\n");
-			$sqlstatements =~ s/$parameterid/$value/g;
-		}
-	}
+	$sqlstatements = replaceParametersInSQL($sqlstatements,$parameters);
 	my $result= executeSQLForPlaylist($sqlstatements,$limit);
 	
 	return $result;
 }
 
-sub createSQL {
+sub parseParameter {
+	my $line = shift;
+	
+	if($line =~ /^\s*--\s*PlaylistParameter\s*\d\s*[:=]\s*/) {
+		$line =~ m/^\s*--\s*PlaylistParameter\s*(\d)\s*[:=]\s*([^:]+):\s*([^:]*):\s*(.*)$/;
+		my $parameterId = $1;
+		my $parameterType = $2;
+		my $parameterName = $3;
+		my $parameterDefinition = $4;
+
+		$parameterType =~ s/^\s+//;
+		$parameterType =~ s/\s+$//;
+
+		$parameterName =~ s/^\s+//;
+		$parameterName =~ s/\s+$//;
+
+		$parameterDefinition =~ s/^\s+//;
+		$parameterDefinition =~ s/\s+$//;
+
+		if($parameterId && $parameterName && $parameterType) {
+			my %parameter = (
+				'id' => $parameterId,
+				'type' => $parameterType,
+				'name' => $parameterName,
+				'definition' => $parameterDefinition
+			);
+			return \%parameter;
+			debugMsg("Adding parameter: $parameterId, $parameterType, $parameterName, $parameterDefinition\n");
+		}else {
+			debugMsg("Error in parameter: $line\n");
+			debugMsg("Parameter values: Id=$parameterId, Type=$parameterType, Name=$parameterName, Definition=$parameterDefinition\n");
+			return undef;
+		}
+	}
+	return undef;
+}	
+sub createSQLPlayList {
 	my $sqlstatements = shift;
 	my $sql = '';
+	my %parameters = undef;
     for my $line (split(/[\n\r]/,$sqlstatements)) {
         chomp $line;
 
-        # skip and strip comments & empty lines
+		my $parameter = parseParameter($line);
+		if(defined($parameter)) {
+			$parameters{$parameter->{'id'}} = $parameter;
+		}
+		
+		# skip and strip comments & empty lines
         $line =~ s/\s*--.*?$//o;
         $line =~ s/^\s*//o;
 
@@ -2240,7 +1926,18 @@ sub createSQL {
 		}
 		$sql .= $line;
     }
-    return $sql;
+    if($sql) {
+	    my %playlist = (
+	    	'sql' => $sql
+	    );
+	    if(defined(%parameters)) {
+	    	$playlist{'parameters'} = \%parameters;
+	    }
+	    	
+	    return \%playlist;
+	}else {
+		return undef;
+	}
 }
 sub executeSQLForPlaylist {
 	my $sqlstatements = shift;
@@ -2281,14 +1978,6 @@ sub executeSQLForPlaylist {
 	}
 	return \@result;
 }
-sub startDynamicPlaylist {
-	my $client = shift;
-	my $item = shift;
-	my $params = shift;
-	
-	my $playlist = getPlayList($client,$item->{'id'});
-	requestParametersAndPlayOrAdd($client,$playlist,$params->{'addonly'},undef);
-}
 sub getDynamicPlayLists {
 	my ($client) = @_;
 
@@ -2307,9 +1996,16 @@ sub getDynamicPlayLists {
 			'url' => "plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=".escape($playlist)
 		);
 		if(defined($current->{'parameters'})) {
-			$currentResult{'startfunction'} = \&startDynamicPlaylist,
-			$currentResult{'playurl'} = "plugins/SQLPlayList/sqlplaylist_mix.html?type=".escape($playlist)."&addOnly=0";
-			$currentResult{'addurl'} = "plugins/SQLPlayList/sqlplaylist_mix.html?type=".escape($playlist)."&addOnly=1";
+			my $parameters = $current->{'parameters'};
+			foreach my $pk (%$parameters) {
+				my %parameter = (
+					'id' => $pk,
+					'type' => $parameters->{$pk}->{'type'},
+					'name' => $parameters->{$pk}->{'name'},
+					'definition' => $parameters->{$pk}->{'definition'}
+				);
+				$currentResult{'parameters'}->{$pk} = \%parameter;
+			}
 		}
 		if($current->{'groups'} && scalar($current->{'groups'})>0) {
 			$currentResult{'groups'} = $current->{'groups'};
@@ -2321,11 +2017,11 @@ sub getDynamicPlayLists {
 }
 
 sub getNextDynamicPlayListTracks {
-	my ($client,$dynamicplaylist,$limit) = @_;
+	my ($client,$dynamicplaylist,$limit,$offset,$parameters) = @_;
 	
 	debugMsg("Getting tracks for: ".$dynamicplaylist->{'id'}."\n");
 	my $playlist = getPlayList($client,$dynamicplaylist->{'id'});
-	my $result = getTracksForPlaylist($client,$playlist,$limit);
+	my $result = getTracksForPlaylist($client,$playlist,$limit,$parameters);
 	
 	return \@{$result};
 }
@@ -2345,30 +2041,6 @@ sub validateTrueFalseWrapper {
 		return Slim::Utils::Validate::trueFalse($arg);
 	}else {
 		return Slim::Web::Setup::validateTrueFalse($arg);
-	}
-}
-
-sub objectForId {
-	my $type = shift;
-	my $id = shift;
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
-		if($type eq 'artist') {
-			$type = 'Contributor';
-		}elsif($type eq 'album') {
-			$type = 'Album';
-		}elsif($type eq 'genre') {
-			$type = 'Genre';
-		}elsif($type eq 'track') {
-			$type = 'Track';
-		}elsif($type eq 'playlist') {
-			$type = 'Playlist';
-		}
-		return Slim::Schema->resultset($type)->find($id);
-	}else {
-		if($type eq 'playlist') {
-			$type = 'track';
-		}
-		return getCurrentDS()->objectForId($type,$id);
 	}
 }
 
@@ -2464,9 +2136,6 @@ sub debugMsg
 
 sub strings {
 	return <<EOF;
-SQLPLAYLIST
-	EN	SQL Playlist
-
 PLUGIN_SQLPLAYLIST
 	EN	SQL Playlist
 
@@ -2493,9 +2162,6 @@ PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
 
 PLUGIN_SQLPLAYLIST_SHOW_MESSAGES
 	EN	Show debug messages
-
-PLUGIN_SQLPLAYLIST_WEB_SHOW_MIXERLINKS
-	EN	Show SQLPlayList button in browse pages
 
 PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
 	EN	Number of tracks
@@ -2656,8 +2322,32 @@ PLUGIN_SQLPLAYLIST_TEMPLATE_NOTREPEAT
 PLUGIN_SQLPLAYLIST_NEXT
 	EN	Next
 
-PLUGIN_SQLPLAYLIST_MIXPARAMETERS_TITLE
-	EN	Enter additional parameters for playlist
+PLUGIN_SQLPLAYLIST_TEST_CHOOSE_PARAMETERS
+	EN	This playlist requires parameters, please select values
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_PARAMETER_PLAYLISTS
+	EN	Playlists with user selectable parameters
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORYEAR
+	EN	Playlist with top rated songs (4 and 5) for user selectable year
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORGENRE
+	EN	Playlist with top rated songs (4 and 5) for user selectable genre
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORARTIST
+	EN	Playlist with top rated songs (4 and 5) for user selectable artist
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORALBUM
+	EN	Playlist with top rated songs (4 and 5) for user selectable album
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORPLAYLIST
+	EN	Playlist with top rated songs (4 and 5) for user selectable playlist
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATING
+	EN	Playlist with songs with user selectable rating
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATINGFORARTIST
+	EN	Playlist with songs with user selectable rating and artist
 EOF
 
 }
