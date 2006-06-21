@@ -54,6 +54,30 @@
 	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_TESTPLAYLIST" | string %]" onclick='document.editForm.testonly.value = "1";document.editForm.submit();'>
 	</td></tr>
 	</table>
+[% IF pluginSQLPlayListTestParameters %]
+	<br>
+	<strong>[% "PLUGIN_SQLPLAYLIST_TEST_CHOOSE_PARAMETERS" | string %]:</strong>
+	<br><br>
+	<input type="hidden" name="sqlplaylist_parameter_changed" value="">
+	<table>
+	[% FOREACH param IN pluginSQLPlayListTestParameters %]
+		<tr>
+		<td>[% param.parameter.name %]</td>
+		<td>&nbsp;</td>
+		<td>
+			<select name="sqlplaylist_parameter_[% param.parameter.id %]">
+			[%- FOREACH value = param.values %]
+				<option onClick='document.editForm.testonly.value = "1";document.editForm.sqlplaylist_parameter_changed.value="[% param.parameter.id %]";document.editForm.submit();return false;' value="[% value.id %]" [% IF param.value == value.id %]selected="selected"[% END %]>[% value.name | html %]</option>
+			[%- END %]
+			</select>
+		</td>
+		</tr>
+	[% END %]
+	<tr><td></td><td>&nbsp;</td><td>
+	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_NEXT" | string %]" onclick='document.editForm.testonly.value = "1";document.editForm.submit();'>
+	</td>
+	</table>
+[% END %]
 </form>
 [% IF pluginSQLPlayListEditPlayListTestResult %]
 	[% WRAPPER contentcontainer %]
