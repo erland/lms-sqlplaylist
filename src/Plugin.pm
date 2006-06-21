@@ -2348,6 +2348,9 @@ PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATING
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATINGFORARTIST
 	EN	Playlist with songs with user selectable rating and artist
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_TRACKSTAT_PLAYLISTS
+	EN	All the following playlists requires that the TrackStat plugin is installed
 EOF
 
 }
