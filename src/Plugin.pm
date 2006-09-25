@@ -30,7 +30,7 @@ use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
 use File::Spec::Functions qw(:ALL);
 
-if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+if ($::VERSION ge '6.5') {
 	eval "use Slim::Schema";
 }
 
@@ -560,7 +560,7 @@ sub getGenres {
 	my ($client) = @_;
 	my %clientGenres = ();
 
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
 		# Should use genre.name in following find, but a bug in find() doesn't allow this
         # XXXX - how does the above comment translate into DBIx::Class world?
         my $rs = Slim::Schema->search('Genre');
@@ -598,7 +598,7 @@ sub getArtists {
 	my ($client) =@_;
 	my %clientArtists = ();
 	
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
         my $rs = Slim::Schema->search('Contributor',undef,{'order_by' => 'name'});
 
 		for my $item ($rs->all) {
@@ -2046,7 +2046,7 @@ sub validateTrueFalseWrapper {
 
 sub objectForUrl {
 	my $url = shift;
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
 		return Slim::Schema->objectForUrl({
 			'url' => $url
 		});
@@ -2056,7 +2056,7 @@ sub objectForUrl {
 }
 
 sub getCurrentDBH {
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
 		return Slim::Schema->storage->dbh();
 	}else {
 		return Slim::Music::Info::getCurrentDataStore()->dbh();
@@ -2064,7 +2064,7 @@ sub getCurrentDBH {
 }
 
 sub getCurrentDS {
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
 		return 'Slim::Schema';
 	}else {
 		return Slim::Music::Info::getCurrentDataStore();
@@ -2090,7 +2090,7 @@ sub displayAsHTML {
 	my $form = shift;
 	my $item = shift;
 	
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
 		$item->displayAsHTML($form);
 	}else {
 		my $ds = getCurrentDS();
@@ -2102,7 +2102,7 @@ sub displayAsHTML {
 
 sub getLinkAttribute {
 	my $attr = shift;
-	if ($::VERSION ge '6.5' && $::REVISION ge '7505') {
+	if ($::VERSION ge '6.5') {
 		if($attr eq 'artist') {
 			$attr = 'contributor';
 		}
