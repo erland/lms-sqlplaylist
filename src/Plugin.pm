@@ -686,16 +686,32 @@ sub handleWebGenerateNewPlaylist {
 	my $maxYear = $params->{'maxtrackyear'};
 	my $minYear = $params->{'mintrackyear'};
 	my $notRepeat = $params->{'notrepeat'};
+	my $includeComment = getCommentString($params->{'includecomment'});
+	my $excludeComment = getCommentString($params->{'excludecomment'});
 	debugMsg("Genres = ".$genreListString."\n");
 	debugMsg("Artists = ".$artistListString."\n");
 	if($params->{'type'} eq "random") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
 		}
-		if($maxLengthValue>0) {
+		if($excludeComment) {
 			if($notRepeat) {
+				$sql .= " and\n\t";
+			}else {
+				$sql .= "\n\twhere ";
+			}
+			$sql .= "excludecomments.id is null";
+		}
+		if($maxLengthValue>0) {
+			if($excludeComment || $notRepeat) {
 				$sql .= " and\n\t";
 			}else {
 				$sql .= "\n\twhere ";
@@ -703,7 +719,7 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "tracks.secs<$maxLengthValue";
 		}
 		if($minLengthValue>0) {
-			if($maxLengthValue>0 || $notRepeat) {
+			if($maxLengthValue>0 || $excludeComment || $notRepeat) {
 				$sql .= " and \n\t"; 
 			}else {
 				$sql .= "\n\twhere ";
@@ -711,7 +727,7 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "tracks.secs>$minLengthValue";
 		}
 		if($maxYear>0) {
-			if($maxLengthValue>0 || $minLengthValue>0 || $notRepeat) {
+			if($maxLengthValue>0 || $minLengthValue>0 || $excludeComment || $notRepeat) {
 				$sql .= " and \n\t"; 
 			}else {
 				$sql .= "\n\twhere ";
@@ -719,17 +735,26 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "tracks.year<=$maxYear";
 		}
 		if($minYear>0) {
-			if($maxLengthValue>0 || $minLengthValue>0 || $maxYear>0 || $notRepeat) {
+			if($maxLengthValue>0 || $minLengthValue>0 || $maxYear>0 || $excludeComment || $notRepeat) {
 				$sql .= " and \n\t"; 
 			}else {
 				$sql .= "\n\twhere ";
 			}
 			$sql .= "tracks.year>=$minYear";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\norder by $orderBy limit 10;";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "includinggenres") {
 		my $sql = "select tracks.url from tracks \n\tjoin genre_track on\n\t\ttracks.id=genre_track.track\n\tjoin genres on\n\t\tgenre_track.genre=genres.id";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -738,6 +763,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "tracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenres.name in (";
 			$sql .= $genreListString;
@@ -755,10 +783,20 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "includinggenresincludingartists") {
 		my $sql = "select tracks.url from tracks\n\tjoin genre_track on\n\t\ttracks.id=genre_track.track\n\tjoin genres on\n\t\tgenre_track.genre=genres.id\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin contributors on\n\t\tcontributor_track.contributor=contributors.id";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -767,6 +805,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "tracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenres.name in (";
 			$sql .= $genreListString;
@@ -789,10 +830,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "includingartists") {
 		my $sql = "select tracks.url from tracks\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin contributors on\n\t\tcontributor_track.contributor=contributors.id";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -801,6 +849,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "tracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($artistListString ne "") {
 			$sql .= " and \n\t\tcontributors.name in (";
 			$sql .= $artistListString;
@@ -818,10 +869,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedincludinggenres") {
 		my $sql = "select tracks.url from tracks\n\tjoin genre_track on\n\t\ttracks.id=genre_track.track\n\tjoin genres on\n\t\tgenre_track.genre=genres.id\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -830,6 +888,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenres.name in (";
 			$sql .= $genreListString;
@@ -847,10 +908,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedincludingartists") {
 		my $sql = "select tracks.url from tracks\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin contributors on\n\t\tcontributor_track.contributor=contributors.id\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -859,6 +927,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($artistListString ne "") {
 			$sql .= " and \n\t\tcontributors.name in (";
 			$sql .= $artistListString;
@@ -876,10 +947,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedincludinggenresincludingartists") {
 		my $sql = "select tracks.url from tracks\n\tjoin genre_track on\n\t\ttracks.id=genre_track.track\n\tjoin genres on\n\t\tgenre_track.genre=genres.id\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin contributors on\n\t\tcontributor_track.contributor=contributors.id\n\tjoin track_statistics on \n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -888,6 +966,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenres.name in (";
 			$sql .= $genreListString;
@@ -910,11 +991,19 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludinggenres") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
-		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		$sql .= "select distinct tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
+		$sql .= "\n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenre_track_withname.name in(";
 			$sql .= $genreListString;
@@ -931,6 +1020,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "genre_track_withname.track is null and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -943,12 +1035,20 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludingartists") {
 		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
-		$sql .= "select distinct tracks.url from tracks \n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
+		$sql .= "select distinct tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
+		$sql .= "\n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
 		if($artistListString ne "") {
 			$sql .= " and \n\t\tcontributor_track_withname.name in(";
 			$sql .= $artistListString;
@@ -965,6 +1065,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "contributor_track_withname.track is null and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -977,13 +1080,21 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table contributor_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludinggenresexcludingartists") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
 		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
-		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		$sql .= "select distinct tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
+		$sql .= "\n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenre_track_withname.name in(";
 			$sql .= $genreListString;
@@ -1009,6 +1120,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "contributor_track_withname.track is null and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1021,12 +1135,19 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table contributor_track_withname;\n";
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludinggenressqlite") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1043,6 +1164,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\t\t\ttrack=tracks.id) and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1054,11 +1178,20 @@ sub handleWebGenerateNewPlaylist {
 		}
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
+		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
 		}
 		$sql .= "\n\t\torder by $orderBy limit 10;\n\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludingartistssqlite") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1075,6 +1208,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\t\t\ttrack=tracks.id) and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1087,10 +1223,19 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\n\t\torder by $orderBy limit 10;\n\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "excludinggenresexcludingartistssqlite") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1115,6 +1260,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\t\t\ttrack=tracks.id) and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1127,11 +1275,21 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\n\t\torder by $orderBy limit 10;\n\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludinggenres") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
-		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		$sql .= "select distinct tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
+		$sql .= "\n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenre_track_withname.name in(";
 			$sql .= $genreListString;
@@ -1149,6 +1307,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "genre_track_withname.track is null and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1161,12 +1322,20 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludingartists") {
 		my $sql = "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
-		$sql .= "select distinct tracks.url from tracks \n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
+		$sql .= "select distinct tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
+		$sql .= "\n\tleft join contributor_track_withname on \n\t\ttracks.id=contributor_track_withname.track";
 		if($artistListString ne "") {
 			$sql .= " and \n\t\tcontributor_track_withname.name in(";
 			$sql .= $artistListString;
@@ -1184,6 +1353,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "contributor_track_withname.track is null and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1196,13 +1368,21 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table contributor_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludinggenresexcludingartists") {
 		my $sql = "create temporary table genre_track_withname \n\t(primary key (track,genre)) \n\tselect genre_track.track,genre_track.genre,genres.name,genres.namesort \n\t\tfrom genre_track,genres \n\t\twhere genre_track.genre=genres.id;\n\n";
 		$sql .= "create temporary table contributor_track_withname \n\t(primary key (track,contributor)) \n\tselect distinct contributor_track.track,contributor_track.contributor,contributors.name,contributors.namesort \n\t\tfrom contributor_track,contributors \n\t\twhere contributor_track.contributor=contributors.id;\n\n";
-		$sql .= "select distinct tracks.url from tracks \n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
+		$sql .= "select distinct tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
+		$sql .= "\n\tleft join genre_track_withname on \n\t\ttracks.id=genre_track_withname.track";
 		if($genreListString ne "") {
 			$sql .= " and \n\t\tgenre_track_withname.name in(";
 			$sql .= $genreListString;
@@ -1229,6 +1409,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "contributor_track_withname.track is null and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1241,12 +1424,19 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$sql .= "drop temporary table contributor_track_withname;\n";
 		$sql .= "drop temporary table genre_track_withname;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludinggenressqlite") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
@@ -1264,6 +1454,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\t\t\ttrack=tracks.id) and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1276,10 +1469,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludingartistssqlite") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
@@ -1297,6 +1497,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\t\t\ttrack=tracks.id) and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1309,10 +1512,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedexcludinggenresexcludingartistssqlite") {
 		my $sql = "select tracks.url from tracks";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		$sql .= "\n\tleft join track_statistics on\n\t\ttrack_statistics.url=tracks.url";
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
@@ -1338,6 +1548,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\t\t\ttrack=tracks.id) and ";
 		}
 		$sql .= "\n\t\ttracks.audio=1 and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1350,10 +1563,17 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\torder by $orderBy limit 10;\n\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "toprated") {
 		my $sql = "select tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1362,6 +1582,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "track_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1374,11 +1597,20 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\n\torder by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "withspecificrating") {
 		my $sql = "-- PlaylistParameter1:list:Select rating:20:*,40:**,60:***,80:****,100:*****";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1387,6 +1619,9 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "track_statistics.rating=\'PlaylistParameter1\'";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1399,11 +1634,20 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\n\torder by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedforyear") {
 		my $sql = "-- PlaylistParameter1:year:Select year:";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1412,17 +1656,29 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "tracks.year=\'PlaylistParameter1\' and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\n\torder by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedforalbum") {
 		my $sql = "-- PlaylistParameter1:album:Select album:";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin track_statistics on\n\t\ttracks.url = track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1431,17 +1687,29 @@ sub handleWebGenerateNewPlaylist {
 			$sql .= "\n\twhere ";
 		}
 		$sql .= "tracks.album=\'PlaylistParameter1\' and\n\t\ttrack_statistics.rating>=80";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		if($includeComment) {
+			$sql .= "\ngroup by tracks.id";
+		}
 		$sql .= "\n\torder by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedforgenre") {
 		my $sql = "-- PlaylistParameter1:genre:Select genre:";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin genre_track on\n\t\ttracks.id=genre_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1451,6 +1719,9 @@ sub handleWebGenerateNewPlaylist {
 		}
 		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
 		$sql .= " and \n\t\tgenre_track.genre=\'PlaylistParameter1\'";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
@@ -1463,11 +1734,18 @@ sub handleWebGenerateNewPlaylist {
 		if($minYear>0) {
 			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedforartist") {
 		my $sql = "-- PlaylistParameter1:artist:Select artist:";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1477,17 +1755,27 @@ sub handleWebGenerateNewPlaylist {
 		}
 		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
 		$sql .= " and \n\t\tcontributor_track.contributor=\'PlaylistParameter1\'";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "topratedforplaylist") {
 		my $sql = "-- PlaylistParameter1:playlist:Select playlist:";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin playlist_track on\n\t\ttracks.id=playlist_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1497,18 +1785,28 @@ sub handleWebGenerateNewPlaylist {
 		}
 		$sql .= "track_statistics.rating>=80 and\n\t\ttracks.audio=1";
 		$sql .= " and \n\t\tplaylist_track.playlist=\'PlaylistParameter1\'";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}elsif($params->{'type'} eq "withspecificratingforartist") {
 		my $sql = "-- PlaylistParameter1:list:Select rating:20:*,40:**,60:***,80:****,100:*****";
 		$sql .= "\n-- PlaylistParameter2:custom:Select artist:select contributors.id,contributors.name from tracks join contributor_track on tracks.id=contributor_track.track join contributors on contributor_track.contributor=contributors.id left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating=\'PlaylistParameter1\' group by contributors.id order by contributors.namesort";
 		$sql .= "\nselect tracks.url from tracks\n\tjoin contributor_track on\n\t\ttracks.id=contributor_track.track\n\tjoin track_statistics on\n\t\ttracks.url=track_statistics.url";
+		if($includeComment) {
+			$sql .= "\n\tjoin comments on\n\t\ttracks.id=comments.track and comments.value like $includeComment"
+		}
+		if($excludeComment) {
+			$sql .= "\n\tleft join comments as excludecomments on\n\t\ttracks.id=excludecomments.track and excludecomments.value like $excludeComment"
+		}
 		if($notRepeat) {
 			$sql .= "\n\tleft join dynamicplaylist_history on\n\t\ttracks.id=dynamicplaylist_history.id";
 			$sql .= "\n\twhere dynamicplaylist_history.id is null";
@@ -1518,12 +1816,16 @@ sub handleWebGenerateNewPlaylist {
 		}
 		$sql .= "track_statistics.rating=\'PlaylistParameter1\' and\n\t\ttracks.audio=1";
 		$sql .= " and \n\t\tcontributor_track.contributor=\'PlaylistParameter2\'";
+		if($excludeComment) {
+			$sql .= " and \n\t\texcludecomments.id is null";
+		}
 		if($maxLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs<$maxLengthValue";
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
 	}
@@ -1549,6 +1851,14 @@ sub getGenreListString {
 	return $sql;
 }	
 
+sub getCommentString {
+	my $comment = shift;
+	my $dbh = getCurrentDBH();
+	if($comment) {
+		$comment = $dbh->quote("%".$comment."%");
+	}	
+	return $comment;
+}
 sub getArtistListString {
 	my ($client,$params) = @_;
 	
@@ -2351,6 +2661,12 @@ PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATINGFORARTIST
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_TRACKSTAT_PLAYLISTS
 	EN	All the following playlists requires that the TrackStat plugin is installed
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDE_COMMENT
+	EN	Include tracks with COMMENT tag
+
+PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDE_COMMENT
+	EN	Exclude tracks with COMMENT tag
 EOF
 
 }

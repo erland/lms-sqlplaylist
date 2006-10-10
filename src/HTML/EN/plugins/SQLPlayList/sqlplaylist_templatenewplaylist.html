@@ -36,6 +36,8 @@ href="[% webroot %]plugins/SQLPlayList/sqlplaylist_generatenewplaylist.html?type
 		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_MINTRACKYEAR" | string %]</td><td><input type="text" name="mintrackyear" value=""></td></tr>
 		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_MAXTRACKYEAR" | string %]</td><td><input type="text" name="maxtrackyear" value=""></td></tr>
 		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_NOTREPEAT" | string %]</td><td><input type="checkbox" name="notrepeat" value="1"></td></tr>
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDE_COMMENT" | string %]</td><td><input type="text" name="includecomment" value=""></td></tr>
+		<tr><td>[% "PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDE_COMMENT" | string %]</td><td><input type="text" name="excludecomment" value=""></td></tr>
 	</table>
 		
 	<table border="0">[% USE table pluginSQLPlayListGenreList.keys.sort, cols=3, pad=0 %]
