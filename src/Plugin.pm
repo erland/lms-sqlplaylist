@@ -682,9 +682,21 @@ sub handleWebGenerateNewPlaylist {
 	my $genreListString = Slim::Utils::Unicode::utf8decode(getGenreListString($client,$params),'utf8');
 	my $artistListString = Slim::Utils::Unicode::utf8decode(getArtistListString($client,$params),'utf8');
 	my $maxLengthValue = $params->{'maxtracklength'};
+	if(!defined($maxLengthValue)) {
+		$maxLengthValue=0;
+	}
 	my $minLengthValue = $params->{'mintracklength'};
+	if(!defined($minLengthValue)) {
+		$minLengthValue=0;
+	}
 	my $maxYear = $params->{'maxtrackyear'};
+	if(!defined($maxYear)) {
+		$maxYear=0;
+	}
 	my $minYear = $params->{'mintrackyear'};
+	if(!defined($minYear)) {
+		$minYear=0;
+	}
 	my $notRepeat = $params->{'notrepeat'};
 	my $includeComment = getCommentString($params->{'includecomment'});
 	my $excludeComment = getCommentString($params->{'excludecomment'});
@@ -1696,6 +1708,12 @@ sub handleWebGenerateNewPlaylist {
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		if($maxYear>0) {
+			$sql .= " and\n\t\ttracks.year<=$maxYear";
+		}
+		if($minYear>0) {
+			$sql .= " and\n\t\ttracks.year>=$minYear";
+		}
 		if($includeComment) {
 			$sql .= "\ngroup by tracks.id";
 		}
@@ -1764,6 +1782,12 @@ sub handleWebGenerateNewPlaylist {
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
 		}
+		if($maxYear>0) {
+			$sql .= " and\n\t\ttracks.year<=$maxYear";
+		}
+		if($minYear>0) {
+			$sql .= " and\n\t\ttracks.year>=$minYear";
+		}
 		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
 		$params->{'pluginSQLPlayListEditPlayListText'} = $sql;
@@ -1793,6 +1817,12 @@ sub handleWebGenerateNewPlaylist {
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		if($maxYear>0) {
+			$sql .= " and\n\t\ttracks.year<=$maxYear";
+		}
+		if($minYear>0) {
+			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
 		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
@@ -1824,6 +1854,12 @@ sub handleWebGenerateNewPlaylist {
 		}
 		if($minLengthValue>0) {
 			$sql .= " and\n\t\ttracks.secs>$minLengthValue";
+		}
+		if($maxYear>0) {
+			$sql .= " and\n\t\ttracks.year<=$maxYear";
+		}
+		if($minYear>0) {
+			$sql .= " and\n\t\ttracks.year>=$minYear";
 		}
 		$sql .= "\ngroup by tracks.id";
 		$sql .= "\n\t order by $orderBy limit 10;\n";
@@ -2210,7 +2246,7 @@ sub parseParameter {
 sub createSQLPlayList {
 	my $sqlstatements = shift;
 	my $sql = '';
-	my %parameters = undef;
+	my %parameters = ();
     for my $line (split(/[\n\r]/,$sqlstatements)) {
         chomp $line;
 
