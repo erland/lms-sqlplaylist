@@ -840,14 +840,9 @@ sub handleWebNewPlaylist {
 		$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($playlistFile);
 	        return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylist.html', $params);
 	}else {
-		my %templateParameters = ();
-		for my $p (keys %$params) {
-			if($p =~ /^playlistparameter_/) {
-				$templateParameters{$p}=$params->{$p};
-			}
-		}
+		my $templateParameters = getParameterArray($params,"playlistparameter_");
 		$playlistFile .= ".sql.values";
-		$params->{'pluginSQLPlayListEditPlayListParameters'} = \%templateParameters;
+		$params->{'pluginSQLPlayListEditPlayListParameters'} = $templateParameters;
 		$params->{'pluginSQLPlayListNewPlayListTemplate'} = $params->{'playlisttemplate'};
 		$params->{'pluginSQLPlayListEditPlayListFile'} = $playlistFile;
 		$params->{'pluginSQLPlayListEditPlayListFileUnescaped'} = unescape($playlistFile);
@@ -879,13 +874,8 @@ sub handleWebSaveNewSimplePlaylist {
 	}
 
 	if(!saveSimplePlaylist($client,$params,$url)) {
-		my %templateParameters = ();
-		for my $p (keys %$params) {
-			if($p =~ /^playlistparameter_/) {
-				$templateParameters{$p}=$params->{$p};
-			}
-		}
-		$params->{'pluginSQLPlayListEditPlayListParameters'} = \%templateParameters;
+		my $templateParameters = getParameterArray($params,"playlistparameter_");
+		$params->{'pluginSQLPlayListEditPlayListParameters'} = $templateParameters;
 		$params->{'pluginSQLPlayListNewPlayListTemplate'}=$params->{'playlisttemplate'};
 		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newsimpleplaylist.html', $params);
 	}else {
@@ -2299,6 +2289,7 @@ sub getValueOfTemplateParameter {
 	my $parameter = shift;
 
 	my $dbh = getCurrentDBH();
+	my $result = undef;
 	if($parameter->{'type'} =~ /.*multiplelist$/ || $parameter->{'type'} =~ /.*checkboxes$/) {
 		my $selectedValues = undef;
 		if($parameter->{'type'} =~ /.*multiplelist$/) {
@@ -2307,7 +2298,6 @@ sub getValueOfTemplateParameter {
 			$selectedValues = getCheckBoxesQueryParameter($params,'playlistparameter_'.$parameter->{'id'});
 		}
 		my $values = $parameter->{'values'};
-		my $result = undef;
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
 				if(defined($result)) {
@@ -2323,11 +2313,9 @@ sub getValueOfTemplateParameter {
 		if(!defined($result)) {
 			$result = '';
 		}
-		return $result;
 	}elsif($parameter->{'type'} =~ /.*singlelist$/) {
 		my $values = $parameter->{'values'};
 		my $selectedValue = $params->{'playlistparameter_'.$parameter->{'id'}};
-		my $result = undef;
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
 				if($parameter->{'quotevalue'}) {
@@ -2341,18 +2329,22 @@ sub getValueOfTemplateParameter {
 		if(!defined($result)) {
 			$result = '';
 		}
-		return $result;
 	}else{
 		if($params->{'playlistparameter_'.$parameter->{'id'}}) {
 			if($parameter->{'quotevalue'}) {
-				return $dbh->quote(encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\""));
+				$result = $dbh->quote(encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\""));
 			}else {
-				return encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\"");
+				$result = encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\"");
 			}
 		}else {
-			return '';
+			$result = '';
 		}
 	}
+	if(defined($result)) {
+		$result = Slim::Utils::Unicode::utf8on($result);
+		$result = Slim::Utils::Unicode::utf8encode_locale($result);
+	}
+	return $result;
 }
 
 sub getXMLValueOfTemplateParameter {
@@ -2360,6 +2352,7 @@ sub getXMLValueOfTemplateParameter {
 	my $parameter = shift;
 
 	my $dbh = getCurrentDBH();
+	my $result = undef;
 	if($parameter->{'type'} =~ /.*multiplelist$/ || $parameter->{'type'} =~ /.*checkboxes$/) {
 		my $selectedValues = undef;
 		if($parameter->{'type'} =~ /.*multiplelist$/) {
@@ -2368,7 +2361,6 @@ sub getXMLValueOfTemplateParameter {
 			$selectedValues = getCheckBoxesQueryParameter($params,'playlistparameter_'.$parameter->{'id'});
 		}
 		my $values = $parameter->{'values'};
-		my $result = undef;
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
 				$result = $result.'<value>';
@@ -2383,37 +2375,40 @@ sub getXMLValueOfTemplateParameter {
 		if(!defined($result)) {
 			$result = '';
 		}
-		return $result;
 	}elsif($parameter->{'type'} =~ /.*singlelist$/) {
 		my $values = $parameter->{'values'};
 		my $selectedValue = $params->{'playlistparameter_'.$parameter->{'id'}};
-		my $result = undef;
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
-				$result = $result.'<value>';
+				$result = '<value>';
 				if($parameter->{'quotevalue'}) {
-					$result = encode_entities($item->{'value'},"&<>\'\"");
+					$result .= encode_entities($item->{'value'},"&<>\'\"");
 				}else {
-					$result = encode_entities($item->{'value'},"&<>\'\"");
+					$result .= encode_entities($item->{'value'},"&<>\'\"");
 				}
-				$result = $result.'</value>';
+				$result .= '</value>';
 				last;
 			}
 		}
 		if(!defined($result)) {
 			$result = '';
 		}
-		return $result;
 	}else{
 		if(defined($params->{'playlistparameter_'.$parameter->{'id'}}) && $params->{'playlistparameter_'.$parameter->{'id'}} ne '') {
 			if($parameter->{'quotevalue'}) {
-				return '<value>'.encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\"").'</value>';
+				$result = '<value>'.encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\"").'</value>';
 			}else {
-				return '<value>'.encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\"").'</value>';
+				$result = '<value>'.encode_entities($params->{'playlistparameter_'.$parameter->{'id'}},"&<>\'\"").'</value>';
 			}
+		}else {
+			$result = '';
 		}
-		return '';
 	}
+	if(defined($result)) {
+		$result = Slim::Utils::Unicode::utf8on($result);
+		$result = Slim::Utils::Unicode::utf8encode_locale($result);
+	}
+	return $result;
 }
 
 
@@ -2426,8 +2421,8 @@ sub getMultipleListQueryParameter {
 	if($query) {
 		foreach my $param (split /\&/, $query) {
 			if ($param =~ /([^=]+)=(.*)/) {
-				my $name  = unescape($1);
-				my $value = unescape($2);
+				my $name  = unescape($1,1);
+				my $value = unescape($2,1);
 				if($name eq $parameter) {
 					# We need to turn perl's internal
 					# representation of the unescaped
@@ -2443,6 +2438,38 @@ sub getMultipleListQueryParameter {
 		}
 	}
 	return \%result;
+}
+
+sub getParameterArray {
+	my $params = shift;
+	my $prefix = shift;
+
+	my $query = $params->{url_query};
+	my @result = ();
+	if($query) {
+		foreach my $param (split /\&/, $query) {
+			if ($param =~ /([^=]+)=(.*)/) {
+				my $name  = unescape($1,1);
+				my $value = unescape($2,1);
+				if($name =~ /^$prefix/) {
+					# We need to turn perl's internal
+					# representation of the unescaped
+					# UTF-8 string into a "real" UTF-8
+					# string with the appropriate magic set.
+					if ($value ne '*' && $value ne '') {
+						$value = Slim::Utils::Unicode::utf8on($value);
+						$value = Slim::Utils::Unicode::utf8encode_locale($value);
+					}
+					my %parameter = (
+						'id' => $name,
+						'value' => $value
+					);
+					push @result,\%parameter;
+				}
+			}
+		}
+	}
+	return \@result;
 }
 
 sub getCheckBoxesQueryParameter {
@@ -2828,8 +2855,8 @@ sub getArtistListString {
 	if($query) {
         foreach my $param (split /\&/, $query) {
             if ($param =~ /([^=]+)=(.*)/) {
-                my $name  = unescape($1);
-                my $value = unescape($2);
+                my $name  = unescape($1,1);
+                my $value = unescape($2,1);
                 debugMsg("Got $name=$value\n");
                 if($name eq 'artistList') {
                     # We need to turn perl's internal

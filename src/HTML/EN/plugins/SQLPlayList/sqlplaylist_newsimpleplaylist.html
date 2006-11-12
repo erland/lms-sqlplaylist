@@ -25,8 +25,8 @@
 	</td><td>
 	<input type="text" name="file" value="[% pluginSQLPlayListEditPlayListFileUnescaped %]">
 	</td></tr>
-	[%- FOREACH parameter IN pluginSQLPlayListEditPlayListParameters.keys.sort %]
-		<input type="hidden" name="[% parameter %]" value="[% pluginSQLPlayListEditPlayListParameters.$parameter | html %]">
+	[%- FOREACH parameter IN pluginSQLPlayListEditPlayListParameters %]
+		<input type="hidden" name="[% parameter.id %]" value="[% parameter.value %]">
 	[% END %]
 	<input type="hidden" name="playlisttemplate" value="[% pluginSQLPlayListNewPlayListTemplate %]">
 	[% IF pluginSQLPlayListError %]
