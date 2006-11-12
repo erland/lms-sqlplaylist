@@ -39,11 +39,6 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 	[% END %]
 [% END %]
 
-<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_settings.html" name="genreForm">
-	<input type="hidden" name="type" value="">
-	<input type="hidden" name="addOnly" value="0">
-	<input type="hidden" name="player" value="[% player %]">
-
 	[% IF player == '' %]
 		[% "NO_PLAYER_FOUND" | string %]
 	[% ELSE %]
@@ -107,5 +102,4 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 				<tr><td colspan="4"><br><br><strong>[% pluginSQLPlayListError %]</strong></td></tr>
 			[% END %]
 		[% END %]
-</form>
 [% PROCESS pagefooter.html %]
