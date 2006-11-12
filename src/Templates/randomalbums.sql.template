@@ -1,0 +1,70 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+-- PlaylistOption Unlimited:1
+create temporary table sqlplaylist_random_albums (primary key (album)) 
+	select tracks.album from tracks
+		[%- IF includedgenres %]
+		join genre_track on
+			tracks.id=genre_track.track
+		join genres on
+			genre_track.genre=genres.id
+		[%- END %]
+		[%- IF notrepeat %]
+		left join dynamicplaylist_history on
+			tracks.id=dynamicplaylist_history.id
+		[%- END %]
+		where
+			audio=1
+		[%- IF notrepeat %]
+			and dynamicplaylist_history.id is null
+		[%- END %]
+		[%- IF includedgenres %]
+			and genres.name in ([% includedgenres %])
+		[%- END %]
+		[%- IF excludedgenres %]
+			and not exists (select * from tracks t2,genre_track,genres
+							where
+								t2.id=tracks.id and
+								tracks.id=genre_track.track and 
+								genre_track.genre=genres.id and
+								genres.name in ([% excludedgenres %]))
+		[%- END %]
+		[%- IF includedgenres or notrepeat %]
+		group by tracks.album
+		[%- END %]
+		order by rand()
+		limit 1;
+select tracks.url from tracks
+	join sqlplaylist_random_albums 
+		on tracks.album=sqlplaylist_random_albums.album
+	[%- IF includedgenres %]
+	join genre_track on
+		tracks.id=genre_track.track
+	join genres on
+		genre_track.genre=genres.id
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	where
+		audio=1
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	[%- IF includedgenres %]
+		and genres.name in ([% includedgenres %])
+	[%- END %]
+	[%- IF excludedgenres %]
+		and not exists (select * from tracks t2,genre_track,genres
+						where
+							t2.id=tracks.id and
+							tracks.id=genre_track.track and 
+							genre_track.genre=genres.id and
+							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF includedgenres or notrepeat %]
+	group by tracks.id
+	[%- END %]
+	order by sqlplaylist_random_albums.album,tracks.tracknum;
+drop temporary table sqlplaylist_random_albums;

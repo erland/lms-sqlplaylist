@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<template>
+		<id>randomalbums.sql.xml</id>
+		<parameter type="text" id="playlistname"><value>Random albums</value></parameter>
+		<parameter type="text" id="playlistgroups"><value>Random</value></parameter>
+		<parameter type="text" id="notrepeat"><value>1</value></parameter>
+		<parameter type="text" id="includedgenres" quotevalue="1"></parameter>
+		<parameter type="text" id="excludedgenres" quotevalue="1"></parameter>
+	</template>
+</sqlplaylist>

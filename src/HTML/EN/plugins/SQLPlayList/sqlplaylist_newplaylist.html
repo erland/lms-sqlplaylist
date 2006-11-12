@@ -20,9 +20,11 @@
 [% IF !pluginSQLPlayListSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
+[% PROCESS plugins/SQLPlayList/catchtab.js %]
 
 <form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_savenewplaylist.html" name="editForm" accept-charset="iso8859-1">
 	<input type="hidden" name="testonly" value=""/>
+	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
 	<table>
 	<tr><td>
 	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_FILENAME" | string %]:
@@ -42,7 +44,7 @@
 	<tr valign="top"><td>
 	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_QUERY" | string %]: 
 	</td><td>
-	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off">[% pluginSQLPlayListEditPlayListText %]</textarea>
+	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% pluginSQLPlayListEditPlayListText %]</textarea>
 	</td></tr>
 	[% IF pluginSQLPlayListError %]
 	<tr><td colspan="2">

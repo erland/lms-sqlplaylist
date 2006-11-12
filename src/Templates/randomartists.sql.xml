@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<template>
+		<name>Random Artists</name>
+		<description>Random artists playlist with possibillity to include/exclude genres</description>
+		<parameter type="text" id="playlistname" name="Playlist name" value="Random artists"/>
+		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
+		<parameter type="sqlcheckboxes" id="includedgenres" name="Include genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
+		<parameter type="sqlcheckboxes" id="excludedgenres" name="Exclude genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
+		<parameter type="text" id="nooftracks" name="Number of songs per artist" value="20"/>
+	</template>
+</sqlplaylist>
+

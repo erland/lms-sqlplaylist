@@ -20,10 +20,15 @@
 [% IF !pluginSQLPlayListSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
+[% PROCESS plugins/SQLPlayList/catchtab.js %]
 
 <form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_saveplaylist.html" name="editForm" accept-charset="iso8859-1">
 	<input type="hidden" name="testonly" value=""/>
+	<input type="hidden" name="play" value=""/>
 	<input type="hidden" name="file" value="[% pluginSQLPlayListEditPlayListFile %]">
+	[% IF pluginSQLPlayListEditPlayListDeleteSimple %]<input type="hidden" name="deletesimple" value="[% pluginSQLPlayListEditPlayListDeleteSimple %]">[% END %]
+	[% IF pluginSQLPlayListEditPlayListType %]<input type="hidden" name="type" value="[% pluginSQLPlayListEditPlayListType %]">[% END %]
+	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
 	<table>
 	<tr><td>
 	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_FILENAME" | string %]: 
@@ -43,16 +48,17 @@
 	<tr valign="top"><td>
 	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_QUERY" | string %]: 
 	</td><td>
-	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off">[% pluginSQLPlayListEditPlayListText %]</textarea>
+	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% pluginSQLPlayListEditPlayListText %]</textarea>
 	</td></tr>
 	[% IF pluginSQLPlayListError %]
 	<tr><td colspan="2">
-	<br>Error: [% pluginSQLPlayListError %]<br>
+	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
 	</td></tr>
 	[% END %]
 	<tr><td></td><td>
 	<input type="submit" value="[% "SAVE" | string %]">
 	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_TESTPLAYLIST" | string %]" onclick='document.editForm.testonly.value = "1";document.editForm.submit();'>
+	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_SAVEPLAY" | string %]" onclick='document.editForm.play.value = "1";document.editForm.submit();'>
 	</td></tr>
 	</table>
 [% IF pluginSQLPlayListTestParameters %]

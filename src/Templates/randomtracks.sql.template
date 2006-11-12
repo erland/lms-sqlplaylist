@@ -1,0 +1,34 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+select tracks.url from tracks
+	[%- IF includedgenres %]
+	join genre_track on
+		tracks.id=genre_track.track
+	join genres on
+		genre_track.genre=genres.id
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	where
+		audio=1
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	[%- IF includedgenres %]
+		and genres.name in ([% includedgenres %])
+	[%- END %]
+	[%- IF excludedgenres %]
+		and not exists (select * from tracks t2,genre_track,genres
+						where
+							t2.id=tracks.id and
+							tracks.id=genre_track.track and 
+							genre_track.genre=genres.id and
+							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF includedgenres%]
+	group by tracks.id
+	[%- END %]
+	order by rand()
+	limit 10;

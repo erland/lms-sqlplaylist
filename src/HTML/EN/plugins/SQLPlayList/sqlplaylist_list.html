@@ -57,22 +57,12 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 				[% odd = 1 %]
 				[% FOREACH type IN pluginSQLPlayListPlayLists.keys %]
 					[% BLOCK controls %]
-						[% IF pluginSQLPlayListSlimserver65 %]
-							<div id="sqlplaylist_resultlist_controls">
-							<div id="sqlplaylist_resultlist_controls_inner">
-							[% PROCESS dynamicPlayListLink type="$type" addOnly="0" %]
-							[% PROCESS dynamicPlayListLink type="$type" addOnly="1" %]
-							</div>
-						[% END %]
-						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST" | string %]</a>
+						[%- IF !pluginSQLPlayListPlayLists.$type.defaultplaylist %]
 						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_removeplaylist.html?type=[% type |uri %]&player=[% player | uri %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST" | string %]</a>
-						&nbsp;&nbsp;
-						[% IF pluginSQLPlayListSlimserver65 %]
-							</div>
-						[% ELSE %]
-							[% PROCESS dynamicPlayListLink type="$type" addOnly="0" %]
-							[% PROCESS dynamicPlayListLink type="$type" addOnly="1" %]
-						[% END %]
+						[%- END %]
+						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST" | string %]</a>
+						[% PROCESS dynamicPlayListLink type="$type" addOnly="0" %]
+						[% PROCESS dynamicPlayListLink type="$type" addOnly="1" %]
 					[% END %]
 					[%- WRAPPER contentitem controls='controls' %]
 						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% pluginSQLPlayListPlayLists.$type.name %]</a>
@@ -111,7 +101,7 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 			</tr>
 
 			<tr>
-				<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylist.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a></td>
+				<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylisttypes.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a></td>
 			</tr>
 			[% IF pluginSQLPlayListError %]
 				<tr><td colspan="4"><br><br><strong>[% pluginSQLPlayListError %]</strong></td></tr>

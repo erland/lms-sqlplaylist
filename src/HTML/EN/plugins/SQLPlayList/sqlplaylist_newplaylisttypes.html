@@ -1,0 +1,37 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
+ 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+	[% PROCESS plugins/SQLPlayList/css65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+	[% IF pluginSQLPlayListNowPlaying != '' %]
+		<strong>[% "NOW_PLAYING" | string %]:</strong>
+		<span class="exboldnowplaying">[% pluginSQLPlayListNowPlaying %]</span>
+	[% END %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+<table border="0" width="100%">
+	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST_TYPES_TITLE" | string %]</b></td></tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	[% odd = 1 %]
+	[%- FOREACH playlist IN pluginSQLPlayListTemplates %]
+		<tr>
+			<td class="[% IF odd %]odd[% ELSE %]even[% END %]"><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylistparameters.html?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]">[% playlist.name %]</a></td>
+			<td class="[% IF odd %]odd[% ELSE %]even[% END %]">&nbsp;&nbsp;&nbsp;</td>
+			<td class="[% IF odd %]odd[% ELSE %]even[% END %]"><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylistparameters.html?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]">[% playlist.description %]</a></td>
+		</tr>
+		[% odd = !odd %]
+	[%- END %]
+</table>
+[% PROCESS pagefooter.html %]

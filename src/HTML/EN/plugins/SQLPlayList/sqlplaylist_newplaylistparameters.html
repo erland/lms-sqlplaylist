@@ -1,0 +1,89 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF !pluginCustomBrowseSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+	[% PROCESS plugins/SQLPlayList/css65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+<table border="0">
+<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylist.html" name="editForm" accept-charset="iso8859-1">
+	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST_PARAMETERS_TITLE" | string %]</b></td></tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	[%- FOREACH parameter = pluginSQLPlayListNewPlayListParameters %]
+		<tr>
+			<td>[% parameter.name %]</td>
+			<td>&nbsp;&nbsp;&nbsp;</td>
+			<td>
+			[% IF parameter.type == 'text' %]
+				<input type="text" name="playlistparameter_[% parameter.id %]" value="[% parameter.value %]">
+			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'sqlsinglelist'%]
+				<table border="0">
+					<tr><td>
+						<select name="playlistparameter_[% parameter.id %]">
+						[%- FOREACH item = parameter.values %]
+							[%- itemid = item.id %]
+							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]">[% item.name | html %]</option>
+						[%- END %]
+						</select>
+					</td></tr>
+				</table>
+			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'sqlmultiplelist'%]
+				<table border="0">
+					<tr><td>
+						<select name="playlistparameter_[% parameter.id %]" multiple size="10">
+						[%- FOREACH item = parameter.values %]
+							[%- itemid = item.id %]
+							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]">[% item.name | html %]</option>
+						[%- END %]
+						</select>
+					</td></tr>
+				</table>
+			[% ELSIF parameter.type == 'checkbox' %]
+				<input type="checkbox" name="playlistparameter_[% parameter.id %]" id="playlistparameter_[% parameter.id %]" value="1" [% parameter.value ? "checked" : "" %]>
+			[% ELSIF parameter.type == 'checkboxes' or parameter.type == 'sqlcheckboxes'%]
+				<table border="0">[% USE table parameter.values, cols=3, pad=0 %]
+					[%- FOREACH itemrow = table.rows %]
+						<tr>
+						[%- FOREACH item = itemrow %]
+							[%- itemid = "playlistparameter_" _ parameter.id _ "_" _ item.id %]
+							[%- IF not loop.first %]
+								<td>[% nbsp = "&nbsp"; nbsp.repeat(10) %]</td>
+							[%- END %]
+							<td><input type="checkbox" name="[% itemid %]" id="[% itemid %]" value="1" [% parameter.value ? "checked" : "" %]>
+							<label for="[% itemid %]">[% item.name | html %]</label></td>
+						[%- END %]
+						</tr>
+					[%- END %]
+				</table>
+			[% END %]
+			</td>
+		</tr>
+		<tr><td>&nbsp;</td></tr>
+	[%- END %]
+	<tr>
+		<td>[% "PLUGIN_SQLPLAYLIST_PLAYLISTTYPE" | string %]</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td>
+				<input type="radio" name="playlisttype" value="simple" checked>[% "PLUGIN_SQLPLAYLIST_PLAYLISTTYPE_SIMPLE" | string %]</option>
+				<input type="radio" name="playlisttype" value="advanced">[% "PLUGIN_SQLPLAYLIST_PLAYLISTTYPE_ADVANCED" | string %]</option>
+		</td>
+	</tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	<input type="hidden" name="playlisttemplate" value="[% pluginSQLPlayListNewPlayListTemplate %]">
+	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
+	<tr><td><input type="submit" value="[% "NEXT" | string %]"></td></tr>
+</form>
+</table>
+[% PROCESS pagefooter.html %]

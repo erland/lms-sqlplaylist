@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 2. PREREQUISITES
 ================
-- A slimserver 6.2.* or 6.5 installed and configured
+- A slimserver 6.5 installed and configured (6.3 might work for some playlists but it has not been tested)
 - The DynamicPlayList plugin must installed
 
 3. FILES
@@ -84,11 +84,28 @@ The SQLPlayList sql file for a playlist must have the following syntax:
               -- PlaylistParameter6:list:Choose rating:20:*,40:**,60:***,80:****,100:*****
               -- PlaylistParameter7:custom:Choose artist:select id,name from contributors where name like 'A%'
 
+- Option rows: The options for the playlist, the options described below is currently supported. The option rows are optional.
+              -- PlaylistOption [id]:[value]
+              
+              id: The id of the option
+              value: The value of the option
+
+              Currently supported options:
+              Unlimited: Don't limit the returned number of tracks to the requested number from DynamicPlayList plugin
+
+              Some examples:
+              -- PlaylistOption Unlimited:1 
+              
 - Other rows: SQL queries, all queries will be executed and those starting with SELECT must return a single "url" column and the 
               tracks returned in all SELECT statements will be part of the playlist.
 
-Some example playlists follows below, observere that the SQL statements needs to be different for the standard slimserver database(SQLite) and
-for the MySQL database. So make sure you use the right example based on which database you are using. The main difference for simple queries is
+There are also a number of dynamic parameters which will be replaced every time the SQL statements are executed, the replacements works in the same way as
+the PlaylistParameter handling. The follogin Dynamic parameters exist:
+              PlaylistLimit: The number of tracks requested from DynamicPlayList plugin
+              PlaylistOffset: The number of tracks previously played for this playlist             
+
+Some example playlists follows below, observere that the SQL statements needs to be different for the standard slimserver database in 6.3(SQLite) and
+for the MySQL database in slimserver 6.5 and later. So make sure you use the right syntax based on which database you are using. The main difference for simple queries is
 that SQLite uses "order by random()" while MySQL uses "order by rand()". See also the playlist templates available in the web ui for more examples.
 
 Playlist1.sql: MySQL (Tracks never played)
@@ -96,24 +113,13 @@ Playlist1.sql: MySQL (Tracks never played)
 -- PlaylistName: Not played tracks
 select url from tracks where audio=1 and playCount is null order by rand() limit 10;
 
-Playlist2.sql: SQLite (Tracks never played)
-------------------------------------------------
--- PlaylistName: Not played tracks
-select url from tracks where audio=1 and playCount is null order by random() limit 10;
-
-Playlist3.sql: MySQL (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
+Playlist2.sql: MySQL (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
 ---------------------------------------------------------------------------------
 -- PlaylistName: Top rated tracks
 -- PlaylistGroups: Top rated
 select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.audio=1 order by rand() limit 10;
 
-Playlist4.sql: SQLite (Tracks rated as 4-5 in TrackStat, requires TrackStat plugin)
----------------------------------------------------------------------------------
--- PlaylistName: Top rated tracks
--- PlaylistGroups: Top rated
-select tracks.url from track_statistics,tracks,albums where tracks.album=albums.id and tracks.url=track_statistics.url and track_statistics.rating>=80 and tracks.audio=1 order by random() limit 10;
-
-Playlist5.sql: MySQL (All tracks besides those which contains genre=Christmas and some bad albums)
+Playlist3.sql: MySQL (All tracks besides those which contains genre=Christmas and some bad albums)
 -------------------------------------------------------------------------------------------------
 -- PlaylistName: Mixed without Christmas
 

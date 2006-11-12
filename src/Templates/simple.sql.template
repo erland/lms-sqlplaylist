@@ -1,0 +1,7 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+select url from tracks 
+	where
+		audio=1
+	order by rand()
+	[% IF nooftracks %]limit [% nooftracks %][% END %];

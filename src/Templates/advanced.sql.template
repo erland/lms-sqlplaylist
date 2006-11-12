@@ -1,0 +1,78 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+select tracks.url from tracks
+	[%- IF includedartists %]
+	join contributor_track on
+		tracks.id=contributor_track.track
+	join contributors on
+		contributor_track.contributor=contributors.id and contributor_track.role in (1,5)
+	[%- END %]
+	[%- IF includedgenres %]
+	join genre_track on
+		tracks.id=genre_track.track
+	join genres on
+		genre_track.genre=genres.id
+	[%- END %]
+	[%- IF includedcomment %]
+	join comments on
+		tracks.id=comments.track and comments.value like [% includedcomment %]
+	[%- END %]
+	[%- IF excludedcomment %]
+	left join comments as excludecomments on
+		tracks.id=excludecomments.track and excludecomments.value like [% excludedcomment %]
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	where
+		audio=1
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	[%- IF excludedcomment %]
+		and excludecomments.id is null
+	[%- END %]
+	[%- IF maxlength %]
+		and tracks.secs<[% maxlength %]
+	[%- END %]
+	[%- IF minlength %]
+		and tracks.secs>[% minlength %]
+	[%- END %]
+	[%- IF maxyear %]
+		and tracks.year<=[% maxyear %]
+	[%- END %]
+	[%- IF minyear %]
+		and tracks.year>=[% minyear %]
+	[%- END %]
+	[%- IF includedartists %]
+		and contributors.name in ([% includedartists %])
+	[%- END %]
+	[%- IF includedgenres %]
+		and genres.name in ([% includedgenres %])
+	[%- END %]
+	[%- IF excludedartists %]
+		and not exists (select * from tracks t2,contributor_track,contributors
+						where
+							t2.id=tracks.id and
+							tracks.id=contributor_track.track and 
+							contributor_track.contributor=contributors.id and
+							contributor_track.role in (1,5) and
+							contributors.name in ([% excludedartists %]))
+	[%- END %]
+	[%- IF excludedgenres %]
+		and not exists (select * from tracks t2,genre_track,genres
+						where
+							t2.id=tracks.id and
+							tracks.id=genre_track.track and 
+							genre_track.genre=genres.id and
+							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF lossless %]
+		and tracks.lossless=1
+	[%- END %]
+	[%- IF includedcomment or includedartist or includedgenres%]
+	group by tracks.id
+	[%- END %]
+	order by rand()
+	[% IF nooftracks %]limit [% nooftracks %][% END %];
