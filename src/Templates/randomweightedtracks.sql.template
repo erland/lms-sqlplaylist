@@ -1,0 +1,87 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+create temporary table randomweightedratingslow select tracks.url from tracks
+	[%- IF includedgenres %]
+	join genre_track on
+		tracks.id=genre_track.track
+	join genres on
+		genre_track.genre=genres.id
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	left join track_statistics on
+		tracks.url=track_statistics.url
+	where
+		audio=1
+		and track_statistics.rating<50
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	[%- IF includedgenres %]
+		and genres.name in ([% includedgenres %])
+	[%- END %]
+	[%- IF excludedgenres %]
+		and not exists (select * from tracks t2,genre_track,genres
+						where
+							t2.id=tracks.id and
+							tracks.id=genre_track.track and 
+							genre_track.genre=genres.id and
+							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF includedgenres%]
+	group by tracks.id
+	[%- END %]
+	order by rand()
+	limit [% percentage %];
+
+
+create temporary table randomweightedratingshigh select tracks.url from tracks
+	[%- IF includedgenres %]
+	join genre_track on
+		tracks.id=genre_track.track
+	join genres on
+		genre_track.genre=genres.id
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	left join track_statistics on
+		tracks.url=track_statistics.url
+	where
+		audio=1
+		and track_statistics.rating>=50
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	[%- IF includedgenres %]
+		and genres.name in ([% includedgenres %])
+	[%- END %]
+	[%- IF excludedgenres %]
+		and not exists (select * from tracks t2,genre_track,genres
+						where
+							t2.id=tracks.id and
+							tracks.id=genre_track.track and 
+							genre_track.genre=genres.id and
+							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF includedgenres%]
+	group by tracks.id
+	[%- END %]
+	order by rand()
+	limit [% 100 - percentage %];
+
+create temporary table randomweightedratingscombined as 
+	SELECT * FROM randomweightedratingslow 
+	UNION 
+	SELECT * from randomweightedratingshigh;
+
+SELECT * from randomweightedratingscombined 
+	ORDER BY rand() 
+	limit 10;
+
+DROP TABLE randomweightedratingshigh;
+DROP TABLE randomweightedratingslow;
+DROP TABLE randomweightedratingscombined;

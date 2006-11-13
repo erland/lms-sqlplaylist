@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<requireplugins>TrackStat</requireplugins>
+	<template>
+		<name>Random for rating/genre</name>
+		<description>Random songs for user selectable rating and genre</description>
+		<parameter type="text" id="playlistname" name="Playlist name" value="Random for rating/genre"/>
+		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
+	</template>
+</sqlplaylist>
+

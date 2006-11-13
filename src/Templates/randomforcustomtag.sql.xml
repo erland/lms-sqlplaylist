@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<requireplugins>CustomScan</requireplugins>
+	<template>
+		<name>Random for custom tag</name>
+		<description>Random songs for user selectable custom tag, requires Custom Scan plugin</description>
+		<parameter type="text" id="playlistname" name="Playlist name" value="Random for custom tag"/>
+		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="text" id="customtaguserfriendlyname" name="Custom Tag user fiendly name" value="Owner"/>
+		<parameter type="text" id="customtagname" name="Custom Tag name" value="OWNER"/>
+		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
+	</template>
+</sqlplaylist>
+

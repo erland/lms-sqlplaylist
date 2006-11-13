@@ -1,0 +1,20 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+-- PlaylistParameter1:custom:Select [% customtaguserfriendlyname %]:select customscan_track_attributes.value,customscan_track_attributes.value from customscan_track_attributes where customscan_track_attributes.module='customtag' and customscan_track_attributes.attr='[% customtagname %]' group by customscan_track_attributes.value order by customscan_track_attributes.value
+select tracks.url from tracks
+	join track_statistics on
+		tracks.url=track_statistics.url
+	join customscan_track_attributes on
+		tracks.id=customscan_track_attributes.track and customscan_track_attributes.module='customtag' and customscan_track_attributes.attr='[% customtagname %]' and customscan_track_attributes.value=''PlaylistParameter1''
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	where
+		audio=1
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	group by tracks.id
+	order by rand()
+	limit 10;

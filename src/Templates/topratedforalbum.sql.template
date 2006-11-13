@@ -1,0 +1,26 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+-- PlaylistParameter1:album:Select album:
+select tracks.url from tracks
+	[%- IF minrating %]
+	join track_statistics on
+		tracks.url=track_statistics.url
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id
+	[%- END %]
+	where
+		audio=1
+		and tracks.album='PlaylistParameter1'
+	[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+	[%- END %]
+	[%- IF minrating %]
+		and track_statistics.rating>=[% minrating %]
+	[%- END %]
+	[%- IF minrating or notrepeat %]
+	group by tracks.id
+	[%- END %]
+	order by rand()
+	limit 10;

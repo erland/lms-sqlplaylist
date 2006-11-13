@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<requireplugins>TrackStat</requireplugins>
+	<template>
+		<name>Top rated for artist</name>
+		<description>Random songs with predefined minimum rating with user selectable artist</description>
+		<parameter type="text" id="playlistname" name="Playlist name" value="Top rated for artist"/>
+		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
+		<parameter type="singlelist" id="minrating" name="Minimum rating" value="0" data="0==0,1=* (10-)=10,2=** (30-)=30,3=*** (50-)=50,4=**** (70-)=70,5=***** (90-)=90"/>
+	</template>
+</sqlplaylist>
+
