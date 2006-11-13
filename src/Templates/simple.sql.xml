@@ -2,7 +2,7 @@
 <sqlplaylist>
 	<template>
 		<name>Simple</name>
-		<description>Simple random tracks playlist with almost no options</description>
+		<description>Simple random songs playlist with almost no options</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Simple"/>
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
 		<parameter type="text" id="nooftracks" name="Number of tracks per time" value="10"/>
