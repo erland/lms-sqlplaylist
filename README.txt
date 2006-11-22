@@ -133,3 +133,64 @@ drop temporary table genre_track_withname;
 drop temporary table tracks_nochristmas;
 drop temporary table albums_nobad;
 
+6. PLUGIN DEVELOPERS
+====================
+You can implement your own playlist templates by implementing the methods described below
+in your plugin. The plugin must be enabled for it to be detected by SQLPlayList plugin.
+
+# Returns an array with templates
+# This method will be called by the SQLPlayList plugin whenever the type of playlists available shall be shown
+# Parameters in each template
+# id = A uniqe identifier 
+# type =	
+#	final: You are responsible for replacing parameters in getSQLPlayListTemplateData, 
+#	template: SQLPlayList will replace [% parametervalue %] with the actual value, same template types as used in the HTML pages 
+#                     for slimserver. See also all *.templates files in SQLPlayList/Templates directory for some samples
+# template = The actual playlist template configuration, consists of the following parts
+#	name = A user friendly name of your playlist type
+#	description = A description of your playlist type
+#	parameter = An array of playlist parameters that shall be possible for the user to specify, see *.xml files in SQLPlayList/Templates directory
+#                          for some samples
+sub getSQLPlayListTemplates {
+	my ($client) = @_;
+
+	my @result = ();
+	my %template = (
+		'id' => 'mynicetemplate',
+		'type' => 'final',
+		'template' => {
+			'name' => 'My nice playlist',
+			'description' => 'A random playlist with parameter for number of tracks to return',
+			'parameter' => [
+				{
+					'type' => 'text',
+					'id' => 'playlistlength',
+					'name' => 'Length of playlist',
+					'value' => 20
+				}
+			]
+		}
+	);
+	push @result,\%template;
+	return \@result;
+}
+
+# Returns the actual playlist for a specified template based on parameter values, this method will be
+# called by SQLPlayList plugin when a playlist is required. The returned data is the actual playlist.
+# In-parameters:
+# template = The template for selected playlist, the same as returned previously by getSQLPlayListTemplates method
+# parameters = A hash map with parameter values that the user has entered for your parameters
+sub getSQLPlayListTemplateData {
+	my ($client,$template,$parameters) = @_;
+
+	if($template->{'id'} eq 'mynicetemplate') {
+		if($parameters->{'playlistlength'}) {
+			my $result = "-- PlaylistName:My nice playlist\nselect url from tracks order by rand() limit ".$parameters->{'playlistlength'}.";";
+			return $result;
+		}else {
+			my $result = "-- PlaylistName:My nice playlist\nselect url from tracks order by rand() limit 10;";
+			return $result;
+		}
+	}
+	return undef;
+}
