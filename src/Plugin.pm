@@ -159,6 +159,7 @@ sub initPlayLists {
 		readPlaylistsFromDir($client,1,catdir($plugindir,"SQLPlayList","Playlists"),\%playlists);
 		readTemplatePlaylistsFromDir($client,1,catdir($plugindir,"SQLPlayList","Playlists"),\%playlists,$templates);
 	}
+	
 	my $playlistDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
 	debugMsg("Searching for playlists in: $playlistDir\n");
 	
@@ -409,6 +410,9 @@ sub handleWebEditPlaylist {
 						my $templateDataParameters = $templateData->{'parameter'};
 						for my $p (@$templateDataParameters) {
 							my $values = $p->{'value'};
+							if(!defined($values)) {
+								push @$values,'';
+							}
 							my %valuesHash = ();
 							for my $v (@$values) {
 								$valuesHash{$v} = $v;
@@ -515,7 +519,7 @@ sub handleWebTestPlaylist {
 					$sql = replaceParametersInSQL($sql,$playlist->{'parameters'});
 				}
 				$sql = replaceParametersInSQL($sql,getOffsetLimitParameters(100,0),'Playlist');
-				my $tracks = executeSQLForPlaylist($sql);
+				my $tracks = executeSQLForPlaylist($sql,undef,$playlist);
 				my @resultTracks;
 				my $itemNumber = 0;
 				foreach my $track (@$tracks) {
@@ -754,7 +758,23 @@ sub handleWebNewPlaylist {
 				}
 			}
 		}
-		my $playlistData = fillTemplate($templateFile,\%templateParameters);
+		my $templateFileData = undef;
+		my $doParsing = 1;
+		if(defined($template->{'sqlplaylist_plugin_template'})) {
+			my $pluginTemplate = $template->{'sqlplaylist_plugin_template'};
+			if(defined($pluginTemplate->{'type'}) && $pluginTemplate->{'type'} eq 'final') {
+				$doParsing = 0;
+			}
+			$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
+		}else {
+			$templateFileData = $templateFile;
+		}
+		my $playlistData = undef;
+		if($doParsing) {
+			$playlistData = fillTemplate($templateFileData,\%templateParameters);
+		}else {
+			$playlistData = $$templateFileData;
+		}
 		$playlistData = Slim::Utils::Unicode::utf8on($playlistData);
 		$playlistData = Slim::Utils::Unicode::utf8encode_locale($playlistData);
 		$playlistData = encode_entities($playlistData,"&<>\'\"");
@@ -840,7 +860,23 @@ sub handleWebSaveSimplePlaylist {
 				}
 			}
 		}
-		my $playlistData = fillTemplate($templateFile,\%templateParameters);
+		my $templateFileData = undef;
+		my $doParsing = 1;
+		if(defined($template->{'sqlplaylist_plugin_template'})) {
+			my $pluginTemplate = $template->{'sqlplaylist_plugin_template'};
+			if(defined($pluginTemplate->{'type'}) && $pluginTemplate->{'type'} eq 'final') {
+				$doParsing = 0;
+			}
+			$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
+		}else {
+			$templateFileData = $templateFile;
+		}
+		my $playlistData = undef;
+		if($doParsing) {
+			$playlistData = fillTemplate($templateFileData,\%templateParameters);
+		}else {
+			$playlistData = $$templateFileData;
+		}
 		$playlistData = Slim::Utils::Unicode::utf8on($playlistData);
 		$playlistData = Slim::Utils::Unicode::utf8encode_locale($playlistData);
 		$playlistData = encode_entities($playlistData,"&<>\'\"");
@@ -884,7 +920,23 @@ sub handleWebSaveSimplePlaylist {
 				}
 			}
 		}
-		my $playlistData = fillTemplate($templateFile,\%templateParameters);
+		my $templateFileData = undef;
+		my $doParsing = 1;
+		if(defined($template->{'sqlplaylist_plugin_template'})) {
+			my $pluginTemplate = $template->{'sqlplaylist_plugin_template'};
+			if(defined($pluginTemplate->{'type'}) && $pluginTemplate->{'type'} eq 'final') {
+				$doParsing = 0;
+			}
+			$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
+		}else {
+			$templateFileData = $templateFile;
+		}
+		my $playlistData = undef;
+		if($doParsing) {
+			$playlistData = fillTemplate($templateFileData,\%templateParameters);
+		}else {
+			$playlistData = $$templateFileData;
+		}
 		$playlistData = Slim::Utils::Unicode::utf8on($playlistData);
 		$playlistData = Slim::Utils::Unicode::utf8encode_locale($playlistData);
 		$playlistData = encode_entities($playlistData,"&<>\'\"");
@@ -1325,19 +1377,52 @@ sub readTemplatePlaylistsFromDir {
 }
 
 sub readTemplateConfiguration {
-    my $client = shift;
-    my @pluginDirs = ();
-    if ($::VERSION ge '6.5') {
-        @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
-    }else {
-        @pluginDirs = catdir($Bin, "Plugins");
-    }
-    my %templates = ();
-    for my $plugindir (@pluginDirs) {
-	next unless -d catdir($plugindir,"SQLPlayList","Templates");
-	readTemplateConfigurationFromDir($client,catdir($plugindir,"SQLPlayList","Templates"),\%templates);
-    }
-    return \%templates;
+	my $client = shift;
+	my @pluginDirs = ();
+	if ($::VERSION ge '6.5') {
+		@pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
+	}else {
+		@pluginDirs = catdir($Bin, "Plugins");
+	}
+	my %templates = ();
+	for my $plugindir (@pluginDirs) {
+		next unless -d catdir($plugindir,"SQLPlayList","Templates");
+		readTemplateConfigurationFromDir($client,catdir($plugindir,"SQLPlayList","Templates"),\%templates);
+	}
+
+	no strict 'refs';
+	my @enabledplugins;
+	if ($::VERSION ge '6.5') {
+		@enabledplugins = Slim::Utils::PluginManager::enabledPlugins();
+	}else {
+		@enabledplugins = Slim::Buttons::Plugins::enabledPlugins();
+	}
+
+	for my $plugin (@enabledplugins) {
+		if(UNIVERSAL::can("Plugins::$plugin","getSQLPlayListTemplates") && UNIVERSAL::can("Plugins::$plugin","getSQLPlayListTemplateData")) {
+			debugMsg("Getting playlist templates for: $plugin\n");
+			my $items = eval { &{"Plugins::${plugin}::getSQLPlayListTemplates"}($client) };
+			if ($@) {
+				debugMsg("Error getting playlist templates from $plugin: $@\n");
+			}
+			for my $item (@$items) {
+				my $template = $item->{'template'};
+				$template->{'sqlplaylist_plugin_template'}=$item;
+				$template->{'sqlplaylist_plugin'} = "Plugins::${plugin}";
+				my $templateId = $item->{'id'};
+				if($plugin =~ /^([^:]+)::.*$/) {
+					$templateId = $1."_".$item->{'id'};
+				}
+				$template->{'id'} = $templateId;
+				debugMsg("Adding template: $templateId\n");
+				#debugMsg(Dumper($template));
+				$templates{$templateId} = $template;
+			}
+		}
+	}
+	use strict 'refs';
+
+	return \%templates;
 }
 
 sub readTemplateConfigurationFromDir {
@@ -1425,7 +1510,6 @@ sub parseTemplatePlaylistContent {
 			$templateId =~s/\.sql\.xml$//;
 			my $include = undef;
 			if($template) {
-				my $templateFile = $templateId.".sql.template";
 				my %templateParameters = ();
 				my $parameters = $valuesXml->{'template'}->{'parameter'};
 				for my $p (@$parameters) {
@@ -1443,7 +1527,24 @@ sub parseTemplatePlaylistContent {
 					}
 					$templateParameters{$p->{'id'}}=$value;
 				}
-				my $playlistData = fillTemplate($templateFile,\%templateParameters);
+
+				my $templateFileData = undef;
+				my $doParsing = 1;
+				if(defined($template->{'sqlplaylist_plugin_template'})) {
+					my $pluginTemplate = $template->{'sqlplaylist_plugin_template'};
+					if(defined($pluginTemplate->{'type'}) && $pluginTemplate->{'type'} eq 'final') {
+						$doParsing = 0;
+					}
+					$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
+				}else {
+					$templateFileData = $templateId.".sql.template";
+				}
+				my $playlistData = undef;
+				if($doParsing) {
+					$playlistData = fillTemplate($templateFileData,\%templateParameters);
+				}else {
+					$playlistData = $$templateFileData;
+				}
 				$playlistData = Slim::Utils::Unicode::utf8on($playlistData);
 				$playlistData = Slim::Utils::Unicode::utf8encode_locale($playlistData);
 			
@@ -1468,6 +1569,25 @@ sub parseTemplatePlaylistContent {
 	return $errorMsg;
 }
 
+sub getPluginTemplateData {
+	my $client = shift;
+	my $template = shift;
+	my $parameters = shift;
+	debugMsg("Get template data from plugin\n");
+	my $plugin = $template->{'sqlplaylist_plugin'};
+	my $pluginTemplate = $template->{'sqlplaylist_plugin_template'};
+	my $templateFileData = undef;
+	no strict 'refs';
+	if(UNIVERSAL::can("$plugin","getSQLPlayListTemplateData")) {
+		debugMsg("Calling: $plugin :: getSQLPlayListTemplateData\n");
+		$templateFileData =  eval { &{"${plugin}::getSQLPlayListTemplateData"}($client,$pluginTemplate,$parameters) };
+		if ($@) {
+			debugMsg("Error retreiving playlist template data from $plugin: $@\n");
+		}
+	}
+	use strict 'refs';
+	return \$templateFileData;
+}
 sub loadTemplateData {
 	my $browseDir = shift;
 	my $file = shift;
@@ -1887,9 +2007,19 @@ sub getTracksForPlaylist {
 	if($unlimitedOption) {
 		$limit = undef;
 	}
-	my $result= executeSQLForPlaylist($sqlstatements,$limit);
-	
+	my $result= executeSQLForPlaylist($sqlstatements,$limit,$playlist);
 	return $result;
+}
+
+sub fisher_yates_shuffle {
+    my $myarray = shift;  
+    my $i = @$myarray;
+    if(scalar(@$myarray)>1) {
+	    while (--$i) {
+	        my $j = int rand ($i+1);
+	        @$myarray[$i,$j] = @$myarray[$j,$i];
+	    }
+    }
 }
 
 sub getPlaylistOption {
@@ -1898,7 +2028,7 @@ sub getPlaylistOption {
 
 	if(defined($playlist->{'options'})){
 		if(defined($playlist->{'options'}->{$option})) {
-			return $playlist->{'options'}->{$option};
+			return $playlist->{'options'}->{$option}->{'value'};
 		}
 	}
 	return undef;
@@ -2036,39 +2166,144 @@ sub createSQLPlayList {
 sub executeSQLForPlaylist {
 	my $sqlstatements = shift;
 	my $limit = shift;
+	my $playlist = shift;
 	my @result;
 	my $ds = getCurrentDS();
 	my $dbh = getCurrentDBH();
 	my $trackno = 0;
 	$sqlerrors = "";
-    for my $sql (split(/[\n\r]/,$sqlstatements)) {
-    	eval {
+	my $contentType = getPlaylistOption($playlist,'ContentType');
+	my $limit = getPlaylistOption($playlist,'NoOfTracks');
+	my $noRepeat = getPlaylistOption($playlist,'DontRepeatTracks');
+	if(defined($playlist)) {
+		debugMsg("Executing SQL for content type: $contentType\n");
+	}
+	for my $sql (split(/[\n\r]/,$sqlstatements)) {
+    		eval {
 			my $sth = $dbh->prepare( $sql );
 			debugMsg("Executing: $sql\n");
 			$sth->execute() or do {
-	            debugMsg("Error executing: $sql\n");
-	            $sql = undef;
+				debugMsg("Error executing: $sql\n");
+				$sql = undef;
 			};
 
-	        if ($sql =~ /^SELECT+/oi) {
+		        if ($sql =~ /^SELECT+/oi) {
 				debugMsg("Executing and collecting: $sql\n");
 				my $url;
-				$sth->bind_columns( undef, \$url);
+				$sth->bind_col( 1, \$url);
 				while( $sth->fetch() ) {
-				  my $track = objectForUrl($url);
-				  $trackno++;
-				  if(!$limit || $trackno<=$limit) {
-					debugMsg("Adding: ".($track->url)."\n");
-				  	push @result, $track;
-				  }
+					my $tracks = getTracksForResult($url,$contentType,$limit,$noRepeat);
+				 	for my $track (@$tracks) {
+						$trackno++;
+						if(!$limit || $trackno<=$limit) {
+							debugMsg("Adding: ".($track->url)."\n");
+							push @result, $track;
+						}
+					}
 				}
 			}
 			$sth->finish();
 		};
 		if( $@ ) {
 			$sqlerrors .= $DBI::errstr."<br>$@<br>";
-		    warn "Database error: $DBI::errstr\n$@\n";
+			warn "Database error: $DBI::errstr\n$@\n";
 		}		
+	}
+	return \@result;
+}
+
+sub getTracksForResult {
+	my $item = shift;
+	my $contentType = shift;
+	my $limit = shift;
+	my $noRepeat = shift;
+	my $dbh = getCurrentDBH();
+	my @result  = ();
+	my $sth = undef;
+	my $sql = undef;
+	if(!defined($contentType) || $contentType eq 'track' || $contentType eq '') {
+		my @resultTracks = ();
+		my $track = objectForUrl($item);
+		push @result,$track;
+	}elsif($contentType eq 'album') {
+		if($noRepeat) {
+			$sql = "select tracks.id from tracks left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and tracks.album=$item group by tracks.id";
+		}else {
+			$sql = "select tracks.id from tracks where tracks.album=$item group by tracks.id";
+		}
+		if($limit) {
+			$sql .= " order by rand() limit $limit";
+		}else {
+			$sql .= " order by disc,tracknum";
+		}
+	}elsif($contentType eq 'artist') {
+		if($noRepeat) {
+			$sql = "select tracks.id from tracks join contributor_track on tracks.id=contributor_track.track and contributor_track.role in (1,4,5,6) left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and contributor_track.contributor=$item group by tracks.id";
+		}else {
+			$sql = "select tracks.id from tracks join contributor_track on tracks.id=contributor_track.track and contributor_track.role in (1,4,5,6) where contributor_track.contributor=$item group by tracks.id";
+		}
+		if($limit) {
+			 $sql .=" order by rand() limit $limit";
+		}else {
+			$sql .= " order by tracks.album,tracks.disc,tracks.tracknum";
+		}
+	}elsif($contentType eq 'year') {
+		if($noRepeat) {
+			$sql = "select tracks.id from tracks left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and tracks.year=$item group by tracks.id";
+		}else {
+			$sql = "select tracks.id from tracks where tracks.year=$item";
+		}
+		if($limit) {
+			 $sql .=" order by rand() limit $limit";
+		}else {
+			$sql .= " order by tracks.year desc,tracks.album,tracks.disc,tracks.tracknum";
+		}
+	}elsif($contentType eq 'genre') {
+		if($noRepeat) {
+			$sql = "select tracks.id from tracks join genre_track on tracks.id=genre_track.track left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and genre_track.genre=$item group by tracks.id";
+		}else {
+			$sql = "select tracks.id from tracks join genre_track on tracks.id=genre_track.track where genre_track.genre=$item group by tracks.id";
+		}
+		if($limit) {
+			 $sql .=" order by rand() limit $limit";
+		}else {
+			$sql .= " order by tracks.album,tracks.disc,tracks.tracknum";
+		}
+	}elsif($contentType eq 'playlist') {
+		if($noRepeat) {
+			$sql = "select tracks.id from tracks join playlist_track on tracks.id=playlist_track.track left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and playlist_track.playlist=$item group by tracks.id";
+		}else {
+			$sql = "select tracks.id from tracks join playlist_track on tracks.id=playlist_track.track where playlist_track.playlist=$item group by tracks.id";
+		}
+		if($limit) {
+			 $sql .=" order by rand() limit $limit";
+		}else {
+			$sql .= " order by playlist_track.position";
+		}
+	}
+	if($sql) {
+		$sth = $dbh->prepare($sql);
+		$sth->execute();
+		my $trackId;
+		$sth->bind_columns(undef,\$trackId);
+		my @trackIds = ();
+		while( $sth->fetch()) {
+			push @trackIds,$trackId;
+		}
+		$sth->finish();
+		my @tmpResult = ();
+		if(scalar(@trackIds)>0) {
+			@tmpResult = Slim::Schema->rs('Track')->search({ 'id' => { 'in' => \@trackIds } });
+		}
+		# Sort according to original select
+		for my $id (@trackIds) {
+			for my $item (@tmpResult) {
+				if($item->id eq $id) {
+					push @result,$item;
+					last;
+				}
+			}
+		}
 	}
 	return \@result;
 }
@@ -2135,6 +2370,30 @@ sub validateTrueFalseWrapper {
 		return Slim::Utils::Validate::trueFalse($arg);
 	}else {
 		return Slim::Web::Setup::validateTrueFalse($arg);
+	}
+}
+
+sub objectForId {
+	my $type = shift;
+	my $id = shift;
+	if ($::VERSION ge '6.5') {
+		if($type eq 'artist') {
+			$type = 'Contributor';
+		}elsif($type eq 'album') {
+			$type = 'Album';
+		}elsif($type eq 'genre') {
+			$type = 'Genre';
+		}elsif($type eq 'track') {
+			$type = 'Track';
+		}elsif($type eq 'playlist') {
+			$type = 'Playlist';
+		}
+		return Slim::Schema->resultset($type)->find($id);
+	}else {
+		if($type eq 'playlist') {
+			$type = 'track';
+		}
+		return getCurrentDS()->objectForId($type,$id);
 	}
 }
 
