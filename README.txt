@@ -91,11 +91,23 @@ The SQLPlayList sql file for a playlist must have the following syntax:
               value: The value of the option
 
               Currently supported options:
-              Unlimited: Don't limit the returned number of tracks to the requested number from DynamicPlayList plugin
+              Unlimited: 1 = Don't limit the returned number of tracks to the requested number from DynamicPlayList plugin
+              ContentType: Specifies the type of object the SQL returns, can be one of: track, album, artist, playlist, genre, year
+                                   track or not specified: SQL shall return tracks.url
+                                   album: SQL shall return albums.id or tracks.album
+                                   artist: SQL shall return contributors.id or contributor_track.contributor
+                                   genre: SQL shall return genres.id or genre_track.genre
+                                   year: SQL shall return tracks.year or years.id
+                                   playlist: SQL shall return playlist_track.playlist
+              NoOfTracks: Number of tracks that shall be returned i ContentType is one of: album, artist, playlist, genre, year
+              DontRepeatTracks: 1 = Do not add tracks already played when ContentType is one of: album, artist, playlist, genre, year
 
               Some examples:
               -- PlaylistOption Unlimited:1 
-              
+              -- PlaylistOption ContentType:album 
+              -- PlaylistOption NoOfTracks:10
+              -- PlaylistOption DontRepeatTracks:1 
+
 - Other rows: SQL queries, all queries will be executed and those starting with SELECT must return a single "url" column and the 
               tracks returned in all SELECT statements will be part of the playlist.
 
