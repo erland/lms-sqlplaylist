@@ -1411,7 +1411,7 @@ sub readTemplateConfiguration {
 				$template->{'sqlplaylist_plugin'} = "Plugins::${plugin}";
 				my $templateId = $item->{'id'};
 				if($plugin =~ /^([^:]+)::.*$/) {
-					$templateId = $1."_".$item->{'id'};
+					$templateId = lc($1)."_".$item->{'id'};
 				}
 				$template->{'id'} = $templateId;
 				debugMsg("Adding template: $templateId\n");
