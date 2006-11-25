@@ -767,6 +767,9 @@ sub handleWebNewPlaylist {
 			}
 			$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
 		}else {
+			if(defined($template->{'templatefile'})) {
+				$templateFile = $template->{'templatefile'};
+			}
 			$templateFileData = $templateFile;
 		}
 		my $playlistData = undef;
@@ -869,6 +872,9 @@ sub handleWebSaveSimplePlaylist {
 			}
 			$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
 		}else {
+			if(defined($template->{'templatefile'})) {
+				$templateFile = $template->{'templatefile'};
+			}
 			$templateFileData = $templateFile;
 		}
 		my $playlistData = undef;
@@ -929,6 +935,9 @@ sub handleWebSaveSimplePlaylist {
 			}
 			$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
 		}else {
+			if(defined($template->{'templatefile'})) {
+				$templateFile = $template->{'templatefile'};
+			}
 			$templateFileData = $templateFile;
 		}
 		my $playlistData = undef;
@@ -968,6 +977,12 @@ sub getTemplate {
 		}
 		my @include_path = ();
 		my $templateDir = undef;
+
+		$templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+		if($templateDir) {
+			push @include_path,$templateDir;
+		}
+
 		for my $plugindir (@pluginDirs) {
 			next unless -d catdir($plugindir,'SQLPlayList/Templates');
 			$templateDir = catdir($plugindir,'SQLPlayList/Templates');
@@ -1422,6 +1437,11 @@ sub readTemplateConfiguration {
 	}
 	use strict 'refs';
 
+	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+	if($templateDir && -d $templateDir) {
+		readTemplateConfigurationFromDir($client,$templateDir,\%templates);
+	}
+
 	return \%templates;
 }
 
@@ -1537,7 +1557,11 @@ sub parseTemplatePlaylistContent {
 					}
 					$templateFileData = getPluginTemplateData($client,$template,\%templateParameters);
 				}else {
-					$templateFileData = $templateId.".sql.template";
+					if(defined($template->{'templatefile'})) {
+						$templateFileData = $template->{'templatefile'};
+					}else {
+						$templateFileData = $templateId.".sql.template";
+					}
 				}
 				my $playlistData = undef;
 				if($doParsing) {
@@ -1939,7 +1963,7 @@ sub setupGroup
 {
 	my %setupGroup =
 	(
-	 PrefOrder => ['plugin_sqlplaylist_playlist_directory','plugin_sqlplaylist_showmessages'],
+	 PrefOrder => ['plugin_sqlplaylist_playlist_directory','plugin_sqlplaylist_template_directory','plugin_sqlplaylist_showmessages'],
 	 GroupHead => string('PLUGIN_SQLPLAYLIST_SETUP_GROUP'),
 	 GroupDesc => string('PLUGIN_SQLPLAYLIST_SETUP_GROUP_DESC'),
 	 GroupLine => 1,
@@ -1965,6 +1989,13 @@ sub setupGroup
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
 			,'PrefSize' => 'large'
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"); }
+		},
+	plugin_sqlplaylist_template_directory => {
+			'validate' => \&validateIsDirWrapper
+			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY')
+			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY')
+			,'PrefSize' => 'large'
+			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory"); }
 		},
 	);
 	return (\%setupGroup,\%setupPrefs);
@@ -2513,6 +2544,9 @@ PLUGIN_SQLPLAYLIST_SETUP_GROUP_DESC
 PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
 	EN	Playlist directory
 
+PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
+	EN	Template directory
+
 PLUGIN_SQLPLAYLIST_SHOW_MESSAGES
 	EN	Show debug messages
 
@@ -2524,6 +2558,9 @@ PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
 
 SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
 	EN	Playlist directory
+
+SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
+	EN	Template directory
 
 SETUP_PLUGIN_SQLPLAYLIST_SHOWMESSAGES
 	EN	Debugging

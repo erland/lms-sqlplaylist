@@ -116,6 +116,24 @@ the PlaylistParameter handling. The follogin Dynamic parameters exist:
               PlaylistLimit: The number of tracks requested from DynamicPlayList plugin
               PlaylistOffset: The number of tracks previously played for this playlist             
 
+Templates
+---------
+It is possible to configure a template directory in the settings page for SQL Playlist in the web
+interface. By doing this you can add your own playlist templates. Templates are usefull if you start to
+customize the playlist configuration in several similar playlist, in that situation you can instead choose to
+create a template with some parameters, where each playlist just have different values on the parameters. You can
+also use templates if you want to base a playlist on the advanced playlist type but limit the number of parameters
+shown to the user.
+
+A menu template consists of two files:
+
+xxx.sql.template     : The playlist configuration which can contain [% yyy %] keywords that will be replaced with
+                       real values when the menu is created.
+
+xxx.sql.xml          : A description of the template and a definition of the parameterse that the user shall enter.
+                       See the templates in the SQLPlayList/Templates directory for some samples.
+
+
 Some example playlists follows below, observere that the SQL statements needs to be different for the standard slimserver database in 6.3(SQLite) and
 for the MySQL database in slimserver 6.5 and later. So make sure you use the right syntax based on which database you are using. The main difference for simple queries is
 that SQLite uses "order by random()" while MySQL uses "order by rand()". See also the playlist templates available in the web ui for more examples.
