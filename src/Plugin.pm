@@ -46,6 +46,7 @@ my $template;
 my $playLists = undef;
 my $playListTypes = undef;
 my $sqlerrors = '';
+my $soapLiteError = 0;
 
 my %disable = (
 	'id' => 'disable', 
@@ -153,6 +154,7 @@ sub initPlayLists {
 		@pluginDirs = catdir($Bin, "Plugins");
 	}
 	my %playlists = ();
+	my %customPlaylists = ();
 	my $templates = readTemplateConfiguration();
 	for my $plugindir (@pluginDirs) {
 		next unless -d catdir($plugindir,"SQLPlayList","Playlists");
@@ -164,8 +166,13 @@ sub initPlayLists {
 	debugMsg("Searching for playlists in: $playlistDir\n");
 	
 	if (defined $playlistDir && -d $playlistDir) {
-		readPlaylistsFromDir($client,0,$playlistDir,\%playlists);
-		readTemplatePlaylistsFromDir($client,0,$playlistDir,\%playlists,$templates);
+		readPlaylistsFromDir($client,0,$playlistDir,\%customPlaylists);
+		readTemplatePlaylistsFromDir($client,0,$playlistDir,\%customPlaylists,$templates);
+		for my $playlistId (keys %customPlaylists) {
+			if(defined($playlists{$playlistId})) {
+				$playlists{$playlistId} = undef;
+			}
+		}
 	}else {
 		debugMsg("Skipping playlist folder scan - playlistdir is undefined.\n");
 	}
@@ -178,6 +185,13 @@ sub initPlayLists {
 			$localPlayLists{$playlist->{'id'}} = $playlist;
 		}
 	}
+	for my $playlistId (keys %customPlaylists) {
+		my $playlist = parsePlaylist($customPlaylists{$playlistId});
+		if(defined($playlist)) {
+			$localPlayLists{$playlist->{'id'}} = $playlist;
+		}
+	}
+
 	$playLists = \%localPlayLists;
 	initPlayListTypes($client);
 	if(defined($client)) {
@@ -268,6 +282,9 @@ sub parsePlaylist {
 		if(defined($playlistHash->{'defaultplaylist'})) {
 			$playlist{'defaultplaylist'} = $playlistHash->{'defaultplaylist'};
 		}
+		if(defined($playlistHash->{'customplaylist'})) {
+			$playlist{'customplaylist'} = $playlistHash->{'customplaylist'};
+		}
 		if(defined($playlistHash->{'simple'})) {
 			$playlist{'simple'} = $playlistHash->{'simple'};
 		}
@@ -298,6 +315,27 @@ sub parsePlaylist {
 
 sub initPlugin {
 	checkDefaults();
+	$soapLiteError = 0;
+	eval "use SOAP::Lite";
+	if ($@) {
+		my @pluginDirs = ();
+		if ($::VERSION ge '6.5') {
+			@pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
+		}else {
+			@pluginDirs = catdir($Bin, "Plugins");
+		}
+		for my $plugindir (@pluginDirs) {
+			next unless -d catdir($plugindir,"SQLPlayList","libs");
+			push @INC,catdir($plugindir,"SQLPlayList","libs");
+			last;
+		}
+		debugMsg("Using internal implementation of SOAP::Lite\n");
+		eval "use SOAP::Lite";
+		if ($@) {
+			$soapLiteError = 1;
+			msg("SQLPlayList: ERROR! Cant load internal implementation of SOAP::Lite, download/publish functionallity will not be available\n");
+		}
+	}
 }
 
 sub webPages {
@@ -306,8 +344,15 @@ sub webPages {
 		"sqlplaylist_list\.(?:htm|xml)"     => \&handleWebList,
 		"sqlplaylist_editplaylist\.(?:htm|xml)"      => \&handleWebEditPlaylist,
 		"sqlplaylist_newplaylisttypes\.(?:htm|xml)"      => \&handleWebNewPlaylistTypes,
+		"sqlplaylist_deleteplaylisttype\.(?:htm|xml)"      => \&handleWebDeletePlaylistType,
                 "sqlplaylist_newplaylistparameters\.(?:htm|xml)"     => \&handleWebNewPlaylistParameters,
 		"sqlplaylist_newplaylist\.(?:htm|xml)"      => \&handleWebNewPlaylist,
+		"sqlplaylist_login\.(?:htm|xml)"      => \&handleWebLogin,
+		"sqlplaylist_downloadnewplaylists\.(?:htm|xml)"      => \&handleWebDownloadNewPlaylists,
+		"sqlplaylist_downloadplaylists\.(?:htm|xml)"      => \&handleWebDownloadPlaylists,
+		"sqlplaylist_downloadplaylist\.(?:htm|xml)"      => \&handleWebDownloadPlaylist,
+		"sqlplaylist_publishplaylistparameters\.(?:htm|xml)"      => \&handleWebPublishPlaylistParameters,
+		"sqlplaylist_publishplaylist\.(?:htm|xml)"      => \&handleWebPublishPlaylist,
                 "sqlplaylist_savenewsimpleplaylist\.(?:htm|xml)"     => \&handleWebSaveNewSimplePlaylist,
                 "sqlplaylist_savesimpleplaylist\.(?:htm|xml)"     => \&handleWebSaveSimplePlaylist,
 		"sqlplaylist_saveplaylist\.(?:htm|xml)"      => \&handleWebSavePlaylist,
@@ -347,6 +392,10 @@ sub handleWebList {
 	if($playlist) {
 		$name = $playlist->{'name'};
 	}
+	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+	if(!defined($templateDir) || !-d $templateDir) {
+		$params->{'pluginSQLPlayListDownloadMessage'} = 'You have to specify a template directory before you can download playlists';
+	}
 	$params->{'pluginSQLPlayListPlayLists'} = $playLists;
 	$params->{'pluginSQLPlayListNowPlaying'} = $name;
 	if ($::VERSION ge '6.5') {
@@ -378,29 +427,7 @@ sub handleWebEditPlaylist {
 		my $playlist = getPlayList($client,$params->{'type'});
 		if($playlist) {
 			if(defined($playlist->{'simple'})) {
-				my $templateData = undef;
-	
-				my $browseDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
-				if (!defined $browseDir || !-d $browseDir) {
-					debugMsg("Skipping playlist configuration - directory is undefined\n");
-				}else {
-					$templateData = loadTemplateData($browseDir,$playlist->{'file'});
-				}
-				if(!defined($templateData)) {
-					my @pluginDirs = ();
-					if ($::VERSION ge '6.5') {
-						@pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
-					}else {
-						@pluginDirs = catdir($Bin, "Plugins");
-					}
-					for my $plugindir (@pluginDirs) {
-						next unless -d catdir($plugindir,"SQLPlayList","Playlists");
-						$templateData = loadTemplateData(catdir($plugindir,"SQLPlayList","Playlists"),$playlist->{'file'});
-						if(defined($templateData)) {
-							last;
-						}
-					}
-				}
+				my $templateData = loadTemplateValues($playlist->{'file'});
 	
 				if(defined($templateData)) {
 					my $templates = readTemplateConfiguration($client);
@@ -682,6 +709,34 @@ sub addParameterValues {
 	}
 }
 
+sub structurePlaylistTypes {
+	my $templates = shift;
+	
+	my %templatesHash = ();
+	
+	for my $key (keys %$templates) {
+		my $plugin = $templates->{$key}->{'sqlplaylist_plugin'};
+		if(defined($templates->{$key}->{'customplaylist'})) {
+			$plugin = 'ZZZ';
+		}
+		if(!defined($plugin)) {
+			$plugin = 'AAA';
+		}
+		my $array = $templatesHash{$plugin};
+		if(!defined($array)) {
+			my @newArray = ();
+			$array = \@newArray;
+			$templatesHash{$plugin} = $array;
+		}
+		push @$array,$templates->{$key};
+	}
+	for my $key (keys %templatesHash) {
+		my $array = $templatesHash{$key};
+		my @sortedArray = sort { uc($a->{'name'}) cmp uc($b->{'name'}) } @$array;
+		$templatesHash{$key} = \@sortedArray;
+	}
+	return \%templatesHash;
+}
 
 sub handleWebNewPlaylistTypes {
 	my ($client, $params) = @_;
@@ -692,15 +747,466 @@ sub handleWebNewPlaylistTypes {
 		$params->{'pluginSQLPlayListRedirect'} = 1;
 	}
 	my $templatesHash = readTemplateConfiguration($client);
-	my @templates = ();
-	for my $key (keys %$templatesHash) {
-		push @templates,$templatesHash->{$key};
-	}
-	@templates = sort { $a->{'name'} cmp $b->{'name'} } @templates;
+	my @collections = ();
+	my $structuredTemplates = structurePlaylistTypes($templatesHash);
 
-	$params->{'pluginSQLPlayListTemplates'} = \@templates;
+	for my $key (sort keys %$structuredTemplates) {
+		my $name = $key;
+		if($name eq 'AAA') {
+			$name = 'Builtin playlists';
+		}elsif($name eq 'ZZZ') {
+			$name = 'Custom or downloaded playlists';
+		}else {
+			$name =~ s/^Plugins:://;
+			$name =~ s/::Plugin$//;
+			$name .= ' playlists';
+		}
+		my %collection = (
+			'name' => $name,
+			'templates' => $structuredTemplates->{$key}
+		);
+		push @collections,\%collection;
+	}
+
+	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+	if(!defined($templateDir) || !-d $templateDir) {
+		$params->{'pluginSQLPlayListDownloadMessage'} = 'You have to specify a template directory before you can download playlists';
+	}
+	if(!defined($params->{'pluginSQLPlayListDownloadMessage'}) && $soapLiteError) {
+		$params->{'pluginSQLPlayListDownloadMessage'} = "Could not use the internal web service implementation, please download and install SOAP::Lite manually";
+	}
+	$params->{'pluginSQLPlayListTemplates'} = \@collections;
+	$params->{'pluginSQLPlayListPostUrl'} = "sqlplaylist_newplaylistparameters.html";
 	
         return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylisttypes.html', $params);
+}
+
+sub handleWebLogin {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+	$params->{'pluginSQLPlayListLoginPlaylist'} = $params->{'type'};
+	$params->{'pluginSQLPlayListLoginUser'} = Slim::Utils::Prefs::get("plugin_sqlplaylist_login_user");
+	$params->{'pluginSQLPlayListLoginPassword'} = Slim::Utils::Prefs::get("plugin_sqlplaylist_login_password");
+	
+	if(Slim::Utils::Prefs::get("plugin_sqlplaylist_login_user")) {
+	        return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
+	}else {
+	        return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_register.html', $params);
+	}
+}
+
+sub handleWebPublishPlaylistParameters {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+
+	if($params->{'anonymous'}) {
+		$params->{'username'} = undef;
+		$params->{'password'} = undef;
+	}
+	$params->{'pluginSQLPlayListLoginPlaylist'} = $params->{'type'};
+	$params->{'pluginSQLPlayListLoginUser'} = $params->{'username'};
+	$params->{'pluginSQLPlayListLoginPassword'} = $params->{'password'};
+	$params->{'pluginSQLPlayListLoginFirstName'} = $params->{'firstname'};
+	$params->{'pluginSQLPlayListLoginLastName'} = $params->{'lastname'};
+	$params->{'pluginSQLPlayListLoginEMail'} = $params->{'email'};
+
+	my $versionError = checkWebServiceVersion();
+	if(defined($versionError)) {
+		$params->{'pluginSQLPlayListError'} = $versionError;
+		if($params->{'register'}) {
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
+		}else {
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_register.html', $params);
+		}
+	}
+
+	if($params->{'register'}) {
+		if(!$params->{'username'} || !$params->{'password'} || !$params->{'firstname'} || !$params->{'lastname'}) {
+			$params->{'pluginSQLPlayListError'} = "Please provide all information";
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_register.html', $params);
+		}
+		my $email = $params->{'email'};
+		if(!defined($email)) {
+			$email = '';
+		}
+		my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email);
+		unless($answer->fault) {
+			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_user",$params->{'username'});
+			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_password",$params->{'password'});
+		}else {
+			$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_register.html', $params);
+		}
+	}elsif(!$params->{'anonymous'}){
+		my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->loginUser($params->{'username'},$params->{'password'});
+		unless($answer->fault) {
+			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_user",$params->{'username'});
+			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_password",$params->{'password'});
+		}else {
+			$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
+		}
+	}
+
+	my $playlist = getPlayList($client,$params->{'type'});
+	if($playlist) {
+		my $playlistId = $playlist->{'file'};
+		if(defined($playlist->{'simple'})) {
+			my $templateData = loadTemplateValues($playlist->{'file'});
+			$playlistId =~ s/\.sql\.values$//;
+			$playlistId =~ s/^published_//;
+			if(defined($templateData)) {
+				my $templates = readTemplateConfiguration($client);
+				my $template = $templates->{$templateData->{'id'}};
+				if(defined($template)) {
+					$params->{'pluginSQLPlayListPublishName'} = unescape($params->{'type'});
+					$params->{'pluginSQLPlayListPublishDescription'} = $template->{'description'};
+					$params->{'pluginSQLPlayListPublishUniqueId'} = $playlistId;
+					return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
+				}
+			}
+		}else {
+			$playlistId =~ s/\.sql$//;
+			$params->{'pluginSQLPlayListPublishName'} = $playlist->{'name'};
+			$params->{'pluginSQLPlayListPublishUniqueId'} = $playlistId;
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
+		}
+	}
+	$params->{'pluginSQLPlayListError'} = "Failed to read selected playlist";
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
+}
+
+sub niceFault {
+	my $fault = shift;
+	if(defined($fault)) {
+		$fault =~ s/^.*?Exception.*?:\s*//;
+	}
+	return $fault;
+}
+sub updateTemplateBeforePublish {
+	my $templateData = shift;
+	my $name = shift;
+	my $description = shift;
+
+	$templateData =~ s/<templatefile>.*<\/templatefile>//m;
+	if(defined($name)) {
+		$templateData =~ s/<name>.*<\/name>/<name>$name<\/name>/m;
+	}
+	if(defined($description)) {
+		$templateData =~ s/<description>.*<\/description>/<description>$description<\/description>/m;
+	}
+	$templateData =~ s/\s*<downloadidentifier>.*<\/downloadidentifier>//m;
+	$templateData =~ s/\s*<lastchanged>.*<\/lastchanged>//m;
+
+	return $templateData;
+}
+sub handleWebPublishPlaylist {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+
+	$params->{'pluginSQLPlayListLoginPlaylist'} = $params->{'type'};
+	$params->{'pluginSQLPlayListLoginUser'} = $params->{'username'};
+	$params->{'pluginSQLPlayListLoginPassword'} = $params->{'password'};
+	$params->{'pluginSQLPlayListPublishName'} = $params->{'playlistname'};
+	$params->{'pluginSQLPlayListPublishDescription'} = $params->{'playlistdescription'};
+	$params->{'pluginSQLPlayListPublishUniqueId'} = $params->{'playlistuniqueid'};
+
+	if(!$params->{'playlistname'} || !$params->{'playlistdescription'} || !$params->{'playlistuniqueid'}) {
+		$params->{'pluginSQLPlayListError'} = "All parameters must be specified";
+		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
+	}
+	my $playlist = getPlayList($client,$params->{'type'});
+	if($playlist) {
+		my $playlistId = $playlist->{'file'};
+		my $publishData = undef;
+		if(defined($playlist->{'simple'})) {
+			my $templateData = loadTemplateValues($playlist->{'file'});
+			$playlistId =~ s/\.sql\.values$//;
+			if($params->{'playlistuniqueid'} !~ /^published_/) {
+				$params->{'playlistuniqueid'} = 'published_'.$params->{'playlistuniqueid'};
+			}
+			if(defined($templateData)) {
+				my $templates = readTemplateConfiguration($client);
+				my $template = $templates->{$templateData->{'id'}};
+				if(defined($template)) {
+					my $templateFile = $playlistId.".sql.template";
+					if(defined($template->{'templatefile'})) {
+						$templateFile = $template->{'templatefile'};
+					}
+					my $templateXml = loadRawTemplateData($playlistId.'.sql.xml');
+					$templateXml = updateTemplateBeforePublish($templateXml,$params->{'playlistname'},$params->{'playlistdescription'});
+					$publishData = '';
+					$publishData .= '<entry>';
+					$publishData .= '<id>'.$params->{'playlistuniqueid'}.'</id>';
+					$publishData .= '<title>'.$params->{'playlistname'}.'</title>';
+					$publishData .= '<description>'.$params->{'playlistdescription'}.'</description>';
+					$publishData .= '<data>';
+					$publishData .= '<type>sql.xml</type>';
+					$publishData .= '<content>'.encode_entities($templateXml,"&<>\'\"").'</content>';
+					$publishData .= '</data>';
+					$publishData .= '<data>';
+					$publishData .= '<type>sql.template</type>';
+					$publishData .= '<content>'.encode_entities(loadRawTemplateData($templateFile),"&<>\'\"").'</content>';
+					$publishData .= '</data>';
+					$publishData .= '</entry>';
+				}
+			}
+		}else {
+			my $templateXml = '';
+			$templateXml .= '<?xml version="1.0" encoding="utf-8"?>'."\n";
+			$templateXml .= '<sqlplaylist>'."\n";
+			$templateXml .= '	<template>'."\n";
+			$templateXml .= '		<name>'.$params->{'playlistname'}.'</name>'."\n";
+			$templateXml .= '		<description>'.$params->{'playlistdescription'}.'</description>'."\n";
+			$templateXml .= '		<parameter type="text" id="playlistname" name="Playlist name" value="'.$params->{'playlistname'}.'"/>'."\n";
+			$templateXml .= '		<parameter type="text" id="playlistgroups" name="Groups" value=""/>'."\n";
+			$templateXml .= '	</template>'."\n";
+			$templateXml .= '</sqlplaylist>'."\n";
+ 
+                
+			my $templateData = '';
+			$templateData  .= "-- PlaylistName:[% playlistname %]\n";
+			$templateData  .= "-- PlaylistGroups:[% playlistgroups %]\n";
+			$templateData  .= $playlist->{'fulltext'};
+
+			$publishData = '';
+			$publishData .= '<entry>';
+			$publishData .= '<id>'.$params->{'playlistuniqueid'}.'</id>';
+			$publishData .= '<title>'.$params->{'playlistname'}.'</title>';
+			$publishData .= '<description>'.$params->{'playlistdescription'}.'</description>';
+			$publishData .= '<data>';
+			$publishData .= '<type>sql.xml</type>';
+			$publishData .= '<content>'.encode_entities($templateXml,"&<>\'\"").'</content>';
+			$publishData .= '</data>';
+			$publishData .= '<data>';
+			$publishData .= '<type>sql.template</type>';
+			$publishData .= '<content>'.encode_entities($templateData,"&<>\'\"").'</content>';
+			$publishData .= '</data>';
+			$publishData .= '</entry>';
+		}
+		if(defined($publishData)) {
+			my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->addDataEntry($params->{'username'},$params->{'password'},"SQLPlayList",0,$publishData);
+			unless ($answer->fault) {
+				return handleWebList($client, $params);
+			}else {
+				$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+				return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
+			}
+		}
+	}
+	$params->{'pluginSQLPlayListError'} = "Failed to read selected playlist";
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
+}
+
+sub checkWebServiceVersion {
+	my $answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->apiVersion();
+	unless ($answer->fault) {
+		if($answer->result() =~ /^(\d+)\.(\d+)$/) {
+			if($1 ne "1") {
+				return "This version of SQLPlayList plugin is incompatible with the current download service, please upgrade";
+			}else {
+				return undef;
+			}
+		}else {
+			return "This version of SQLPlayList plugin is incompatible with the current download service, please upgrade";
+		}
+	} else {
+		return "Unable to contact web service, ".niceFault($answer->faultstring);
+	}
+}
+
+sub handleWebDownloadPlaylists {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+	
+	my $versionError = checkWebServiceVersion();
+	if(defined($versionError)) {
+		$params->{'pluginSQLPlayListError'} = $versionError;
+		return handleWebNewPlaylistTypes($client,$params);
+	}
+
+	my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntries("SQLPlayList");
+	unless ($answer->fault) {
+		my $result = $answer->result();
+		my $xml = eval { XMLin($result, forcearray => ['collection','entry'], keyattr => []) };
+		my $collections = $xml->{'collection'};
+		if(defined($collections)) {
+			my @collectionTemplates = ();
+			for my $collection (@$collections) {
+				my %collectionTemplate = (
+					'id' => $collection->{'id'},
+					'name' => $collection->{'title'},
+					'user' => $collection->{'username'}
+				);
+				if(defined($collection->{'description'}) && ref($collection->{'description'}) ne 'HASH') {
+					$collectionTemplate{'description'} = $collection->{'description'};
+				}else {
+					$collectionTemplate{'description'} = '';
+				}
+				if($collectionTemplate{'user'} eq 'SQLPlayList') {
+					$collectionTemplate{'user'} = 'anonymous';
+				}
+				if($collectionTemplate{'name'} eq 'SQLPlayList') {
+					$collectionTemplate{'name'} = 'Downloadable playlists';
+				}
+				if($collectionTemplate{'description'} eq 'Collection for SQLPlayList') {
+					$collectionTemplate{'description'} = '';
+				}
+
+				my $entries = $collection->{'entries'}->{'entry'};
+				if(defined($entries)) {
+					my @entryTemplates = ();
+					for my $entry (@$entries) {
+						my %template = (
+							'id' => $entry->{'id'},
+							'name' => $entry->{'title'},
+							'description' => $entry->{'description'},
+							'lastchanged' => $entry->{'lastchanged'}
+						);
+						push @entryTemplates, \%template;
+					}
+					if(scalar(@entryTemplates>0)) {
+						$collectionTemplate{'templates'} = \@entryTemplates;
+					}
+				}
+				if(defined($collectionTemplate{'templates'})) {
+					push @collectionTemplates, \%collectionTemplate;
+				}
+			}
+			$params->{'pluginSQLPlayListTemplates'} = \@collectionTemplates;
+			$params->{'pluginSQLPlayListPostUrl'} = "sqlplaylist_downloadplaylist.html";
+	        	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylisttypes.html', $params);
+		}
+		$params->{'pluginSQLPlayListError'} = "No playlists available to download";
+		return handleWebNewPlaylistTypes($client,$params);
+	}else {
+		$params->{'pluginSQLPlayListError'} = "Unable to reach download site: ".niceFault($answer->faultstring);
+		return handleWebNewPlaylistTypes($client,$params);
+	}
+}
+
+sub handleWebDownloadNewPlaylists {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+
+	my $templates = readTemplateConfiguration($client);
+	my $error = '';
+	my $message = '';
+	for my $key (%$templates) {
+		my $template = $templates->{$key};
+		if(defined($template->{'downloadidentifier'})) {
+			my $identifier = $key;
+			$identifier =~ s/\.sql\.xml$//;
+			my $result = downloadPlaylist($template->{'downloadidentifier'},$identifier);
+			if(defined($result->{'error'})) {
+				$error .= $template->{'name'}.": ".$result->{'error'}."<br>";
+			}
+			$message .= "- ".$template->{'name'}." (".$key.")<br>";
+		}
+	}
+	if($message ne '') {
+		$params->{'pluginSQLPlayListMessage'} = "Downloaded following playlists:<br>".$message;
+	}
+	if($error ne '') {
+		$params->{'pluginSQLPlayListError'} = $error;
+	}
+	return handleWebList($client,$params);
+}
+
+sub handleWebDownloadPlaylist {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+	my $result = downloadPlaylist($params->{'playlisttemplate'},$params->{'customname'},$params->{'overwrite'});
+	if(defined($result->{'error'})) {
+		$params->{'pluginSQLPlayListError'} = $result->{'error'};
+	        return handleWebDownloadPlaylists($client,$params);
+	}
+	if($result->{'filenamecollision'}) {
+		$params->{'pluginSQLPlayListTemplate'} = $params->{'playlisttemplate'};
+		$params->{'pluginSQLPlayListUniqueId'} = $result->{'template'};
+		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_savedownloadedplaylist.html', $params);
+	}else {
+		$params->{'playlisttemplate'} = $result->{'template'};
+		return handleWebNewPlaylistParameters($client,$params);
+	}
+}
+
+sub downloadPlaylist {
+	my $id = shift;
+	my $customname = shift;
+	my $overwrite = shift;
+	my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntry($id);
+	my %result = ();
+	unless ($answer->fault) {
+		my $result = $answer->result();
+		my $xml = eval { XMLin($result, forcearray => ['data'], keyattr => []) };
+		my $template = $xml->{'uniqueid'};
+		if(!defined($customname)) {
+			$customname = $template;
+		}
+		my $datas = $xml->{'datas'}->{'data'};
+		if(defined($datas)) {
+			my %dataToStore = ();
+			for my $data (@$datas) {
+				if($data->{'type'} eq 'sql.template') {
+					my $content = $data->{'content'};
+					$dataToStore{$data->{'type'}} = $content;
+				}elsif($data->{'type'} eq 'sql.xml') {
+					my $content = $data->{'content'};
+					$content =~ s/\s*<downloadidentifier>.*<\/downloadidentifier>//m;
+					$content =~ s/<template>/<template>\n\t\t<downloadidentifier>$id<\/downloadidentifier>/m;
+					if(defined($xml->{'lastchanged'})) {
+						$content =~ s/\s*<lastchanged>.*<\/lastchanged>//m;
+						my $lastchanged = $xml->{'lastchanged'};
+						$content =~ s/<\/downloadidentifier>/<\/downloadidentifier>\n\t\t<lastchanged>$lastchanged<\/lastchanged>/m;
+					}
+					$dataToStore{$data->{'type'}} = $content;
+				}
+			}
+			if(defined($dataToStore{'sql.template'}) && defined($dataToStore{'sql.xml'})) {
+				my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+				for my $key (keys %dataToStore) {
+					my $file = $customname.".".$key;
+					my $url = catfile($templateDir,$file);
+					if(-e $url && !$overwrite) {
+						$result{'filenamecollision'} = 1;
+						$result{'template'} = $customname;
+						return \%result;
+					}
+					my $fh;
+					open($fh,"> $url") or do {
+						$result{'error'} = 'Error saving downloaded playlist';
+					        return \%result;
+					};
+					debugMsg("Writing to file: $url\n");
+					print $fh $dataToStore{$key};
+					debugMsg("Writing to file succeeded\n");
+					close $fh;
+				}
+				$result{'template'} = $customname.'.sql.xml';
+				return \%result;
+			}
+			$result{'error'} = "Unable to download playlist";
+			return \%result;
+		}
+		$result{'error'} = "No playlists available to download";
+		return \%result;
+	}else {
+		$result{'error'} = "Unable to reach download site";
+		return \%result;
+	}
 }
 
 sub handleWebNewPlaylistParameters {
@@ -726,6 +1232,36 @@ sub handleWebNewPlaylistParameters {
 	}
 	$params->{'pluginSQLPlayListNewPlayListParameters'} = \@parametersToSelect;
         return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_newplaylistparameters.html', $params);
+}
+
+sub handleWebDeletePlaylistType {
+	my ($client, $params) = @_;
+        if ($::VERSION ge '6.5') {
+                $params->{'pluginSQLPlayListSlimserver65'} = 1;
+        }
+	if(defined($params->{'redirect'})) {
+		$params->{'pluginSQLPlayListRedirect'} = 1;
+	}
+	my $templateDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory");
+	if (defined $templateDir && -d $templateDir) {
+		my $templateId = $params->{'playlisttemplate'};
+		my $path = catfile($templateDir, $templateId);
+		if(-e $path) {
+			debugMsg("Deleting: ".$path."\n");
+			unlink($path) or do {
+				warn "Unable to delete file: ".$path.": $! \n";
+			}
+		}
+		$templateId =~ s/\.sql\.xml/.sql.template/;
+		$path = catfile($templateDir, $templateId);
+		if(-e $path) {
+			debugMsg("Deleting: ".$path."\n");
+			unlink($path) or do {
+				warn "Unable to delete file: ".$path.": $! \n";
+			}
+		}
+	}
+	return handleWebNewPlaylistTypes($client,$params);
 }
 
 sub handleWebNewPlaylist {
@@ -820,7 +1356,7 @@ sub handleWebSaveNewSimplePlaylist {
 	my $file = unescape($params->{'file'});
 	my $url = catfile($browseDir, $file);
 	
-	if(!defined($params->{'pluginSQLPlayListError'}) && -e $url) {
+	if(!defined($params->{'pluginSQLPlayListError'}) && -e $url && !$params->{'overwrite'}) {
 		$params->{'pluginSQLPlayListError'} = 'Invalid filename, file already exist';
 	}
 
@@ -1346,6 +1882,8 @@ sub readPlaylistsFromDir {
 				$playlist{'file'} = $item;
 				if($defaultPlaylist) {
 					$playlist{'defaultplaylist'} = 1;
+				}else {
+					$playlist{'customplaylist'} = 1;
 				}
 		                $playlists->{$playlistId} = \%playlist;
 			}else {
@@ -1402,7 +1940,7 @@ sub readTemplateConfiguration {
 	my %templates = ();
 	for my $plugindir (@pluginDirs) {
 		next unless -d catdir($plugindir,"SQLPlayList","Templates");
-		readTemplateConfigurationFromDir($client,catdir($plugindir,"SQLPlayList","Templates"),\%templates);
+		readTemplateConfigurationFromDir($client,0,catdir($plugindir,"SQLPlayList","Templates"),\%templates);
 	}
 
 	no strict 'refs';
@@ -1439,7 +1977,7 @@ sub readTemplateConfiguration {
 
 	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
 	if($templateDir && -d $templateDir) {
-		readTemplateConfigurationFromDir($client,$templateDir,\%templates);
+		readTemplateConfigurationFromDir($client,1,$templateDir,\%templates);
 	}
 
 	return \%templates;
@@ -1447,6 +1985,7 @@ sub readTemplateConfiguration {
 
 sub readTemplateConfigurationFromDir {
     my $client = shift;
+    my $customplaylist = shift;
     my $templateDir = shift;
     my $templates = shift;
     debugMsg("Loading template configuration from: $templateDir\n");
@@ -1460,7 +1999,7 @@ sub readTemplateConfigurationFromDir {
 
         # read_file from File::Slurp
         my $content = eval { read_file($path) };
-	my $error = parseTemplateContent($client,$item,$content,$templates);
+	my $error = parseTemplateContent($client,$customplaylist, $item,$content,$templates);
 	if($error) {
 		errorMsg("Unable to read: $path\n");
 	}
@@ -1469,6 +2008,7 @@ sub readTemplateConfigurationFromDir {
 
 sub parseTemplateContent {
 	my $client = shift;
+	my $customplaylist = shift;
 	my $key = shift;
 	my $content = shift;
 	my $templates = shift;
@@ -1485,6 +2025,9 @@ sub parseTemplateContent {
 		my $include = isTemplateEnabled($client,$xml);
 		if(defined($xml->{'template'})) {
 			$xml->{'template'}->{'id'} = $key;
+			if($customplaylist) {
+				$xml->{'template'}->{'customplaylist'} = 1;
+			}
 		}
 		if($include && defined($xml->{'template'})) {
 	                $templates->{$key} = $xml->{'template'};
@@ -1578,6 +2121,9 @@ sub parseTemplatePlaylistContent {
 				if($defaultPlaylist) {
 					$playlist{'defaultplaylist'} = 1;
 				}
+				if(defined($template->{'customplaylist'})) {
+					$playlist{'customplaylist'} = 1;
+				}
 				$playlist{'file'} = $item;
 				$playlist{'data'} = $playlistData;
 		                $playlists->{$playlistId} = \%playlist;
@@ -1612,6 +2158,66 @@ sub getPluginTemplateData {
 	use strict 'refs';
 	return \$templateFileData;
 }
+
+sub loadTemplateValues {
+	my $file = shift;
+	my $templateData = undef;
+	my $browseDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
+	if (!defined $browseDir || !-d $browseDir) {
+		debugMsg("Skipping playlist configuration - directory is undefined\n");
+	}else {
+		$templateData = loadTemplateData($browseDir,$file);
+	}
+	if(!defined($templateData)) {
+		my @pluginDirs = ();
+		if ($::VERSION ge '6.5') {
+			@pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
+		}else {
+			@pluginDirs = catdir($Bin, "Plugins");
+		}
+		for my $plugindir (@pluginDirs) {
+			next unless -d catdir($plugindir,"SQLPlayList","Playlists");
+			$templateData = loadTemplateData(catdir($plugindir,"SQLPlayList","Playlists"),$file);
+			if(defined($templateData)) {
+				last;
+			}
+		}
+	}
+	return $templateData;
+}
+
+sub loadRawTemplateData {
+	my $file = shift;
+
+	my $templateData = undef;
+	my $browseDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory");
+	if (!defined $browseDir || !-d $browseDir) {
+		debugMsg("Skipping playlist configuration - directory is undefined\n");
+	}else {
+		my $path = catfile($browseDir, $file);
+		if( -f $path ) {
+			$templateData = eval { read_file($path) };
+		}
+	}
+	if(!defined($templateData)) {
+		my @pluginDirs = ();
+		if ($::VERSION ge '6.5') {
+			@pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
+		}else {
+			@pluginDirs = catdir($Bin, "Plugins");
+		}
+		for my $plugindir (@pluginDirs) {
+			next unless -d catdir($plugindir,"SQLPlayList","Templates");
+			my $path = catfile($browseDir, $file);
+			if( -f $path ) {
+				$templateData = eval { read_file($path) };
+				last;
+			}
+		}
+	}
+	return $templateData;
+}
+
 sub loadTemplateData {
 	my $browseDir = shift;
 	my $file = shift;
@@ -1956,6 +2562,12 @@ sub checkDefaults {
 		# Default to not show debug messages
 		debugMsg("Defaulting plugin_sqlplaylist_showmessages to 0\n");
 		Slim::Utils::Prefs::set('plugin_sqlplaylist_showmessages', 0);
+	}
+	$prefVal = Slim::Utils::Prefs::get('plugin_sqlplaylist_download_url');
+	if (! defined $prefVal) {
+		# Default to not show debug messages
+		debugMsg("Defaulting plugin_sqlplaylist_download_url\n");
+		Slim::Utils::Prefs::set('plugin_sqlplaylist_download_url', 'http://erland.homeip.net/datacollection/services/DataCollection');
 	}
 }
 
@@ -2631,6 +3243,9 @@ PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST
 PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION
 	EN	Are you sure you want to delete this playlist ?
 
+PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_TYPE_QUESTION
+	EN	Removing a playlist type might cause problems later if it is used in existing playlists, are you really sure you want to delete this playlist type ?
+
 PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_TITLE
 	EN	Genres
 
@@ -2774,6 +3389,87 @@ PLUGIN_SQLPLAYLIST_NEW_PLAYLIST_PARAMETERS_TITLE
 
 PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_PARAMETERS_TITLE
 	EN	Please enter playlist parameters
+
+PLUGIN_SQLPLAYLIST_LOGIN_USER
+	EN	Username
+
+PLUGIN_SQLPLAYLIST_LOGIN_PASSWORD
+	EN	Password
+
+PLUGIN_SQLPLAYLIST_LOGIN_FIRSTNAME
+	EN	First name
+
+PLUGIN_SQLPLAYLIST_LOGIN_LASTNAME
+	EN	Last name
+
+PLUGIN_SQLPLAYLIST_LOGIN_EMAIL
+	EN	e-mail
+
+PLUGIN_SQLPLAYLIST_ANONYMOUSLOGIN
+	EN	Anonymous
+
+PLUGIN_SQLPLAYLIST_LOGIN
+	EN	Login
+
+PLUGIN_SQLPLAYLIST_REGISTERLOGIN
+	EN	Register &amp; Login
+
+PLUGIN_SQLPLAYLIST_REGISTER_TITLE
+	EN	Register a new user
+
+PLUGIN_SQLPLAYLIST_LOGIN_TITLE
+	EN	Login
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_PLAYLISTS
+	EN	Download more playlists
+
+PLUGIN_SQLPLAYLIST_PUBLISH_PLAYLIST
+	EN	Publish
+
+PLUGIN_SQLPLAYLIST_PUBLISH
+	EN	Publish
+
+PLUGIN_SQLPLAYLIST_PUBLISHPARAMETERS_TITLE
+	EN	Please specify information about the playlist
+
+PLUGIN_SQLPLAYLIST_PUBLISH_NAME
+	EN	Name
+
+PLUGIN_SQLPLAYLIST_PUBLISH_DESCRIPTION
+	EN	Description
+
+PLUGIN_SQLPLAYLIST_PUBLISH_ID
+	EN	Unique identifier
+
+PLUGIN_SQLPLAYLIST_LASTCHANGED
+	EN	Last changed
+
+PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE
+	EN	Thanks for choosing to publish your playlist. The advantage of publishing a playlist is that other users can use it and it will also be used for ideas of new functionallity in the SQLPlayList plugin. Publishing a playlist is also a great way of improving the functionality in the SQLPlayList plugin by showing the developer what types of playlists you use, besides those already included with the plugin.
+
+PLUGIN_SQLPLAYLIST_REGISTERMESSAGE
+	EN	You can choose to publish your playlist either anonymously or by registering a user and login. The advantage of registering is that other people will be able to see that you have published the playlist, you will get credit for it and you will also be sure that no one else can update or change your published playlist. The e-mail adress will only be used to contact you if I have some questions to you regarding one of your playlists, it will not show up on any web pages. If you already have registered a user, just hit the Login button.
+
+PLUGIN_SQLPLAYLIST_LOGINMESSAGE
+	EN	You can choose to publish your playlist either anonymously or by registering a user and login. The advantage of registering is that other people will be able to see that you have published the playlist, you will get credit for it and you will also be sure that no one else can update or change your published playlist. Hit the &quot;Register &amp; Login&quot; button if you have not previously registered.
+
+PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE_DESCRIPTION
+	EN	It is important that you enter a good description of your playlist, describe what your playlist do and if it is based on one of the existing playlists it is a good idea to mention this and describe which extensions you have made. <br><br>It is also a good idea to try to make the &quot;Unique identifier&quot; as uniqe as possible as this will be used for filename when downloading the playlist. This is especially important if you have choosen to publish your playlist anonymously as it can easily be overwritten if the identifier is not unique. Please try to not use spaces and language specific characters in the unique identifier since these could cause problems on some operating systems.
+
+PLUGIN_SQLPLAYLIST_REFRESH_DOWNLOADED_PLAYLISTS
+	EN	Download last version of existing playlists
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE_WARNING
+	EN	A playlist type with that name already exists, please change the name or select to overwrite the existing playlist type
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE
+	EN	Overwrite existing
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME
+	EN	Unique identifier
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_OVERWRITE
+	EN	Overwrite existing
 EOF
 
 }

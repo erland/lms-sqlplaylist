@@ -52,6 +52,9 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 				[% odd = 1 %]
 				[% FOREACH type IN pluginSQLPlayListPlayLists.keys %]
 					[% BLOCK controls %]
+						[%- IF pluginSQLPlayListPlayLists.$type.customplaylist %]
+						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_login.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_PUBLISH_PLAYLIST" | string %]</a>
+						[%- END %]
 						[%- IF !pluginSQLPlayListPlayLists.$type.defaultplaylist %]
 						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_removeplaylist.html?type=[% type |uri %]&player=[% player | uri %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST" | string %]</a>
 						[%- END %]
@@ -96,10 +99,13 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 			</tr>
 
 			<tr>
-				<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylisttypes.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a></td>
+				<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylisttypes.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a>&nbsp;&nbsp;&nbsp;<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_downloadnewplaylists.html?player=[% player | uri %]" [% IF pluginSQLPlayListDownloadMessage %]onClick="alert('[% pluginSQLPlayListDownloadMessage %]');return false;"[% END %]>[% "PLUGIN_SQLPLAYLIST_REFRESH_DOWNLOADED_PLAYLISTS" | string %]</a></td>
 			</tr>
 			[% IF pluginSQLPlayListError %]
 				<tr><td colspan="4"><br><br><strong>[% pluginSQLPlayListError %]</strong></td></tr>
+			[% END %]
+			[% IF pluginSQLPlayListMessage %]
+				<tr><td colspan="4"><br><br>[% pluginSQLPlayListMessage %]</td></tr>
 			[% END %]
 		[% END %]
 [% PROCESS pagefooter.html %]

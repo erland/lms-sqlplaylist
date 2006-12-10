@@ -24,14 +24,27 @@
 <table border="0" width="100%">
 	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST_TYPES_TITLE" | string %]</b></td></tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
+	<tr><td colspan="3"><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_downloadplaylists.html?player=[% player | uri %]" [% IF pluginSQLPlayListDownloadMessage %]onClick="alert('[% pluginSQLPlayListDownloadMessage %]');return false;"[% END %]>[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_PLAYLISTS" | string %]</a></td></tr>
+	[% IF pluginSQLPlayListError %]
+	<tr><td colspan="3">
+	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	</td></tr>
+	[% END %]
 	[% odd = 1 %]
-	[%- FOREACH playlist IN pluginSQLPlayListTemplates %]
-		<tr>
-			<td class="[% IF odd %]odd[% ELSE %]even[% END %]"><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylistparameters.html?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]">[% playlist.name %]</a></td>
-			<td class="[% IF odd %]odd[% ELSE %]even[% END %]">&nbsp;&nbsp;&nbsp;</td>
-			<td class="[% IF odd %]odd[% ELSE %]even[% END %]"><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylistparameters.html?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]">[% playlist.description %]</a></td>
-		</tr>
-		[% odd = !odd %]
+	[%- FOREACH collection IN pluginSQLPlayListTemplates %]
+		<tr><td colspan="3">&nbsp;</td></tr>
+		<tr><td colspan="3"><strong>[% collection.name %][% IF collection.user %] (by [% collection.user %])[% END %]</strong></td></tr>
+		[% IF collection.description %]
+		<tr><td colspan="3">[% collection.description %]</td></tr>
+		[% END %]
+		[%- FOREACH playlist IN collection.templates %]
+			<tr>
+				<td class="[% IF odd %]odd[% ELSE %]even[% END %]" nowrap><a href="[% webroot %]plugins/SQLPlayList/[% pluginSQLPlayListPostUrl %]?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]">[% playlist.name %]</a>[% IF playlist.customplaylist %] (<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_deleteplaylisttype.html?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_TYPE_QUESTION" | string %]')">[% "DELETE" |string %]</a>)[% END %]</td>
+				<td class="[% IF odd %]odd[% ELSE %]even[% END %]">&nbsp;&nbsp;&nbsp;</td>
+				<td class="[% IF odd %]odd[% ELSE %]even[% END %]"><a href="[% webroot %]plugins/SQLPlayList/[% pluginSQLPlayListPostUrl %]?playlisttemplate=[% playlist.id %]&player=[% player | uri %][% IF pluginSQLPlayListRedirect %]&redirect=1[% END %]">[% playlist.description %]</a>[% IF playlist.lastchanged %]<br>([% "PLUGIN_SQLPLAYLIST_LASTCHANGED" | string %]: [% playlist.lastchanged %])[% END %]</td>
+			</tr>
+			[% odd = !odd %]
+		[%- END %]
 	[%- END %]
 </table>
 [% PROCESS pagefooter.html %]
