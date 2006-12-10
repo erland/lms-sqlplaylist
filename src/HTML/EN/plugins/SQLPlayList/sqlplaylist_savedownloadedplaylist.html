@@ -1,0 +1,48 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+	[% PROCESS plugins/SQLPlayList/css65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_downloadplaylist.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
+	<input type="hidden" name="playlisttemplate" value="[% pluginSQLPlayListTemplate %]">
+	<table>
+	<tr><td colspan="2">
+	<br><div>[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE_WARNING" |string %]</div><br>
+	</td></tr>
+	<tr><td>
+	[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME" | string %]: 
+	</td><td>
+	<input type="text" name="customname" size="40" value="[% pluginSQLPlayListUniqueId %]">
+	</td></tr>
+	<tr><td>
+	[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE" | string %]: 
+	</td><td>
+	<input type="checkbox" name="overwrite" id="overwrite" value="1">
+	</td></tr>
+	[% IF pluginSQLPlayListError %]
+	<tr><td colspan="2">
+	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	</td></tr>
+	[% END %]
+	<tr><td>&nbsp;</td></tr>
+	<tr><td>
+	<input type="submit" value="[% "SAVE" | string %]">
+	</td></tr>
+	</table>
+</form>
+[% PROCESS pagefooter.html %]

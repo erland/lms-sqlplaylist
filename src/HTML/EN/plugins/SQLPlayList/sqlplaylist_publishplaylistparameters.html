@@ -1,0 +1,54 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+	[% PROCESS plugins/SQLPlayList/css65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF !pluginSQLPlayListSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+<table border="0">
+<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_publishplaylist.html" name="editForm" accept-charset="iso8859-1">
+	<input type="hidden" name="type" value="[% pluginSQLPlayListLoginPlaylist %]">
+	<input type="hidden" name="username" value="[% pluginSQLPlayListLoginUser %]">
+	<input type="hidden" name="password" value="[% pluginSQLPlayListLoginPassword %]">
+	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_PUBLISHPARAMETERS_TITLE" | string %]</b></td></tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	</td></tr>
+	[% IF pluginSQLPlayListError %]
+	<tr><td colspan="2">
+	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	</td></tr>
+	[% END %]
+	<tr>
+		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_NAME" | string %]</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td><input type="text" name="playlistname" size="40" value="[% pluginSQLPlayListPublishName %]"></td>
+	</tr>
+	<tr>
+		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_DESCRIPTION" | string %]</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td><textarea name="playlistdescription" cols="40" rows="5">[% pluginSQLPlayListPublishDescription %]</textarea></td>
+	</tr>
+	<tr>
+		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_ID" | string %]</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td><input type="text" name="playlistuniqueid" size="40" value="[% pluginSQLPlayListPublishUniqueId %]"></td>
+	</tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	<tr><td colspan="3">[% "PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE_DESCRIPTION" | string %]</td></tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	<tr><td colspan="3"><input type="submit" value="[% "PLUGIN_SQLPLAYLIST_PUBLISH" | string %]"></td></tr>
+</form>
+</table>
+[% PROCESS pagefooter.html %]
