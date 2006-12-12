@@ -45,6 +45,11 @@
 		<td>&nbsp;&nbsp;&nbsp;</td>
 		<td><input type="text" name="playlistuniqueid" size="40" value="[% pluginSQLPlayListPublishUniqueId %]"></td>
 	</tr>
+	<tr>
+		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_OVERWRITE" | string %]</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td><input type="checkbox" name="overwrite" id="overwrite" value="1" [% IF pluginSQLPlayListPublishOverwrite %]checked[% END%]></td>
+	</tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	<tr><td colspan="3">[% "PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE_DESCRIPTION" | string %]</td></tr>
 	<tr><td colspan="3">&nbsp;</td></tr>

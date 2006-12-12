@@ -866,6 +866,9 @@ sub handleWebPublishPlaylistParameters {
 					$params->{'pluginSQLPlayListPublishName'} = unescape($params->{'type'});
 					$params->{'pluginSQLPlayListPublishDescription'} = $template->{'description'};
 					$params->{'pluginSQLPlayListPublishUniqueId'} = $playlistId;
+					if(defined($template->{'downloadidentifier'})) {
+						$params->{'pluginSQLPlayListPublishOverwrite'} = 1;
+					}
 					return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
 				}
 			}
@@ -895,6 +898,7 @@ sub updateTemplateBeforePublish {
 	$templateData =~ s/<templatefile>.*<\/templatefile>//m;
 	if(defined($name)) {
 		$templateData =~ s/<name>.*<\/name>/<name>$name<\/name>/m;
+		$templateData =~ s/id="playlistname" name="(.*?)" value=".*"/id="playlistname" name="$1" value="$name"/;
 	}
 	if(defined($description)) {
 		$templateData =~ s/<description>.*<\/description>/<description>$description<\/description>/m;
@@ -916,6 +920,11 @@ sub handleWebPublishPlaylist {
 	$params->{'pluginSQLPlayListPublishName'} = $params->{'playlistname'};
 	$params->{'pluginSQLPlayListPublishDescription'} = $params->{'playlistdescription'};
 	$params->{'pluginSQLPlayListPublishUniqueId'} = $params->{'playlistuniqueid'};
+	$params->{'pluginSQLPlayListPublishOverwrite'} = $params->{'overwrite'};
+	my $overwriteFlag = 0;
+	if($params->{'overwrite'}) {
+		$overwriteFlag = 1;
+	}
 
 	if(!$params->{'playlistname'} || !$params->{'playlistdescription'} || !$params->{'playlistuniqueid'}) {
 		$params->{'pluginSQLPlayListError'} = "All parameters must be specified";
@@ -925,12 +934,12 @@ sub handleWebPublishPlaylist {
 	if($playlist) {
 		my $playlistId = $playlist->{'file'};
 		my $publishData = undef;
+		if($params->{'playlistuniqueid'} !~ /^published_/) {
+			$params->{'playlistuniqueid'} = 'published_'.$params->{'playlistuniqueid'};
+		}
 		if(defined($playlist->{'simple'})) {
 			my $templateData = loadTemplateValues($playlist->{'file'});
 			$playlistId =~ s/\.sql\.values$//;
-			if($params->{'playlistuniqueid'} !~ /^published_/) {
-				$params->{'playlistuniqueid'} = 'published_'.$params->{'playlistuniqueid'};
-			}
 			if(defined($templateData)) {
 				my $templates = readTemplateConfiguration($client);
 				my $template = $templates->{$templateData->{'id'}};
@@ -947,11 +956,11 @@ sub handleWebPublishPlaylist {
 					$publishData .= '<title>'.$params->{'playlistname'}.'</title>';
 					$publishData .= '<description>'.$params->{'playlistdescription'}.'</description>';
 					$publishData .= '<data>';
-					$publishData .= '<type>sql.xml</type>';
+					$publishData .= '<type>xml</type>';
 					$publishData .= '<content>'.encode_entities($templateXml,"&<>\'\"").'</content>';
 					$publishData .= '</data>';
 					$publishData .= '<data>';
-					$publishData .= '<type>sql.template</type>';
+					$publishData .= '<type>template</type>';
 					$publishData .= '<content>'.encode_entities(loadRawTemplateData($templateFile),"&<>\'\"").'</content>';
 					$publishData .= '</data>';
 					$publishData .= '</entry>';
@@ -981,17 +990,17 @@ sub handleWebPublishPlaylist {
 			$publishData .= '<title>'.$params->{'playlistname'}.'</title>';
 			$publishData .= '<description>'.$params->{'playlistdescription'}.'</description>';
 			$publishData .= '<data>';
-			$publishData .= '<type>sql.xml</type>';
+			$publishData .= '<type>xml</type>';
 			$publishData .= '<content>'.encode_entities($templateXml,"&<>\'\"").'</content>';
 			$publishData .= '</data>';
 			$publishData .= '<data>';
-			$publishData .= '<type>sql.template</type>';
+			$publishData .= '<type>template</type>';
 			$publishData .= '<content>'.encode_entities($templateData,"&<>\'\"").'</content>';
 			$publishData .= '</data>';
 			$publishData .= '</entry>';
 		}
 		if(defined($publishData)) {
-			my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->addDataEntry($params->{'username'},$params->{'password'},"SQLPlayList",0,$publishData);
+			my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->addDataEntry($params->{'username'},$params->{'password'},"SQLPlayList",0,$overwriteFlag, $publishData);
 			unless ($answer->fault) {
 				return handleWebList($client, $params);
 			}else {
@@ -1160,10 +1169,10 @@ sub downloadPlaylist {
 		if(defined($datas)) {
 			my %dataToStore = ();
 			for my $data (@$datas) {
-				if($data->{'type'} eq 'sql.template') {
+				if($data->{'type'} eq 'template') {
 					my $content = $data->{'content'};
 					$dataToStore{$data->{'type'}} = $content;
-				}elsif($data->{'type'} eq 'sql.xml') {
+				}elsif($data->{'type'} eq 'xml') {
 					my $content = $data->{'content'};
 					$content =~ s/\s*<downloadidentifier>.*<\/downloadidentifier>//m;
 					$content =~ s/<template>/<template>\n\t\t<downloadidentifier>$id<\/downloadidentifier>/m;
@@ -1175,10 +1184,10 @@ sub downloadPlaylist {
 					$dataToStore{$data->{'type'}} = $content;
 				}
 			}
-			if(defined($dataToStore{'sql.template'}) && defined($dataToStore{'sql.xml'})) {
+			if(defined($dataToStore{'template'}) && defined($dataToStore{'xml'})) {
 				my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
 				for my $key (keys %dataToStore) {
-					my $file = $customname.".".$key;
+					my $file = $customname.".sql.".$key;
 					my $url = catfile($templateDir,$file);
 					if(-e $url && !$overwrite) {
 						$result{'filenamecollision'} = 1;
@@ -3463,6 +3472,9 @@ PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE_WARNING
 	EN	A playlist type with that name already exists, please change the name or select to overwrite the existing playlist type
 
 PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE
+	EN	Overwrite existing
+
+PLUGIN_SQLPLAYLIST_PUBLISH_OVERWRITE
 	EN	Overwrite existing
 
 PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME
