@@ -818,9 +818,9 @@ sub handleWebPublishPlaylistParameters {
 	if(defined($versionError)) {
 		$params->{'pluginSQLPlayListError'} = $versionError;
 		if($params->{'register'}) {
-			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
-		}else {
 			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_register.html', $params);
+		}else {
+			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
 		}
 	}
 
@@ -833,21 +833,29 @@ sub handleWebPublishPlaylistParameters {
 		if(!defined($email)) {
 			$email = '';
 		}
-		my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email);
-		unless($answer->fault) {
+		my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email);};
+		unless (!defined($answer) || $answer->fault) {
 			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_user",$params->{'username'});
 			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_password",$params->{'password'});
 		}else {
-			$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+			if(defined($answer)) {
+				$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+			}else {
+				$params->{'pluginSQLPlayListError'} = "Unable to reach publish site";
+			}
 			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_register.html', $params);
 		}
 	}elsif(!$params->{'anonymous'}){
-		my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->loginUser($params->{'username'},$params->{'password'});
-		unless($answer->fault) {
+		my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->loginUser($params->{'username'},$params->{'password'});};
+		unless (!defined($answer) || $answer->fault) {
 			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_user",$params->{'username'});
 			Slim::Utils::Prefs::set("plugin_sqlplaylist_login_password",$params->{'password'});
 		}else {
-			$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+			if(defined($answer)) {
+				$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+			}else {
+				$params->{'pluginSQLPlayListError'} = "Unable to reach publish site";
+			}
 			return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_login.html', $params);
 		}
 	}
@@ -1000,11 +1008,15 @@ sub handleWebPublishPlaylist {
 			$publishData .= '</entry>';
 		}
 		if(defined($publishData)) {
-			my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->addDataEntry($params->{'username'},$params->{'password'},"SQLPlayList",0,$overwriteFlag, $publishData);
-			unless ($answer->fault) {
+			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->addDataEntry($params->{'username'},$params->{'password'},"SQLPlayList",0,$overwriteFlag, $publishData);};
+			unless (!defined($answer) || $answer->fault) {
 				return handleWebList($client, $params);
 			}else {
-				$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+				if(defined($answer)) {
+					$params->{'pluginSQLPlayListError'} = niceFault($answer->faultstring);
+				}else {
+					$params->{'pluginSQLPlayListError'} = "Unable to reach publish site";
+				}
 				return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html', $params);
 			}
 		}
@@ -1014,7 +1026,13 @@ sub handleWebPublishPlaylist {
 }
 
 sub checkWebServiceVersion {
-	my $answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->apiVersion();
+	my $answer = undef;
+	eval {
+		$answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->apiVersion();
+	};
+	if ($@) {
+		return "Unable to contact download/publish site";
+	}
 	unless ($answer->fault) {
 		if($answer->result() =~ /^(\d+)\.(\d+)$/) {
 			if($1 ne "1") {
@@ -1026,7 +1044,7 @@ sub checkWebServiceVersion {
 			return "This version of SQLPlayList plugin is incompatible with the current download service, please upgrade";
 		}
 	} else {
-		return "Unable to contact web service, ".niceFault($answer->faultstring);
+		return "Unable to contact download/publish site: ".niceFault($answer->faultstring);
 	}
 }
 
@@ -1042,8 +1060,8 @@ sub handleWebDownloadPlaylists {
 		return handleWebNewPlaylistTypes($client,$params);
 	}
 
-	my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntries("SQLPlayList");
-	unless ($answer->fault) {
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntries("SQLPlayList");};
+	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
 		my $xml = eval { XMLin($result, forcearray => ['collection','entry'], keyattr => []) };
 		my $collections = $xml->{'collection'};
@@ -1097,7 +1115,11 @@ sub handleWebDownloadPlaylists {
 		$params->{'pluginSQLPlayListError'} = "No playlists available to download";
 		return handleWebNewPlaylistTypes($client,$params);
 	}else {
-		$params->{'pluginSQLPlayListError'} = "Unable to reach download site: ".niceFault($answer->faultstring);
+		if(defined($answer)) {
+			$params->{'pluginSQLPlayListError'} = "Unable to reach download site: ".niceFault($answer->faultstring);
+		}else {
+			$params->{'pluginSQLPlayListError'} = "Unable to reach download site";
+		}
 		return handleWebNewPlaylistTypes($client,$params);
 	}
 }
@@ -1119,8 +1141,9 @@ sub handleWebDownloadNewPlaylists {
 			my $result = downloadPlaylist($template->{'downloadidentifier'},$identifier);
 			if(defined($result->{'error'})) {
 				$error .= $template->{'name'}.": ".$result->{'error'}."<br>";
+			}else {
+				$message .= "- ".$template->{'name'}." (".$key.")<br>";
 			}
-			$message .= "- ".$template->{'name'}." (".$key.")<br>";
 		}
 	}
 	if($message ne '') {
@@ -1156,9 +1179,9 @@ sub downloadPlaylist {
 	my $id = shift;
 	my $customname = shift;
 	my $overwrite = shift;
-	my $answer= SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntry($id);
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntry($id);};
 	my %result = ();
-	unless ($answer->fault) {
+	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
 		my $xml = eval { XMLin($result, forcearray => ['data'], keyattr => []) };
 		my $template = $xml->{'uniqueid'};
