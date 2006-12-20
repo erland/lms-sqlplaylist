@@ -3529,6 +3529,9 @@ PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME
 
 PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_OVERWRITE
 	EN	Overwrite existing
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION
+	EN	This operation will download latest version of all playlists, this might take some time. Are you sure you want to continue ?
 EOF
 
 }
