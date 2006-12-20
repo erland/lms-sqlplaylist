@@ -52,7 +52,7 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 				[% odd = 1 %]
 				[% FOREACH type IN pluginSQLPlayListPlayLists.keys %]
 					[% BLOCK controls %]
-						[%- IF pluginSQLPlayListPlayLists.$type.customplaylist %]
+						[%- IF pluginSQLPlayListPlayLists.$type.customplaylist and !pluginSQLPlayListPlayLists.$type.downloadedplaylist %]
 						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_login.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_PUBLISH_PLAYLIST" | string %]</a>
 						[%- END %]
 						[%- IF !pluginSQLPlayListPlayLists.$type.defaultplaylist %]

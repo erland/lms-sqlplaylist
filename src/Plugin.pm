@@ -285,6 +285,9 @@ sub parsePlaylist {
 		if(defined($playlistHash->{'customplaylist'})) {
 			$playlist{'customplaylist'} = $playlistHash->{'customplaylist'};
 		}
+		if(defined($playlistHash->{'downloadedplaylist'})) {
+			$playlist{'downloadedplaylist'} = $playlistHash->{'downloadedplaylist'};
+		}
 		if(defined($playlistHash->{'simple'})) {
 			$playlist{'simple'} = $playlistHash->{'simple'};
 		}
@@ -2179,6 +2182,9 @@ sub parseTemplatePlaylistContent {
 				}
 				if(defined($template->{'customplaylist'})) {
 					$playlist{'customplaylist'} = 1;
+					if(defined($template->{'downloadidentifier'})) {
+						$playlist{'downloadedplaylist'} = 1;
+					}
 				}
 				$playlist{'file'} = $item;
 				$playlist{'data'} = $playlistData;
@@ -3531,7 +3537,7 @@ PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_OVERWRITE
 	EN	Overwrite existing
 
 PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION
-	EN	This operation will download latest version of all playlists, this might take some time. Are you sure you want to continue ?
+	EN	This operation will download latest version of all playlists, this might take some time. Please note that this will overwrite any local changes you have made in built-in or previously downloaded playlist types. Are you sure you want to continue ?
 EOF
 
 }
