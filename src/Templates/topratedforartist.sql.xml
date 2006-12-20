@@ -2,6 +2,7 @@
 <sqlplaylist>
 	<requireplugins>TrackStat</requireplugins>
 	<template>
+		<downloadidentifier>13</downloadidentifier>
 		<name>Top rated for artist</name>
 		<description>Random songs with predefined minimum rating with user selectable artist</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Top rated for artist"/>

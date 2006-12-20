@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<template>
+		<downloadidentifier>9</downloadidentifier>
 		<name>Random Songs</name>
 		<description>Random songs playlist with possibillity to include/exclude genres</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Random songs"/>

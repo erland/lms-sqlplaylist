@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<template>
+		<downloadidentifier>11</downloadidentifier>
 		<name>Simple</name>
 		<description>Simple random songs playlist with almost no options</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Simple"/>

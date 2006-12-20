@@ -2,6 +2,7 @@
 <sqlplaylist>
 	<requireplugins>TrackStat</requireplugins>
 	<template>
+		<downloadidentifier>2</downloadidentifier>
 		<name>Advanced with rating</name>
 		<description>Advanced playlist with a lot of different options including TrackStat ratings</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Advanced with rating"/>

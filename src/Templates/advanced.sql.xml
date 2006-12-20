@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<template>
+		<downloadidentifier>1</downloadidentifier>
 		<name>Advanced</name>
 		<description>Advanced playlist with a lot of different options</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Advanced"/>

@@ -2,6 +2,7 @@
 <sqlplaylist>
 	<requireplugins>TrackStat</requireplugins>
 	<template>
+		<downloadidentifier>6</downloadidentifier>
 		<name>Random for rating/genre</name>
 		<description>Random songs for user selectable rating and genre</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Random for rating/genre"/>
