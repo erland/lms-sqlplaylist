@@ -132,6 +132,11 @@ xxx.sql.template     : The playlist configuration which can contain [% yyy %] ke
 
 xxx.sql.xml          : A description of the template and a definition of the parameterse that the user shall enter.
                        See the templates in the SQLPlayList/Templates directory for some samples.
+                       NOTE!
+                       The templates can contain a downloadidentifier element, you shall NOT include this element
+                       if you create a new template you should also remove it if you modify an existing template.
+                       The purpose of the downloadidentifier element is to make the download function work, it will
+                       automatically be added to the template if you choose to publish it.
 
 
 Some example playlists follows below, observere that the SQL statements needs to be different for the standard slimserver database in 6.3(SQLite) and
