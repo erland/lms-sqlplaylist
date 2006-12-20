@@ -718,6 +718,9 @@ sub structurePlaylistTypes {
 		my $plugin = $templates->{$key}->{'sqlplaylist_plugin'};
 		if(defined($templates->{$key}->{'customplaylist'})) {
 			$plugin = 'ZZZ';
+			if(defined($templates->{$key}->{'downloadsection'})) {
+				$plugin .= $templates->{$key}->{'downloadsection'};
+			}
 		}
 		if(!defined($plugin)) {
 			$plugin = 'AAA';
@@ -756,6 +759,8 @@ sub handleWebNewPlaylistTypes {
 			$name = 'Builtin playlists';
 		}elsif($name eq 'ZZZ') {
 			$name = 'Custom or downloaded playlists';
+		}elsif($name =~ /^ZZZ(.+)$/) {
+			$name = $1;
 		}else {
 			$name =~ s/^Plugins:://;
 			$name =~ s/::Plugin$//;
@@ -912,6 +917,7 @@ sub updateTemplateBeforePublish {
 		$templateData =~ s/<description>.*<\/description>/<description>$description<\/description>/m;
 	}
 	$templateData =~ s/\s*<downloadidentifier>.*<\/downloadidentifier>//m;
+	$templateData =~ s/\s*<downloadsection>.*<\/downloadsection>//m;
 	$templateData =~ s/\s*<lastchanged>.*<\/lastchanged>//m;
 
 	return $templateData;
@@ -1133,14 +1139,17 @@ sub handleWebDownloadNewPlaylists {
 	my $templates = readTemplateConfiguration($client);
 	my $error = '';
 	my $message = '';
-	for my $key (%$templates) {
+	for my $key (sort keys %$templates) {
 		my $template = $templates->{$key};
 		if(defined($template->{'downloadidentifier'})) {
 			my $identifier = $key;
 			$identifier =~ s/\.sql\.xml$//;
-			my $result = downloadPlaylist($template->{'downloadidentifier'},$identifier);
+			if(defined($template->{'sqlplaylist_plugin_template'})) {
+				$identifier = undef;
+			}
+			my $result = downloadPlaylist($template->{'downloadidentifier'},$identifier,1,1);
 			if(defined($result->{'error'})) {
-				$error .= $template->{'name'}.": ".$result->{'error'}."<br>";
+				$error .= $template->{'name'}."(".$template->{'id'}.") : ".$result->{'error'}."<br>";
 			}else {
 				$message .= "- ".$template->{'name'}." (".$key.")<br>";
 			}
@@ -1179,6 +1188,8 @@ sub downloadPlaylist {
 	my $id = shift;
 	my $customname = shift;
 	my $overwrite = shift;
+	my $onlyOverwrite = shift;
+
 	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy(Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url"))->getEntry($id);};
 	my %result = ();
 	unless (!defined($answer) || $answer->fault) {
@@ -1187,10 +1198,22 @@ sub downloadPlaylist {
 		my $template = $xml->{'uniqueid'};
 		if(!defined($customname)) {
 			$customname = $template;
+		}elsif($onlyOverwrite && $customname ne $template) {
+			$result{'error'} = "Id doesnt match name, must be downloaded manually";
+			return \%result;
 		}
 		my $datas = $xml->{'datas'}->{'data'};
 		if(defined($datas)) {
 			my %dataToStore = ();
+			my $username = $xml->{'collection'}->{'username'};
+			if($username eq 'SQLPlayList') {
+				$username = 'anonymous';
+			}
+			my $title = $xml->{'collection'}->{'title'};
+			if($title eq 'SQLPlayList') {
+				$title = 'Downloaded playlists';
+			}
+			my $downloadsection = $title." (by ".$username.")";
 			for my $data (@$datas) {
 				if($data->{'type'} eq 'template') {
 					my $content = $data->{'content'};
@@ -1198,7 +1221,8 @@ sub downloadPlaylist {
 				}elsif($data->{'type'} eq 'xml') {
 					my $content = $data->{'content'};
 					$content =~ s/\s*<downloadidentifier>.*<\/downloadidentifier>//m;
-					$content =~ s/<template>/<template>\n\t\t<downloadidentifier>$id<\/downloadidentifier>/m;
+					$content =~ s/\s*<downloadsection>.*<\/downloadsection>//m;
+					$content =~ s/<template>/<template>\n\t\t<downloadsection>$downloadsection<\/downloadsection>\n\t\t<downloadidentifier>$id<\/downloadidentifier>/m;
 					if(defined($xml->{'lastchanged'})) {
 						$content =~ s/\s*<lastchanged>.*<\/lastchanged>//m;
 						my $lastchanged = $xml->{'lastchanged'};
