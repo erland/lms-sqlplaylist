@@ -2880,7 +2880,7 @@ sub executeSQLForPlaylist {
 	my $contentType = getPlaylistOption($playlist,'ContentType');
 	my $limit = getPlaylistOption($playlist,'NoOfTracks');
 	my $noRepeat = getPlaylistOption($playlist,'DontRepeatTracks');
-	if(defined($playlist)) {
+	if(defined($contentType)) {
 		debugMsg("Executing SQL for content type: $contentType\n");
 	}
 	for my $sql (split(/[\n\r]/,$sqlstatements)) {
@@ -2892,7 +2892,7 @@ sub executeSQLForPlaylist {
 				$sql = undef;
 			};
 
-		        if ($sql =~ /^SELECT+/oi) {
+		        if ($sql =~ /^\(*SELECT+/oi) {
 				debugMsg("Executing and collecting: $sql\n");
 				my $url;
 				$sth->bind_col( 1, \$url);
