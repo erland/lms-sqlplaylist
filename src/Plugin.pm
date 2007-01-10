@@ -47,6 +47,7 @@ my $playLists = undef;
 my $playListTypes = undef;
 my $sqlerrors = '';
 my $soapLiteError = 0;
+my $PLUGINVERSION = '1.16';
 
 my %disable = (
 	'id' => 'disable', 
@@ -407,6 +408,7 @@ sub handleWebList {
 	if(!UNIVERSAL::can("Plugins::DynamicPlayList::Plugin","getCurrentPlayList")) {
 		$params->{'pluginSQLPlayListError'} = "ERROR!!! Cannot find DynamicPlayList plugin, please make sure you have installed and enabled at least DynamicPlayList 1.3"
 	}
+	$params->{'pluginSQLPlayListVersion'} = $PLUGINVERSION;
 	if(defined($params->{'redirect'})) {
 		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_redirect.html', $params);
 	}else {
@@ -1217,6 +1219,7 @@ sub downloadPlaylist {
 				$title = 'Downloaded playlists';
 			}
 			my $downloadsection = $title." (by ".$username.")";
+			my $incompatibleVersions = 0;
 			for my $data (@$datas) {
 				if($data->{'type'} eq 'template') {
 					my $content = $data->{'content'};
@@ -1231,7 +1234,22 @@ sub downloadPlaylist {
 						my $lastchanged = $xml->{'lastchanged'};
 						$content =~ s/<\/downloadidentifier>/<\/downloadidentifier>\n\t\t<lastchanged>$lastchanged<\/lastchanged>/m;
 					}
-					$dataToStore{$data->{'type'}} = $content;
+					if($content =~ /<minpluginversion>(\d+)\.(\d+).*<\/minpluginversion>/) {
+						my $downloadMajor = $1;
+						my $downloadMinor = $2;
+						if($PLUGINVERSION =~ /(\d+)\.(\d+).*/) {
+							my $pluginMajor = $1;
+							my $pluginMinor = $2;
+
+							if($pluginMajor>=$downloadMajor && $pluginMinor>=$downloadMinor) {
+								$dataToStore{$data->{'type'}} = $content;
+							}else {
+								$incompatibleVersions = 1;
+							}
+						}
+					}else {
+						$dataToStore{$data->{'type'}} = $content;
+					}
 				}
 			}
 			if(defined($dataToStore{'template'}) && defined($dataToStore{'xml'})) {
@@ -1256,8 +1274,11 @@ sub downloadPlaylist {
 				}
 				$result{'template'} = $customname.'.sql.xml';
 				return \%result;
+			}elsif($incompatibleVersions) {
+				$result{'error'} = "Unable to download playlist, newer plugin version required";
+			}else {
+				$result{'error'} = "Unable to download playlist";
 			}
-			$result{'error'} = "Unable to download playlist";
 			return \%result;
 		}
 		$result{'error'} = "No playlists available to download";
