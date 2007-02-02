@@ -696,7 +696,8 @@ sub addParameterValues {
 			if(defined($sql)) {
 				my $id;
 				my $name;
-				$sth->bind_columns( undef, \$id,\$name);
+				my $sortlink;
+				$sth->bind_columns( undef, \$id,\$name,\$sortlink);
 				while( $sth->fetch() ) {
 					my %listitem = (
 						'id' => $id,
