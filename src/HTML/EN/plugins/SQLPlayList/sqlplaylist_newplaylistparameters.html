@@ -28,7 +28,7 @@
 			<td>
 			[% IF parameter.type == 'text' %]
 				<input type="text" name="playlistparameter_[% parameter.id %]" value="[% parameter.value %]">
-			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'sqloptionalsinglelist'%]
+			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'sqloptionalsinglelist' or parameter.type == 'functionsinglelist' or parameter.type == 'functionoptionalsinglelist'%]
 				<table border="0">
 					<tr><td>
 						<select name="playlistparameter_[% parameter.id %]">
@@ -39,7 +39,7 @@
 						</select>
 					</td></tr>
 				</table>
-			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'optionalmultiplelist' or parameter.type == 'sqlmultiplelist' or parameter.type == 'sqloptionalmultiplelist'%]
+			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'optionalmultiplelist' or parameter.type == 'sqlmultiplelist' or parameter.type == 'sqloptionalmultiplelist' or parameter.type == 'functionmultiplelist' or parameter.type == 'functionoptionalmultiplelist'%]
 				<table border="0">
 					<tr><td>
 						<select name="playlistparameter_[% parameter.id %]" multiple size="10">
@@ -52,7 +52,7 @@
 				</table>
 			[% ELSIF parameter.type == 'checkbox' %]
 				<input type="checkbox" name="playlistparameter_[% parameter.id %]" id="playlistparameter_[% parameter.id %]" value="1" [% parameter.value ? "checked" : "" %]>
-			[% ELSIF parameter.type == 'checkboxes' or parameter.type == 'sqlcheckboxes'%]
+			[% ELSIF parameter.type == 'checkboxes' or parameter.type == 'sqlcheckboxes' or parameter.type == 'functioncheckboxes'%]
 				<table border="0">[% USE table parameter.values, cols=3, pad=0 %]
 					[%- FOREACH itemrow = table.rows %]
 						<tr>

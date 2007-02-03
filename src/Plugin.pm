@@ -215,6 +215,8 @@ sub parsePlaylist {
 	my @groups = ();
 	my %parameters = ();
 	my %options = ();
+	my %startactions = ();
+	my %stopactions = ();
 	for my $line (@playlistDataArray) {
 		#Lets add linefeed again, to make sure playlist looks ok when editing
 		$line .= "\n";
@@ -227,6 +229,7 @@ sub parsePlaylist {
 		$line =~ s/^\s*--\s*PlaylistName\s*[:=]\s*//io;
 		
 		my $parameter = parseParameter($line);
+		my $action = parseAction($line);
 		my $option = parseOption($line);
 		if($line =~ /^\s*--\s*PlaylistGroups\s*[:=]\s*/) {
 			$line =~ s/^\s*--\s*PlaylistGroups\s*[:=]\s*//io;
@@ -247,6 +250,13 @@ sub parsePlaylist {
 		}
 		if($option) {
 			$options{$option->{'id'}} = $option;
+		}
+		if($action) {
+			if($action->{'execute'} eq 'Start') {
+				$startactions{$action->{'id'}} = $action;
+			}elsif($action->{'execute'} eq 'Stop') {
+				$stopactions{$action->{'id'}} = $action;
+			}
 		}
 			
 		# skip and strip comments & empty lines
@@ -312,6 +322,22 @@ sub parsePlaylist {
 		}
 		if(%options) {
 			$playlist{'options'} = \%options;
+		}
+		if(%startactions) {
+			my @actionArray = ();
+			for my $key (keys %startactions) {
+				my $a = $startactions{$key};
+				push @actionArray,$a;
+			}
+			$playlist{'startactions'} = \@actionArray;
+		}
+		if(%stopactions) {
+			my @actionArray = ();
+			for my $key (keys %stopactions) {
+				my $a = $stopactions{$key};
+				push @actionArray,$a;
+			}
+			$playlist{'stopactions'} = \@actionArray;
 		}
 		return \%playlist;
 	}
@@ -447,7 +473,9 @@ sub handleWebEditPlaylist {
 							}
 							my %valuesHash = ();
 							for my $v (@$values) {
-								$valuesHash{$v} = $v;
+								if(ref($v) ne 'HASH') {
+									$valuesHash{$v} = $v;
+								}
 							}
 							if(%valuesHash) {
 								$currentParameterValues{$p->{'id'}} = \%valuesHash;
@@ -1710,6 +1738,36 @@ sub addValuesToTemplateParameter {
 					$v->{'selected'} = 1;
 				}
 			}
+		}else {
+			for my $v (@$listValues) {
+				if($p->{'value'}) {
+					$v->{'selected'} = 1;
+				}
+			}
+		}
+		$p->{'values'} = $listValues;
+	}elsif($p->{'type'} =~ 'function.*') {
+		my $listValues = getFunctionTemplateData($p->{'data'});
+		if($p->{'type'} =~ /.*optional.*list$/) {
+			my %empty = (
+				'id' => '',
+				'name' => '',
+				'value' => ''
+			);
+			unshift @$listValues,\%empty;
+		}
+		if(defined($currentValues)) {
+			for my $v (@$listValues) {
+				if($currentValues->{$v->{'value'}}) {
+					$v->{'selected'} = 1;
+				}
+			}
+		}else {
+			for my $v (@$listValues) {
+				if($p->{'value'}) {
+					$v->{'selected'} = 1;
+				}
+			}
 		}
 		$p->{'values'} = $listValues;
 	}elsif($p->{'type'} =~ '.*list$' || $p->{'type'} =~ '.*checkboxes$') {
@@ -1805,6 +1863,57 @@ sub getValueOfTemplateParameter {
 			}
 		}else {
 			$result = '';
+		}
+	}
+	if(defined($result)) {
+		$result = Slim::Utils::Unicode::utf8on($result);
+		$result = Slim::Utils::Unicode::utf8encode_locale($result);
+	}
+	return $result;
+}
+
+sub getDefaultValueOfTemplateParameter {
+	my $parameter = shift;
+
+	my $result = undef;
+	my $dbh = getCurrentDBH();
+	if($parameter->{'type'} =~ /.*multiplelist$/ || $parameter->{'type'} =~ /.*checkboxes$/) {
+		my $values = $parameter->{'values'};
+		$result = '';
+		for my $item (@$values) {
+			if(defined($item->{'selected'})) {
+				if($result) {
+					$result = $result.',';
+				}
+				if($parameter->{'quotevalue'}) {
+					$result = $result.$dbh->quote(encode_entities($item->{'value'},"&<>\'\""));
+				}else {
+					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
+				}
+			}
+		}
+	}elsif($parameter->{'type'} =~ /.*singlelist$/) {
+		my $values = $parameter->{'values'};
+		$result = '';
+		for my $item (@$values) {
+			if(defined($item->{'selected'})) {
+				if($parameter->{'quotevalue'}) {
+					$result = $dbh->quote(encode_entities($item->{'value'},"&<>\'\""));
+				}else {
+					$result = encode_entities($item->{'value'},"&<>\'\"");
+				}
+				last;
+			}
+		}
+	}else{
+		my $value = $parameter->{'value'};
+		if(!defined($value) || ref($value) eq 'HASH') {
+			$value='';
+		}
+		if($parameter->{'quotevalue'}) {
+			$result = $dbh->quote(encode_entities($value,"&<>\'\""));
+		}else {
+			$result = encode_entities($value,"&<>\'\"");
 		}
 	}
 	if(defined($result)) {
@@ -1952,6 +2061,31 @@ sub getCheckBoxesQueryParameter {
 		}
 	}
 	return \%result;
+}
+
+sub getFunctionTemplateData {
+	my $data = shift;
+    	my @params = split(/\,/,$data);
+	my @result =();
+	if(scalar(@params)==2) {
+		my $object = @params->[0];
+		my $function = @params->[1];
+		if(UNIVERSAL::can($object,$function)) {
+			debugMsg("Getting values for: $function\n");
+			no strict 'refs';
+			my $items = eval { &{$object.'::'.$function}() };
+			if( $@ ) {
+			    warn "Function call error: $@\n";
+			}		
+			use strict 'refs';
+			if(defined($items)) {
+				@result = @$items;
+			}
+		}
+	}else {
+		debugMsg("Error getting values for: $data, incorrect number of parameters ".scalar(@params)."\n");
+	}
+	return \@result;
 }
 
 sub getSQLTemplateData {
@@ -2237,13 +2371,15 @@ sub parseTemplatePlaylistContent {
 						my $values = $p->{'value'};
 						my $value = '';
 						for my $v (@$values) {
-							if($value ne '') {
-								$value .= ',';
-							}
-							if($p->{'quotevalue'}) {
-								$value .= $dbh->quote(encode_entities($v,"&<>\'\""));
-							}else {
-								$value .= encode_entities($v,"&<>\'\"");
+							if(defined($v) && ref($v) ne 'HASH') {
+								if($value ne '') {
+									$value .= ',';
+								}
+								if($p->{'quotevalue'}) {
+									$value .= $dbh->quote(encode_entities($v,"&<>\'\""));
+								}else {
+									$value .= encode_entities($v,"&<>\'\"");
+								}
 							}
 						}
 						$templateParameters{$p->{'id'}}=$value;
@@ -2252,9 +2388,10 @@ sub parseTemplatePlaylistContent {
 				for my $key (keys %parametersToInclude) {
 					my $p = $parametersToInclude{$key};
 					if(!defined($templateParameters{$key})) {
-						my $value = $p->{'value'};
-						if(!defined($value) || ref($value) eq 'HASH') {
-							$value='';
+						my $value = '';
+						if(defined($p->{'value'}) && $p->{'value'} && ref($p->{'value'}) ne 'HASH') {
+							addValuesToTemplateParameter($p);
+							$value = getDefaultValueOfTemplateParameter($p);
 						}
 						debugMsg("Setting default value ".$p->{'id'}."=".$value."\n");
 						$templateParameters{$p->{'id'}} = $value;
@@ -2921,6 +3058,40 @@ sub parseParameter {
 	return undef;
 }	
 
+sub parseAction {
+	my $line = shift;
+	my $actionType = shift;
+	
+	if($line =~ /^\s*--\s*Playlist(Start|Stop)Action\s*\d\s*[:=]\s*/) {
+		$line =~ m/^\s*--\s*Playlist(Start|Stop)Action\s*(\d)\s*[:=]\s*([^:]+):\s*(.*)$/;
+		my $executeTime = $1;
+		my $actionId = $2;
+		my $actionType = $3;
+		my $actionDefinition = $4;
+
+		$actionType =~ s/^\s+//;
+		$actionType =~ s/\s+$//;
+
+		$actionDefinition =~ s/^\s+//;
+		$actionDefinition =~ s/\s+$//;
+
+		if($actionId && $actionType && $actionDefinition) {
+			my %action = (
+				'id' => $actionId,
+				'execute' => $executeTime,
+				'type' => $actionType,
+				'data' => $actionDefinition
+			);
+			return \%action;
+		}else {
+			debugMsg("Error in action: $line\n");
+			debugMsg("Action values: Id=$actionId, Type=$actionType, Definition=$actionDefinition\n");
+			return undef;
+		}
+	}
+	return undef;
+}	
+
 sub parseOption {
 	my $line = shift;
 	if($line =~ /^\s*--\s*PlaylistOption\s*[^:=]+\s*[:=]\s*/) {
@@ -3170,6 +3341,12 @@ sub getDynamicPlayLists {
 				);
 				$currentResult{'parameters'}->{$pk} = \%parameter;
 			}
+		}
+		if(defined($current->{'startactions'})) {
+			$currentResult{'startactions'}=$current->{'startactions'};
+		}
+		if(defined($current->{'stopactions'})) {
+			$currentResult{'stopactions'}=$current->{'stopactions'};
 		}
 		if($current->{'groups'} && scalar($current->{'groups'})>0) {
 			$currentResult{'groups'} = $current->{'groups'};
