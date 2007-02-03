@@ -28,7 +28,7 @@
 			<td>
 			[% IF parameter.type == 'text' %]
 				<input type="text" name="playlistparameter_[% parameter.id %]" value="[% parameter.value %]">
-			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'sqlsinglelist'%]
+			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'sqloptionalsinglelist'%]
 				<table border="0">
 					<tr><td>
 						<select name="playlistparameter_[% parameter.id %]">
@@ -39,7 +39,7 @@
 						</select>
 					</td></tr>
 				</table>
-			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'sqlmultiplelist'%]
+			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'optionalmultiplelist' or parameter.type == 'sqlmultiplelist' or parameter.type == 'sqloptionalmultiplelist'%]
 				<table border="0">
 					<tr><td>
 						<select name="playlistparameter_[% parameter.id %]" multiple size="10">

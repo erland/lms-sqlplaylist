@@ -458,8 +458,14 @@ sub handleWebEditPlaylist {
 							my @parametersToSelect = ();
 							for my $p (@$parameters) {
 								if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-									addValuesToTemplateParameter($p,$currentParameterValues{$p->{'id'}});
-									push @parametersToSelect,$p;
+									my $parameterEnabled = 1;
+									if(defined($p->{'requireplugins'})) {
+										$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
+									}
+									if($parameterEnabled) {
+										addValuesToTemplateParameter($p,$currentParameterValues{$p->{'id'}});
+										push @parametersToSelect,$p;
+									}
 								}
 							}
 							$params->{'pluginSQLPlayListEditPlayListParameters'} = \@parametersToSelect;
@@ -483,6 +489,22 @@ sub handleWebEditPlaylist {
 		}
 	}
 	return handleWebList($client,$params);
+}
+
+sub isPluginsInstalled {
+	my $client = shift;
+	my $pluginList = shift;
+	my $enabledPlugin = 1;
+	foreach my $plugin (split /,/, $pluginList) {
+		if($enabledPlugin) {
+			if ($::VERSION ge '6.5') {
+				$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
+			}else {
+				$enabledPlugin = grep(/$plugin/,Slim::Buttons::Plugins::enabledPlugins($client));
+			}
+		}
+	}
+	return $enabledPlugin;
 }
 
 sub getGroupString {
@@ -550,7 +572,7 @@ sub handleWebTestPlaylist {
 				if(defined($playlist->{'parameters'})) {
 					$sql = replaceParametersInSQL($sql,$playlist->{'parameters'});
 				}
-				$sql = replaceParametersInSQL($sql,getOffsetLimitParameters(100,0),'Playlist');
+				$sql = replaceParametersInSQL($sql,getInternalParameters($client,100,0),'Playlist');
 				my $tracks = executeSQLForPlaylist($sql,undef,$playlist);
 				my @resultTracks;
 				my $itemNumber = 0;
@@ -642,7 +664,7 @@ sub addParameterValues {
 	}elsif(lc($parameter->{'type'}) eq 'genre') {
 		$sql = "select id,name from genres order by namesort";
 	}elsif(lc($parameter->{'type'}) eq 'year') {
-		$sql = "select year,year from tracks where year is not null group by year order by year";
+		$sql = "select year,year from tracks where year is not null group by year order by year desc";
 	}elsif(lc($parameter->{'type'}) eq 'playlist') {
 		$sql = "select playlist_track.playlist,tracks.title from tracks, playlist_track where tracks.id=playlist_track.playlist group by playlist_track.playlist order by titlesort";
 	}elsif(lc($parameter->{'type'}) eq 'list') {
@@ -1306,8 +1328,14 @@ sub handleWebNewPlaylistParameters {
 		my $parameters = $template->{'parameter'};
 		for my $p (@$parameters) {
 			if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-				addValuesToTemplateParameter($p);
-				push @parametersToSelect,$p;
+				my $parameterEnabled = 1;
+				if(defined($p->{'requireplugins'})) {
+					$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
+				}
+				if($parameterEnabled) {
+					addValuesToTemplateParameter($p);
+					push @parametersToSelect,$p;
+				}
 			}
 		}
 	}
@@ -1369,9 +1397,15 @@ sub handleWebNewPlaylist {
 			my @parametersToSelect = ();
 			for my $p (@$parameters) {
 				if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-					addValuesToTemplateParameter($p);
-					my $value = getValueOfTemplateParameter($params,$p);
-					$templateParameters{$p->{'id'}} = $value;
+					my $parameterEnabled = 1;
+					if(defined($p->{'requireplugins'})) {
+						$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
+					}
+					if($parameterEnabled) {
+						addValuesToTemplateParameter($p);
+						my $value = getValueOfTemplateParameter($params,$p);
+						$templateParameters{$p->{'id'}} = $value;
+					}
 				}
 			}
 		}
@@ -1474,9 +1508,15 @@ sub handleWebSaveSimplePlaylist {
 			my @parametersToSelect = ();
 			for my $p (@$parameters) {
 				if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-					addValuesToTemplateParameter($p);
-					my $value = getValueOfTemplateParameter($params,$p);
-					$templateParameters{$p->{'id'}} = $value;
+					my $parameterEnabled = 1;
+					if(defined($p->{'requireplugins'})) {
+						$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
+					}
+					if($parameterEnabled) {
+						addValuesToTemplateParameter($p);
+						my $value = getValueOfTemplateParameter($params,$p);
+						$templateParameters{$p->{'id'}} = $value;
+					}
 				}
 			}
 		}
@@ -1537,9 +1577,15 @@ sub handleWebSaveSimplePlaylist {
 			my @parametersToSelect = ();
 			for my $p (@$parameters) {
 				if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-					addValuesToTemplateParameter($p);
-					my $value = getValueOfTemplateParameter($params,$p);
-					$templateParameters{$p->{'id'}} = $value;
+					my $parameterEnabled = 1;
+					if(defined($p->{'requireplugins'})) {
+						$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
+					}
+					if($parameterEnabled) {
+						addValuesToTemplateParameter($p);
+						my $value = getValueOfTemplateParameter($params,$p);
+						$templateParameters{$p->{'id'}} = $value;
+					}
 				}
 			}
 		}
@@ -1650,6 +1696,14 @@ sub addValuesToTemplateParameter {
 
 	if($p->{'type'} =~ '^sql.*') {
 		my $listValues = getSQLTemplateData($p->{'data'});
+		if($p->{'type'} =~ /.*optional.*/) {
+			my %empty = (
+				'id' => '',
+				'name' => '',
+				'value' => ''
+			);
+			unshift @$listValues,\%empty;
+		}
 		if(defined($currentValues)) {
 			for my $v (@$listValues) {
 				if($currentValues->{$v->{'value'}}) {
@@ -1673,6 +1727,14 @@ sub addValuesToTemplateParameter {
 				$listValue{'value'} = @idName->[0];
 			}
 			push @listValues, \%listValue;
+		}
+		if($p->{'type'} =~ /.*optional.*list$/) {
+			my %empty = (
+				'id' => '',
+				'name' => '',
+				'value' => ''
+			);
+			unshift @listValues,\%empty;
 		}
 		if(defined($currentValues)) {
 			for my $v (@listValues) {
@@ -2154,22 +2216,49 @@ sub parseTemplatePlaylistContent {
 			$templateId =~s/\.sql\.xml$//;
 			my $include = undef;
 			if($template) {
+				my $parameters = $template->{'parameter'};
+				my %parametersToInclude = ();
+				for my $p (@$parameters) {
+					if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
+						my $parameterEnabled = 1;
+						if(defined($p->{'requireplugins'})) {
+							$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
+						}
+						if($parameterEnabled) {
+							$parametersToInclude{$p->{'id'}} = $p;
+						}
+					}
+				}
+
 				my %templateParameters = ();
 				my $parameters = $valuesXml->{'template'}->{'parameter'};
 				for my $p (@$parameters) {
-					my $values = $p->{'value'};
-					my $value = '';
-					for my $v (@$values) {
-						if($value ne '') {
-							$value .= ',';
+					if(defined($parametersToInclude{$p->{'id'}})) {
+						my $values = $p->{'value'};
+						my $value = '';
+						for my $v (@$values) {
+							if($value ne '') {
+								$value .= ',';
+							}
+							if($p->{'quotevalue'}) {
+								$value .= $dbh->quote(encode_entities($v,"&<>\'\""));
+							}else {
+								$value .= encode_entities($v,"&<>\'\"");
+							}
 						}
-						if($p->{'quotevalue'}) {
-							$value .= $dbh->quote(encode_entities($v,"&<>\'\""));
-						}else {
-							$value .= encode_entities($v,"&<>\'\"");
-						}
+						$templateParameters{$p->{'id'}}=$value;
 					}
-					$templateParameters{$p->{'id'}}=$value;
+				}
+				for my $key (keys %parametersToInclude) {
+					my $p = $parametersToInclude{$key};
+					if(!defined($templateParameters{$key})) {
+						my $value = $p->{'value'};
+						if(!defined($value) || ref($value) eq 'HASH') {
+							$value='';
+						}
+						debugMsg("Setting default value ".$p->{'id'}."=".$value."\n");
+						$templateParameters{$p->{'id'}} = $value;
+					}
 				}
 
 				my $templateFileData = undef;
@@ -2538,14 +2627,20 @@ sub saveSimplePlaylist {
 			my @parametersToSelect = ();
 			for my $p (@$parameters) {
 				if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-					addValuesToTemplateParameter($p);
-					my $value = getXMLValueOfTemplateParameter($params,$p);
-					if($p->{'quotevalue'}) {
-						$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\" quotevalue=\"1\">";
-					}else {
-						$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\">";
+					my $parameterEnabled = 1;
+					if(defined($p->{'requireplugins'})) {
+						$parameterEnabled = isPluginsInstalled($client,$p->{'requireplugins'});
 					}
-					$data .= $value.'</parameter>';
+					if($parameterEnabled) {
+						addValuesToTemplateParameter($p);
+						my $value = getXMLValueOfTemplateParameter($params,$p);
+						if($p->{'quotevalue'}) {
+							$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\" quotevalue=\"1\">";
+						}else {
+							$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\">";
+						}
+						$data .= $value.'</parameter>';
+					}
 				}
 			}
 		}
@@ -2728,7 +2823,7 @@ sub getTracksForPlaylist {
 	my $sqlstatements = $playlist->{'sql'};
 	my $dbh = getCurrentDBH();
 	$sqlstatements = replaceParametersInSQL($sqlstatements,$parameters);
-	my $offsetLimitParameters = getOffsetLimitParameters($limit,$offset);
+	my $offsetLimitParameters = getInternalParameters($client,$limit,$offset);
 	$sqlstatements = replaceParametersInSQL($sqlstatements,$offsetLimitParameters,'Playlist');
 	my $unlimitedOption = getPlaylistOption($playlist,'Unlimited');
 	if($unlimitedOption) {
@@ -2760,7 +2855,8 @@ sub getPlaylistOption {
 	}
 	return undef;
 }
-sub getOffsetLimitParameters {
+sub getInternalParameters {
+	my $client = shift;
 	my $limit = shift;
 	my $offset = shift;
 
@@ -2773,6 +2869,18 @@ sub getOffsetLimitParameters {
 		'id' => 'Limit',
 		'value' => $limit
 	);
+	my $activeLibrary = 0;
+	if(isPluginsInstalled($client,'MultiLibrary::Plugin')) {
+		$activeLibrary = $client->prefGet('plugin_multilibrary_activelibraryno');
+		if(!defined($activeLibrary)) {
+			$activeLibrary = 0;
+		}
+	}
+	my %activeLibraryParameter = (
+		'id' => 'ActiveLibrary',
+		'value' => $activeLibrary
+	);
+	$offsetLimitParameters{'PlaylistActiveLibrary'} = \%activeLibraryParameter;
 	$offsetLimitParameters{'PlaylistOffset'} = \%offsetParameter;
 	$offsetLimitParameters{'PlaylistLimit'} = \%limitParameter;
 	return \%offsetLimitParameters;
