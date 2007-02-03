@@ -47,7 +47,7 @@ my $playLists = undef;
 my $playListTypes = undef;
 my $sqlerrors = '';
 my $soapLiteError = 0;
-my $PLUGINVERSION = '1.16';
+my $PLUGINVERSION = '1.17';
 
 my %disable = (
 	'id' => 'disable', 
