@@ -5,6 +5,10 @@
 [%- ELSE %]
 -- PlaylistParameter1:genre:Select genre:
 [%- END %]
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 select tracks.url from tracks
 	join genre_track on
 		tracks.id=genre_track.track and genre_track.genre='PlaylistParameter1'

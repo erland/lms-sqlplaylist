@@ -1,6 +1,10 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
 -- PlaylistParameter1:list:Select rating:20:* (10-29),40:** (30-49),60:*** (50-69),80:**** (70-89),100:***** (90-100)
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 select tracks.url from tracks
 	join track_statistics on
 		tracks.url=track_statistics.url

@@ -2,6 +2,10 @@
 -- PlaylistGroups:[% playlistgroups %]
 -- PlaylistParameter1:list:Select rating:20:* (10-29),40:** (30-49),60:*** (50-69),80:**** (70-89),100:***** (90-100)
 -- PlaylistParameter2:custom:Select year:select tracks.year,tracks.year from tracks [% IF library or activelibrary %]join multilibrary_track on tracks.id=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %][% END %] left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating>=('PlaylistParameter1'-10) and track_statistics.rating<('PlaylistParameter1'+10) group by tracks.year order by tracks.year desc
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 select tracks.url from tracks
 	join track_statistics on
 		tracks.url=track_statistics.url

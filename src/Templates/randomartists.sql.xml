@@ -13,6 +13,7 @@
 		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
 		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
 		<parameter type="text" id="nooftracks" name="Number of songs per artist" value="20"/>
+		<parameter type="functionoptionalsinglelist" id="customskipfilter" requireplugins="CustomSkip::Plugin" name="Custom Skip filter" value="" data="Plugins::CustomSkip::Plugin,getAvailableFilters"/>
 	</template>
 </sqlplaylist>
 

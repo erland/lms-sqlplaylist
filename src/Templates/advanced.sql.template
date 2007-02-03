@@ -1,5 +1,9 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 select tracks.url from tracks
 	[%- IF library or activelibrary %]
 	join multilibrary_track on

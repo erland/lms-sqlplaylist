@@ -5,6 +5,10 @@
 [%- ELSE %]
 -- PlaylistParameter1:playlist:Select playlist:
 [%- END %]
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 select tracks.url from tracks
 	join playlist_track on
 		tracks.id=playlist_track.track and playlist_track.playlist='PlaylistParameter1'

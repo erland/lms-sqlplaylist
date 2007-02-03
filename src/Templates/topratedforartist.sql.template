@@ -5,6 +5,10 @@
 [%- ELSE %]
 -- PlaylistParameter1:artist:Select artist:
 [%- END %]
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 select tracks.url from tracks
 	join contributor_track on
 		tracks.id=contributor_track.track and contributor_track.contributor='PlaylistParameter1'

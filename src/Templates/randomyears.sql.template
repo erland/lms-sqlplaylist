@@ -1,6 +1,10 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
 -- PlaylistOption Unlimited:1
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
 create temporary table sqlplaylist_random_years (primary key (year)) 
 	select tracks.year from tracks
 		[%- IF library or activelibrary %]
