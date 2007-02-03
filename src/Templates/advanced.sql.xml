@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
+	<minpluginversion>1.17</minpluginversion>
 	<template>
 		<downloadidentifier>1</downloadidentifier>
 		<name>Advanced</name>
@@ -17,6 +18,8 @@
 		<parameter type="sqlcheckboxes" id="excludedgenres" name="Exclude genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
 		<parameter type="sqlmultiplelist" id="includedartists" name="Only include tracks for selected artists" data="select contributors.id,contributors.name,contributors.name from tracks,contributor_track,contributors where tracks.id=contributor_track.track and contributor_track.contributor=contributors.id and contributor_track.role in (1,5) group by contributors.id order by contributors.namesort asc" quotevalue="1"/>
 		<parameter type="sqlmultiplelist" id="excludedartists" name="Exclude tracks for selected artists" data="select contributors.id,contributors.name,contributors.name from tracks,contributor_track,contributors where tracks.id=contributor_track.track and contributor_track.contributor=contributors.id and contributor_track.role in (1,5) group by contributors.id order by contributors.namesort asc" quotevalue="1"/>
+		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
+		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
 		<parameter type="checkbox" id="lossless" name="Only lossless format" value="0"/>
 		<parameter type="text" id="nooftracks" name="Number of tracks per time" value="10"/>
 	</template>

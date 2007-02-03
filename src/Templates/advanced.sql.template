@@ -1,6 +1,11 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
 select tracks.url from tracks
+	[%- IF library or activelibrary %]
+	join multilibrary_track on
+		tracks.id=multilibrary_track.track and
+		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+	[%- END %]
 	[%- IF includedartists %]
 	join contributor_track on
 		tracks.id=contributor_track.track

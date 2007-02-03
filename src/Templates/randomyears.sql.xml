@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
+	<minpluginversion>1.17</minpluginversion>
 	<template>
 		<downloadidentifier>10</downloadidentifier>
 		<name>Random Years</name>
@@ -9,6 +10,8 @@
 		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
 		<parameter type="sqlcheckboxes" id="includedgenres" name="Include genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
 		<parameter type="sqlcheckboxes" id="excludedgenres" name="Exclude genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
+		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
+		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
 		<parameter type="text" id="nooftracks" name="Number of songs per year" value="20"/>
 	</template>
 </sqlplaylist>

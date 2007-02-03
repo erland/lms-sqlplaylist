@@ -1,7 +1,16 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
+[%- IF library or activelibrary %]
+-- PlaylistParameter1:custom:Select album:select id,title,substr(titlesort,1,1) from albums join multilibrary_album on albums.id=multilibrary_album.album and multilibrary_album.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %] order by albums.titlesort
+[%- ELSE %]
 -- PlaylistParameter1:album:Select album:
+[%- END %]
 select tracks.url from tracks
+	[%- IF library or activelibrary %]
+	join multilibrary_track on
+		tracks.id=multilibrary_track.track and
+		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+	[%- END %]
 	[%- IF minrating %]
 	join track_statistics on
 		tracks.url=track_statistics.url

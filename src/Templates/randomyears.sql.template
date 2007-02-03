@@ -3,6 +3,11 @@
 -- PlaylistOption Unlimited:1
 create temporary table sqlplaylist_random_years (primary key (year)) 
 	select tracks.year from tracks
+		[%- IF library or activelibrary %]
+		join multilibrary_track on
+			tracks.id=multilibrary_track.track and
+			multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+		[%- END %]
 		[%- IF includedgenres %]
 		join genre_track on
 			tracks.id=genre_track.track
@@ -31,14 +36,17 @@ create temporary table sqlplaylist_random_years (primary key (year))
 								genre_track.genre=genres.id and
 								genres.name in ([% excludedgenres %]))
 		[%- END %]
-		[%- IF includedgenres or notrepeat %]
 		group by tracks.year
-		[%- END %]
 		order by rand()
 		limit 1;
 select tracks.url from tracks
 	join sqlplaylist_random_years 
 		on tracks.year=sqlplaylist_random_years.year
+	[%- IF library or activelibrary %]
+	join multilibrary_track on
+		tracks.id=multilibrary_track.track and
+		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+	[%- END %]
 	[%- IF includedgenres %]
 	join genre_track on
 		tracks.id=genre_track.track

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<requireplugins>TrackStat</requireplugins>
+	<minpluginversion>1.17</minpluginversion>
 	<template>
 		<downloadidentifier>16</downloadidentifier>
 		<name>Top rated for year</name>
@@ -9,6 +10,8 @@
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
 		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
 		<parameter type="singlelist" id="minrating" name="Minimum rating" value="0" data="0==0,1=* (10-)=10,2=** (30-)=30,3=*** (50-)=50,4=**** (70-)=70,5=***** (90-)=90"/>
+		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
+		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
 	</template>
 </sqlplaylist>
 

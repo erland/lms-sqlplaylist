@@ -5,6 +5,11 @@ create temporary table sqlplaylist_random_contributors (primary key (contributor
 	select contributor_track.contributor from tracks
 		join contributor_track
 			on tracks.id=contributor_track.track and contributor_track.role in (1,5)
+		[%- IF library or activelibrary %]
+		join multilibrary_track on
+			tracks.id=multilibrary_track.track and
+			multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+		[%- END %]
 		[%- IF includedgenres %]
 		join genre_track on
 			tracks.id=genre_track.track
@@ -39,6 +44,11 @@ select tracks.url from tracks
 		on tracks.id=contributor_track.track and contributor_track.role in (1,5)
 	join sqlplaylist_random_contributors 
 		on contributor_track.contributor=sqlplaylist_random_contributors.contributor
+	[%- IF library or activelibrary %]
+	join multilibrary_track on
+		tracks.id=multilibrary_track.track and
+		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+	[%- END %]
 	[%- IF includedgenres %]
 	join genre_track on
 		tracks.id=genre_track.track

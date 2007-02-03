@@ -1,12 +1,17 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
 -- PlaylistParameter1:list:Select rating:20:* (10-29),40:** (30-49),60:*** (50-69),80:**** (70-89),100:***** (90-100)
--- PlaylistParameter2:custom:Select artist:select contributors.id,contributors.name from tracks join contributor_track on tracks.id=contributor_track.track join contributors on contributor_track.contributor=contributors.id left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating>=('PlaylistParameter1'-10) and track_statistics.rating<('PlaylistParameter1'+10) group by contributors.id order by contributors.namesort
+-- PlaylistParameter2:custom:Select artist:select contributors.id,contributors.name from tracks join contributor_track on tracks.id=contributor_track.track join contributors on contributor_track.contributor=contributors.id [% IF library or activelibrary %]join multilibrary_track on tracks.id=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %][% END %] left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating>=('PlaylistParameter1'-10) and track_statistics.rating<('PlaylistParameter1'+10) group by contributors.id order by contributors.namesort
 select tracks.url from tracks
 	join track_statistics on
 		tracks.url=track_statistics.url
 	join contributor_track on
 		tracks.id=contributor_track.track and contributor_track.contributor='PlaylistParameter2'
+	[%- IF library or activelibrary %]
+	join multilibrary_track on
+		tracks.id=multilibrary_track.track and
+		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+	[%- END %]
 	[%- IF notrepeat %]
 	left join dynamicplaylist_history on
 		tracks.id=dynamicplaylist_history.id
