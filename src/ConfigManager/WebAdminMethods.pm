@@ -126,7 +126,7 @@ sub webEditItem {
 			my $templateData = $self->loadTemplateValues($client,$itemId,$itemHash->{$itemId});
 
 			if(defined($templateData)) {
-				my $template = $templates->{$templateData->{'id'}};
+				my $template = $templates->{lc($templateData->{'id'})};
 				if(defined($template)) {
 					my %currentParameterValues = ();
 					my $templateDataParameters = $templateData->{'parameter'};
@@ -167,7 +167,7 @@ sub webEditItem {
 						}
 						$params->{'pluginWebAdminMethodsEditItemParameters'} = \@parametersToSelect;
 					}
-					$params->{'pluginWebAdminMethodsEditItemTemplate'} = $templateData->{'id'};
+					$params->{'pluginWebAdminMethodsEditItemTemplate'} = lc($templateData->{'id'});
 					$params->{'pluginWebAdminMethodsEditItemFile'} = $itemId.".".$self->simpleExtension;
 					$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($itemId.".".$self->simpleExtension);
 					return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webEditSimpleItem'}, $params);
@@ -405,7 +405,7 @@ sub webPublishItemParameters {
 			my $templateData = $self->loadTemplateValues($client,$itemId,$items->{$itemId});
 			$itemId =~ s/^published_//;
 			if(defined($templateData)) {
-				my $template = $templates->{$templateData->{'id'}};
+				my $template = $templates->{lc($templateData->{'id'})};
 				if(defined($template)) {
 					$params->{'pluginWebAdminMethodsPublishName'} = $itemName;
 					$params->{'pluginWebAdminMethodsPublishDescription'} = $template->{'description'};
@@ -467,7 +467,7 @@ sub webPublishItem {
 		if(defined($items->{$itemId}->{'simple'})) {
 			my $templateData = $self->loadTemplateValues($client,$itemId,$items->{$itemId});
 			if(defined($templateData)) {
-				my $template = $templates->{$templateData->{'id'}};
+				my $template = $templates->{lc($templateData->{'id'})};
 				if(defined($template)) {
 					my $templateFile = $itemId;
 					if(defined($template->{'templatefile'})) {

@@ -101,7 +101,7 @@ sub parseTemplateContent {
 			$errorMsg = "$@";
 			$self->errorCallback->("Failed to parse ".$self->contentType." configuration because:\n$@\n");
 		}else {
-			my $templateId = $valuesXml->{'template'}->{'id'};
+			my $templateId = lc($valuesXml->{'template'}->{'id'});
 			my $template = $templates->{$templateId};
 			if(!defined($template)) {
 				$self->debugCallback->("Template $templateId not found\n");

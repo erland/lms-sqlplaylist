@@ -48,7 +48,7 @@ sub parse {
 	if($globalcontext->{'source'} ne 'plugin') {
 		return $self->parseContent($client,$item,$content,$items,$globalcontext,\%localcontext);
 	}else {
-		$items->{$item} = $content;
+		$items->{lc($item)} = $content;
 		return undef;
 	}
 }
