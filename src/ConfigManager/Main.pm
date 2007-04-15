@@ -275,7 +275,7 @@ sub readItemConfiguration {
 		$self->templateContentDirectoryHandler()->readFromDir($client,$dir,\%customItems, \%globalcontext);
 		for my $itemId (keys %customItems) {
 			if(defined($items{$itemId})) {
-				$items{$itemId} = undef;
+				delete($items{$itemId});
 			}
 		}
 	}
