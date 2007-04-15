@@ -1,5 +1,5 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginCustomBrowseSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
 	[% PROCESS plugins/SQLPlayList/css65 %]
@@ -13,25 +13,26 @@
 [%- pageHeaderInfo = BLOCK %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
 
 <table border="0">
-<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylist.html" name="editForm" accept-charset="iso8859-1">
-	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST_PARAMETERS_TITLE" | string %]</b></td></tr>
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_newitem.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_ITEM_PARAMETERS_TITLE" | string %]</b></td></tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
-	[%- FOREACH parameter = pluginSQLPlayListNewPlayListParameters %]
+	[%- FOREACH parameter = pluginWebAdminMethodsNewItemParameters %]
 		<tr>
 			<td>[% parameter.name %]</td>
 			<td>&nbsp;&nbsp;&nbsp;</td>
 			<td>
 			[% IF parameter.type == 'text' %]
-				<input type="text" name="playlistparameter_[% parameter.id %]" value="[% parameter.value %]">
-			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'sqloptionalsinglelist' or parameter.type == 'functionsinglelist' or parameter.type == 'functionoptionalsinglelist'%]
+				<input type="text" name="itemparameter_[% parameter.id %]" value="[% parameter.value %]">
+			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'functionsinglelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqloptionalsinglelist' or parameter.type == 'functionoptionalsinglelist'%]
 				<table border="0">
 					<tr><td>
-						<select name="playlistparameter_[% parameter.id %]">
+						<select name="itemparameter_[% parameter.id %]">
 						[%- FOREACH item = parameter.values %]
 							[%- itemid = item.id %]
 							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]">[% item.name | html %]</option>
@@ -39,10 +40,10 @@
 						</select>
 					</td></tr>
 				</table>
-			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'optionalmultiplelist' or parameter.type == 'sqlmultiplelist' or parameter.type == 'sqloptionalmultiplelist' or parameter.type == 'functionmultiplelist' or parameter.type == 'functionoptionalmultiplelist'%]
+			[% ELSIF parameter.type == 'multiplelist' or parameter.type == 'sqlmultiplelist' or parameter.type == 'functionmultiplelist' or parameter.type == 'optionalmultiplelist' or parameter.type == 'sqloptionalmultiplelist' or parameter.type == 'functionoptionalmultiplelist'%]
 				<table border="0">
 					<tr><td>
-						<select name="playlistparameter_[% parameter.id %]" multiple size="10">
+						<select name="itemparameter_[% parameter.id %]" multiple size="10">
 						[%- FOREACH item = parameter.values %]
 							[%- itemid = item.id %]
 							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]">[% item.name | html %]</option>
@@ -51,13 +52,13 @@
 					</td></tr>
 				</table>
 			[% ELSIF parameter.type == 'checkbox' %]
-				<input type="checkbox" name="playlistparameter_[% parameter.id %]" id="playlistparameter_[% parameter.id %]" value="1" [% parameter.value ? "checked" : "" %]>
+				<input type="checkbox" name="itemparameter_[% parameter.id %]" id="itemparameter_[% parameter.id %]" value="1" [% parameter.value ? "checked" : "" %]>
 			[% ELSIF parameter.type == 'checkboxes' or parameter.type == 'sqlcheckboxes' or parameter.type == 'functioncheckboxes'%]
 				<table border="0">[% USE table parameter.values, cols=3, pad=0 %]
 					[%- FOREACH itemrow = table.rows %]
 						<tr>
 						[%- FOREACH item = itemrow %]
-							[%- itemid = "playlistparameter_" _ parameter.id _ "_" _ item.id %]
+							[%- itemid = "itemparameter_" _ parameter.id _ "_" _ item.id %]
 							[%- IF not loop.first %]
 								<td>[% nbsp = "&nbsp"; nbsp.repeat(10) %]</td>
 							[%- END %]
@@ -73,16 +74,15 @@
 		<tr><td>&nbsp;</td></tr>
 	[%- END %]
 	<tr>
-		<td>[% "PLUGIN_SQLPLAYLIST_PLAYLISTTYPE" | string %]</td>
+		<td>[% "PLUGIN_SQLPLAYLIST_ITEMTYPE" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
 		<td>
-				<input type="radio" name="playlisttype" value="simple" checked>[% "PLUGIN_SQLPLAYLIST_PLAYLISTTYPE_SIMPLE" | string %]</option>
-				<input type="radio" name="playlisttype" value="advanced">[% "PLUGIN_SQLPLAYLIST_PLAYLISTTYPE_ADVANCED" | string %]</option>
+				<input type="radio" name="itemtype" value="simple" checked>[% "PLUGIN_SQLPLAYLIST_ITEMTYPE_SIMPLE" | string %]</option>
+				<input type="radio" name="itemtype" value="advanced">[% "PLUGIN_SQLPLAYLIST_ITEMTYPE_ADVANCED" | string %]</option>
 		</td>
 	</tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
-	<input type="hidden" name="playlisttemplate" value="[% pluginSQLPlayListNewPlayListTemplate %]">
-	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
+	<input type="hidden" name="itemtemplate" value="[% pluginWebAdminMethodsNewItemTemplate %]">
 	<tr><td><input type="submit" value="[% "NEXT" | string %]"></td></tr>
 </form>
 </table>

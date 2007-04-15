@@ -1,5 +1,5 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
 	[% PROCESS plugins/SQLPlayList/css65 %]
@@ -11,51 +11,38 @@
 	</a>
 [% END -%]
 [%- pageHeaderInfo = BLOCK %]
-	[% IF pluginSQLPlayListNowPlaying != '' %]
-		<strong>[% "NOW_PLAYING" | string %]:</strong>
-		<span class="exboldnowplaying">[% pluginSQLPlayListNowPlaying %]</span>
-	[% END %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
 [% PROCESS plugins/SQLPlayList/catchtab.js %]
 
-<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_saveplaylist.html" name="editForm" accept-charset="iso8859-1">
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_savenewitem.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
 	<input type="hidden" name="testonly" value=""/>
 	<input type="hidden" name="play" value=""/>
-	<input type="hidden" name="file" value="[% pluginSQLPlayListEditPlayListFile %]">
-	[% IF pluginSQLPlayListEditPlayListDeleteSimple %]<input type="hidden" name="deletesimple" value="[% pluginSQLPlayListEditPlayListDeleteSimple %]">[% END %]
-	[% IF pluginSQLPlayListEditPlayListType %]<input type="hidden" name="type" value="[% pluginSQLPlayListEditPlayListType %]">[% END %]
-	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
 	<table>
 	<tr><td>
-	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_FILENAME" | string %]: 
+	[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM_FILENAME" | string %]: 
 	</td><td>
-	[% pluginSQLPlayListEditPlayListFileUnescaped %]
+	<input type="text" name="file" value="[% pluginWebAdminMethodsEditItemFileUnescaped %]">
 	</td></tr>
-	<tr><td>
-	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_NAME" | string %]: 
-	</td><td>
-	<input type="text" name="name" value="[% pluginSQLPlayListEditPlayListName %]">
+	<tr valign="top"><td colspan="2">
+	[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM_DATA" | string %]: <br>
+	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% pluginWebAdminMethodsEditItemData %]</textarea>
 	</td></tr>
-	<tr><td>
-	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_GROUPS" | string %]: 
-	</td><td>
-	<input type="text" size="80" name="groups" value="[% pluginSQLPlayListEditPlayListGroups %]">
-	</td></tr>
-	<tr valign="top"><td>
-	[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_QUERY" | string %]: 
-	</td><td>
-	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% pluginSQLPlayListEditPlayListText %]</textarea>
-	</td></tr>
-	[% IF pluginSQLPlayListError %]
+	[% IF pluginWebAdminMethodsError %]
 	<tr><td colspan="2">
-	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
+	</td></tr>
+	[% ELSIF pluginWebAdminMethodsEditItemSizeWarning %]
+	<tr><td colspan="2">
+	<br><div style="color:red;">Warning:<br>[% pluginWebAdminMethodsEditItemSizeWarning %]</div><br>
 	</td></tr>
 	[% END %]
-	<tr><td></td><td>
+	<tr><td>&nbsp;</td></tr>
+	<tr><td>
 	<input type="submit" value="[% "SAVE" | string %]">
 	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_TESTPLAYLIST" | string %]" onclick='document.editForm.testonly.value = "1";document.editForm.submit();'>
 	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_SAVEPLAY" | string %]" onclick='document.editForm.play.value = "1";document.editForm.submit();'>

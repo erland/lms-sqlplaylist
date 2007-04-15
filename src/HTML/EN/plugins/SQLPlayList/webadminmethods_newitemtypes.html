@@ -1,0 +1,48 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+	[% PROCESS plugins/SQLPlayList/css65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+
+<table border="0">
+	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_ITEM_TYPES_TITLE" | string %]</b></td></tr>
+	<tr><td colspan="3">&nbsp;</td></tr>
+	<tr><td colspan="3"><a href="[% webroot %]plugins/SQLPlayList/webadminmethods_downloaditems.html?player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" [% IF pluginWebAdminMethodsDownloadMessage %]onClick="alert('[% pluginWebAdminMethodsDownloadMessage %]');return false;"[% END %]>[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_ITEMS" | string %]</a></td></tr>
+	[% IF pluginWebAdminMethodsError %]
+	<tr><td colspan="3">
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
+	</td></tr>
+	[% END %]
+	<tr><td colspan="3">&nbsp;</td></tr>
+	[% odd = 1 %]
+	[% odd = 1 %]
+	[%- FOREACH collection IN pluginWebAdminMethodsTemplates %]
+		<tr><td colspan="3">&nbsp;</td></tr>
+		<tr><td colspan="3"><strong>[% collection.name %][% IF collection.user %] (by [% collection.user %])[% END %]</strong></td></tr>
+		[% IF collection.description %]
+		<tr><td colspan="3">[% collection.description %]</td></tr>
+		[% END %]
+		[%- FOREACH item IN collection.templates %]
+		<tr>
+			<td class="[% IF odd %]odd[% ELSE %]even[% END %]" nowrap><a href="[% webroot %][% pluginWebAdminMethodsPostUrl %]?itemtemplate=[% item.id %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% item.name %]</a>[% IF item.customtemplate %] (<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_deleteitemtype.html?itemtemplate=[% item.id %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM_TYPE_QUESTION" | string %]')">[% "DELETE" |string %]</a>)[% END %]</td>
+			<td class="[% IF odd %]odd[% ELSE %]even[% END %]">&nbsp;&nbsp;&nbsp;</td>
+			<td class="[% IF odd %]odd[% ELSE %]even[% END %]"><a href="[% webroot %][% pluginWebAdminMethodsPostUrl %]?itemtemplate=[% item.id %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% item.description %]</a>[% IF item.lastchanged %]<br>([% "PLUGIN_SQLPLAYLIST_LASTCHANGED" | string %]: [% item.lastchanged %])[% END %]</td>
+		</tr>
+		[% odd = !odd %]
+		[%- END %]
+	[%- END %]
+</table>
+[% PROCESS pagefooter.html %]

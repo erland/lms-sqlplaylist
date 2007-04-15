@@ -1,5 +1,5 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
 	[% PROCESS plugins/SQLPlayList/css65 %]
@@ -13,13 +13,13 @@
 [%- pageHeaderInfo = BLOCK %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
 
-<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_downloadplaylist.html" name="editForm" accept-charset="iso8859-1">
-	[% IF pluginSQLPlayListRedirect %]<input type="hidden" name="redirect" value="1">[% END %]
-	<input type="hidden" name="playlisttemplate" value="[% pluginSQLPlayListTemplate %]">
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_downloaditem.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	<input type="hidden" name="itemtemplate" value="[% pluginWebAdminMethodsTemplate %]">
 	<table>
 	<tr><td colspan="2">
 	<br><div style="color:red;">[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE_WARNING" |string %]</div><br>
@@ -27,16 +27,16 @@
 	<tr><td>
 	[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME" | string %]: 
 	</td><td>
-	<input type="text" name="customname" size="40" value="[% pluginSQLPlayListUniqueId %]">
+	<input type="text" name="customname" size="40" value="[% pluginWebAdminMethodsUniqueId %]">
 	</td></tr>
 	<tr><td>
 	[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE" | string %]: 
 	</td><td>
 	<input type="checkbox" name="overwrite" id="overwrite" value="1">
 	</td></tr>
-	[% IF pluginSQLPlayListError %]
+	[% IF pluginWebAdminMethodsError %]
 	<tr><td colspan="2">
-	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
 	</td></tr>
 	[% END %]
 	<tr><td>&nbsp;</td></tr>

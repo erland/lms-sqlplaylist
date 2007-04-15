@@ -50,20 +50,20 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 			</tr>
 
 				[% odd = 1 %]
-				[% FOREACH type IN pluginSQLPlayListPlayLists.keys %]
+				[% FOREACH playlist IN pluginSQLPlayListPlayLists %]
 					[% BLOCK controls %]
-						[%- IF pluginSQLPlayListPlayLists.$type.customplaylist and !pluginSQLPlayListPlayLists.$type.downloadedplaylist %]
-						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_login.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_PUBLISH_PLAYLIST" | string %]</a>
+						[%- IF playlist.customplaylist and !playlist.downloadedplaylist %]
+						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_login.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_PUBLISH_ITEM" | string %]</a>
 						[%- END %]
-						[%- IF !pluginSQLPlayListPlayLists.$type.defaultplaylist %]
-						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_removeplaylist.html?type=[% type |uri %]&player=[% player | uri %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_PLAYLIST" | string %]</a>
+						[%- IF !playlist.defaultplaylist %]
+						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_removeitem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM" | string %]</a>
 						[%- END %]
-						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST" | string %]</a>
-						[% PROCESS dynamicPlayListLink type="$type" addOnly="0" %]
-						[% PROCESS dynamicPlayListLink type="$type" addOnly="1" %]
+						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM" | string %]</a>
+						[% PROCESS dynamicPlayListLink type="playlist.id" addOnly="0" %]
+						[% PROCESS dynamicPlayListLink type="playlist.id" addOnly="1" %]
 					[% END %]
 					[%- WRAPPER contentitem controls='controls' %]
-						<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_editplaylist.html?type=[% type |uri %]&player=[% player | uri %]">[% pluginSQLPlayListPlayLists.$type.name %]</a>
+						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% playlist.name %]</a>
 					[% END %]
 				[% odd = (not odd) %]
 				[% END %]
@@ -99,13 +99,19 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 			</tr>
 
 			<tr>
-				<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_newplaylisttypes.html?player=[% player | uri %]">[% "PLUGIN_SQLPLAYLIST_NEW_PLAYLIST" | string %]</a>&nbsp;&nbsp;&nbsp;<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_downloadnewplaylists.html?player=[% player | uri %]" [% IF pluginSQLPlayListDownloadMessage %]onClick="alert('[% pluginSQLPlayListDownloadMessage %]');return false;"[% ELSE %]onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION" |string %]');"[% END %]>[% "PLUGIN_SQLPLAYLIST_REFRESH_DOWNLOADED_PLAYLISTS" | string %]</a><div style="float:right;">([% "PLUGIN_SQLPLAYLIST" | string %] [% pluginSQLPlayListVersion %])</div></td>
+				<td colspan="4"><br><a href="[% webroot %]plugins/SQLPlayList/webadminmethods_newitemtypes.html?player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_NEW_ITEM" | string %]</a>&nbsp;&nbsp;&nbsp;<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_downloadnewitems.html?player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" [% IF pluginSQLPlayListDownloadMessage %]onClick="alert('[% pluginSQLPlayListDownloadMessage %]');return false;"[% ELSE %]onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION" |string %]');"[% END %]>[% "PLUGIN_SQLPLAYLIST_REFRESH_DOWNLOADED_ITEMS" | string %]</a><div style="float:right;">([% "PLUGIN_SQLPLAYLIST" | string %] [% pluginSQLPlayListVersion %])</div></td>
 			</tr>
 			[% IF pluginSQLPlayListError %]
 				<tr><td colspan="4"><br><br><strong>[% pluginSQLPlayListError %]</strong></td></tr>
 			[% END %]
 			[% IF pluginSQLPlayListMessage %]
 				<tr><td colspan="4"><br><br>[% pluginSQLPlayListMessage %]</td></tr>
+			[% END %]
+			[% IF pluginWebAdminMethodsError %]
+				<tr><td colspan="4"><br><br><strong>[% pluginWebAdminMethodsError %]</strong><br></td></tr>
+			[% END %]
+			[% IF pluginWebAdminMethodsMessage %]
+				<tr><td colspan="4"><br><br>[% pluginWebAdminMethodsMessage %]</td></ttr>
 			[% END %]
 		[% END %]
 [% PROCESS pagefooter.html %]

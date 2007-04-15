@@ -1,5 +1,5 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
 	[% PROCESS plugins/SQLPlayList/css65 %]
@@ -13,47 +13,48 @@
 [%- pageHeaderInfo = BLOCK %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
 
 <table border="0">
-<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_publishplaylistparameters.html" name="editForm" accept-charset="iso8859-1">
-	<input type="hidden" name="type" value="[% pluginSQLPlayListLoginPlaylist %]">
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_publishitemparameters.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	<input type="hidden" name="item" value="[% pluginWebAdminMethodsLoginItem %]">
 	<input type="hidden" name="register" value="1">
 	<input type="hidden" name="anonymous" value="0">
 	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_REGISTER_TITLE" | string %]</b></td></tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	</td></tr>
-	[% IF pluginSQLPlayListError %]
+	[% IF pluginWebAdminMethodsError %]
 	<tr><td colspan="3">
-	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
 	</td></tr>
 	[% END %]
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_LOGIN_USER" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="text" name="username" value="[% pluginSQLPlayListLoginUser %]"></td>
+		<td><input type="text" name="username" value="[% pluginWebAdminMethodsLoginUser %]"></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_LOGIN_FIRSTNAME" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="text" name="firstname" value="[% pluginSQLPlayListLoginFirstName %]"></td>
+		<td><input type="text" name="firstname" value="[% pluginWebAdminMethodsLoginFirstName %]"></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_LOGIN_LASTNAME" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="text" name="lastname" value="[% pluginSQLPlayListLoginLastName %]"></td>
+		<td><input type="text" name="lastname" value="[% pluginWebAdminMethodsLoginLastName %]"></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_LOGIN_EMAIL" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="text" name="email" value="[% pluginSQLPlayListLoginEMail %]"></td>
+		<td><input type="text" name="email" value="[% pluginWebAdminMethodsLoginEMail %]"></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_LOGIN_PASSWORD" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="password" name="password" value="[% pluginSQLPlayListLoginPassword %]"></td>
+		<td><input type="password" name="password" value="[% pluginWebAdminMethodsLoginPassword %]"></td>
 	</tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	<tr><td colspan="3">[% "PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE" | string %]</td></tr>

@@ -1,5 +1,5 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
 	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
 	[% PROCESS plugins/SQLPlayList/css65 %]
@@ -13,42 +13,43 @@
 [%- pageHeaderInfo = BLOCK %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginSQLPlayListSlimserver65 %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
 	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
 [% END %]
 
 <table border="0">
-<form action="[% webroot %]plugins/SQLPlayList/sqlplaylist_publishplaylist.html" name="editForm" accept-charset="iso8859-1">
-	<input type="hidden" name="type" value="[% pluginSQLPlayListLoginPlaylist %]">
-	<input type="hidden" name="username" value="[% pluginSQLPlayListLoginUser %]">
-	<input type="hidden" name="password" value="[% pluginSQLPlayListLoginPassword %]">
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_publishitem.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	<input type="hidden" name="item" value="[% pluginWebAdminMethodsLoginItem %]">
+	<input type="hidden" name="username" value="[% pluginWebAdminMethodsLoginUser %]">
+	<input type="hidden" name="password" value="[% pluginWebAdminMethodsLoginPassword %]">
 	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_PUBLISHPARAMETERS_TITLE" | string %]</b></td></tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	</td></tr>
-	[% IF pluginSQLPlayListError %]
+	[% IF pluginWebAdminMethodsError %]
 	<tr><td colspan="2">
-	<br><div style="color:red;">Error:<br>[% pluginSQLPlayListError %]</div><br>
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
 	</td></tr>
 	[% END %]
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_NAME" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="text" name="playlistname" size="40" value="[% pluginSQLPlayListPublishName %]"></td>
+		<td><input type="text" name="itemname" size="40" value="[% pluginWebAdminMethodsPublishName %]"></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_DESCRIPTION" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><textarea name="playlistdescription" cols="40" rows="5">[% pluginSQLPlayListPublishDescription %]</textarea></td>
+		<td><textarea name="itemdescription" cols="40" rows="5">[% pluginWebAdminMethodsPublishDescription %]</textarea></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_ID" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="text" name="playlistuniqueid" size="40" value="[% pluginSQLPlayListPublishUniqueId %]"></td>
+		<td><input type="text" name="itemuniqueid" size="40" value="[% pluginWebAdminMethodsPublishUniqueId %]"></td>
 	</tr>
 	<tr>
 		<td>[% "PLUGIN_SQLPLAYLIST_PUBLISH_OVERWRITE" | string %]</td>
 		<td>&nbsp;&nbsp;&nbsp;</td>
-		<td><input type="checkbox" name="overwrite" id="overwrite" value="1" [% IF pluginSQLPlayListPublishOverwrite %]checked[% END%]></td>
+		<td><input type="checkbox" name="overwrite" id="overwrite" value="1" [% IF pluginWebAdminMethodsPublishOverwrite %]checked[% END%]></td>
 	</tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	<tr><td colspan="3">[% "PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE_DESCRIPTION" | string %]</td></tr>

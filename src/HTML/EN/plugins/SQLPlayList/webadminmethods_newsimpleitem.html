@@ -1,0 +1,54 @@
+[%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
+	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
+	[% PROCESS plugins/SQLPlayList/css65 %]
+[% END %]
+
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
+		[% "PLUGIN_SQLPLAYLIST" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% IF !pluginWebAdminMethodsSlimserver65 %]
+	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
+[% END %]
+[% PROCESS plugins/SQLPlayList/catchtab.js %]
+
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_savenewsimpleitem.html" name="editForm" accept-charset="iso8859-1">
+	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	<input type="hidden" name="play" value=""/>
+	<table>
+	<tr><td>
+	[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM_FILENAME" | string %]: 
+	</td><td>
+	<input type="text" name="file" size="40" value="[% pluginWebAdminMethodsEditItemFileUnescaped %]">
+	</td></tr>
+	<tr><td>
+	[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM_OVERWRITE" | string %]: 
+	</td><td>
+	<input type="checkbox" name="overwrite" id="overwrite" value="1">
+	</td></tr>
+	[%- FOREACH parameter IN pluginWebAdminMethodsEditItemParameters.keys.sort %]
+		<input type="hidden" name="[% parameter %]" value="[% pluginWebAdminMethodsEditItemParameters.$parameter | html %]">
+	[% END %]
+	<input type="hidden" name="itemtemplate" value="[% pluginWebAdminMethodsNewItemTemplate %]">
+	[% IF pluginWebAdminMethodsError %]
+	<tr><td colspan="2">
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
+	</td></tr>
+	[% ELSIF pluginWebAdminMethodsEditItemSizeWarning %]
+	<tr><td colspan="2">
+	<br><div style="color:red;">Warning:<br>[% pluginWebAdminMethodsEditItemSizeWarning %]</div><br>
+	</td></tr>
+	[% END %]
+	<tr><td>&nbsp;</td></tr>
+	<tr><td colspan="2">
+	<input type="submit" value="[% "SAVE" | string %]">
+	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_SAVEPLAY" | string %]" onclick='document.editForm.play.value = "1";document.editForm.submit();'>
+	</td></tr>
+	</table>
+[% PROCESS pagefooter.html %]
