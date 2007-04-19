@@ -536,7 +536,12 @@ sub addParameterValues {
 				my $id;
 				my $name;
 				my $sortlink;
-				$sth->bind_columns( undef, \$id,\$name,\$sortlink);
+				eval {
+					$sth->bind_columns( undef, \$id,\$name,\$sortlink);
+				};
+				if( $@ ) {
+					$sth->bind_columns( undef, \$id,\$name);
+				}
 				while( $sth->fetch() ) {
 					my %listitem = (
 						'id' => $id,
@@ -549,7 +554,7 @@ sub addParameterValues {
 			$sth->finish();
 		};
 		if( $@ ) {
-		    warn "Database error: $DBI::errstr\n";
+		    warn "Database error: $DBI::errstr\n$@\n";
 		}		
 	}
 }
@@ -668,7 +673,8 @@ sub handleWebSaveNewPlaylist {
 		return handleWebTestNewPlaylist($client,$params);
 	}
 	handleWebTestPlaylist($client,$params);
-
+	$params->{'pluginSQLPlayListTestParameters'} = undef;
+	$params->{'pluginSQLPlayListEditPlayListTestResult'} = undef;
 	if(!defined($params->{'pluginWebAdminMethodsError'})) {
 		return getConfigManager()->webSaveNewItem($client,$params);
 	}else {
@@ -682,6 +688,8 @@ sub handleWebSavePlaylist {
 		return handleWebTestEditPlaylist($client,$params);
 	}
 	handleWebTestPlaylist($client,$params);
+	$params->{'pluginSQLPlayListTestParameters'} = undef;
+	$params->{'pluginSQLPlayListEditPlayListTestResult'} = undef;
 	if(!defined($params->{'pluginWebAdminMethodsError'})) {
 		return getConfigManager()->webSaveItem($client,$params);
 	}else {

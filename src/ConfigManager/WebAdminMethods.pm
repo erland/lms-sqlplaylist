@@ -211,6 +211,7 @@ sub webDeleteItemType {
 			}
 		}
 	}
+	$self->changedTemplateConfiguration($client,$params);
 	return $self->webCallbacks->webNewItemTypes($client,$params);
 }
 
@@ -614,6 +615,7 @@ sub webDownloadItems {
 			return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webNewItemTypes'}, $params);
 		}
 		$params->{'pluginWebAdminMethodsError'} = "No items available to download";
+		$self->changedTemplateConfiguration($client,$params);
 		return $self->webCallbacks->webNewItemTypes($client,$params);
 	}else {
 		if(defined($answer)) {
@@ -663,6 +665,7 @@ sub webDownloadNewItems {
 	if($error ne '') {
 		$params->{'pluginWebAdminMethodsError'} = $error;
 	}
+	$self->changedTemplateConfiguration($client,$params);
 	return $self->webCallbacks->webEditItems($client,$params);
 }
 
@@ -689,6 +692,7 @@ sub webDownloadItem {
 		return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webSaveDownloadedItem'}, $params);
 	}else {
 		$params->{'itemtemplate'} = $result->{'template'};
+		$self->changedTemplateConfiguration($client,$params);
 		return $self->webCallbacks->webNewItemParameters($client,$params);
 	}
 }
@@ -716,6 +720,13 @@ sub webNewItem {
 	my $template = $templates->{$templateId};
 	my $menytype = $params->{'itemtype'};
 
+	if(-e catfile($self->customItemDirectory,unescape($itemFile).".".$self->extension) || -e catfile($self->customItemDirectory,unescape($itemFile).".".$self->simpleExtension)) {
+		my $i=1;
+		while(-e catfile($self->customItemDirectory,unescape($itemFile).$i.".".$self->extension) || -e catfile($self->customItemDirectory,unescape($itemFile).$i.".".$self->simpleExtension)) {
+			$i = $i + 1;
+		}
+		$itemFile .= $i;
+	}
 	if($menytype eq 'advanced') {
 		$itemFile .= ".".$self->extension;
 		my %templateParameters = ();
@@ -877,9 +888,14 @@ sub webSaveSimpleItem {
 		my $file = unescape($params->{'file'});
 		my $url = catfile($dir, $file);
 		
+		my $error = $self->checkSaveSimpleItem($client,$params);
+		if(defined($error)) {
+			$params->{'pluginWebAdminMethodsError'} = $error;
+		}
 		if(!$self->saveSimpleItem($client,$params,$url,$templateId,$templates)) {
 		        return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webEditSimpleItem'}, $params);
 		}else {
+			$self->changedItemConfiguration($client,$params);
 			return $self->webCallbacks->webEditItems($client,$params);
 		}
 	}
@@ -911,6 +927,7 @@ sub webDeleteItem {
 			warn "Unable to delete file: ".$url.": $! \n";
 		}
 	}		
+	$self->changedItemConfiguration($client,$params);
 	return $self->webCallbacks->webEditItems($client,$params);
 }
 
@@ -951,6 +968,10 @@ sub webSaveNewSimpleItem {
 		$params->{'pluginWebAdminMethodsError'} = 'Invalid filename, customized item with this name already exist';
 	}
 
+	my $error = $self->checkSaveSimpleItem($client,$params);
+	if(defined($error)) {
+		$params->{'pluginWebAdminMethodsError'} = $error;
+	}
 	if(!$self->saveSimpleItem($client,$params,$url,$templateId,$templates)) {
 	        return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webNewSimpleItem'}, $params);
 	}else {
@@ -962,6 +983,7 @@ sub webSaveNewSimpleItem {
 				}
 			}
 		}
+		$self->changedItemConfiguration($client,$params);
 		return $self->webCallbacks->webEditItems($client,$params);
 	}
 }
@@ -995,6 +1017,7 @@ sub webSaveNewItem {
 	if(!$self->saveItem($client,$params,$url)) {
 	        return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webNewItem'}, $params);
 	}else {
+		$self->changedItemConfiguration($client,$params);
 		return $self->webCallbacks->webEditItems($client,$params);
 	}
 }
@@ -1033,8 +1056,41 @@ sub webSaveItem {
 				}
 			}
 		}
+		$self->changedItemConfiguration($client,$params);
 		return $self->webCallbacks->webEditItems($client,$params);
 	}
+}
+
+sub changedItemConfiguration {
+	my $self = shift;
+	my $client = shift;
+	my $params = shift;
+
+	$self->webCallbacks->changedItemConfiguration($client,$params);
+}
+
+sub changedTemplateConfiguration {
+	my $self = shift;
+	my $client = shift;
+	my $params = shift;
+
+	$self->webCallbacks->changedTemplateConfiguration($client,$params);
+}
+
+sub checkSaveItem {
+	my $self = shift;
+	my $client = shift;
+	my $params = shift;
+
+	return undef;
+}
+
+sub checkSaveSimpleItem {
+	my $self = shift;
+	my $client = shift;
+	my $params = shift;
+
+	return undef;
 }
 
 sub saveItem 
@@ -1056,6 +1112,11 @@ sub saveItem
 
 		if($error) {
 			$params->{'pluginWebAdminMethodsError'} = "Reading configuration: <br>".$error;
+		}else {
+			my $errorMsg = $self->checkSaveItem($client,$params,$items{'test'});
+			if(defined($errorMsg)) {
+				$params->{'pluginWebAdminMethodsError'} = $errorMsg;
+			}
 		}
 	}
 
@@ -1075,7 +1136,7 @@ sub saveItem
 	
 	if($params->{'pluginWebAdminMethodsError'}) {
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $params->{'file'};
-		$params->{'pluginWebAdminMethodsEditItemData'} = $params->{'text'};
+		$params->{'pluginWebAdminMethodsEditItemData'} = encode_entities($params->{'text'});
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'pluginWebAdminMethodsEditItemFile'});
 		if ($::VERSION ge '6.5') {
 			$params->{'pluginWebAdminMethodsSlimserver65'} = 1;
@@ -1145,15 +1206,60 @@ sub saveSimpleItem {
 	}
 	
 	if($params->{'pluginWebAdminMethodsError'}) {
-		my %parameters;
-		my $regexp = '^'.$self->parameterHandler->parameterPrefix.'_';
-		for my $p (keys %$params) {
-			if($p =~ /$regexp/) {
-				$parameters{$p}=$params->{$p};
+		my $template = $templates->{$templateId};
+		if(defined($template->{'parameter'})) {
+			my @templateDataParameters = ();
+			my $parameters = $template->{'parameter'};
+			if(ref($parameters) ne 'ARRAY') {
+				my @parameterArray = ();
+				if(defined($parameters)) {
+					push @parameterArray,$parameters;
+				}
+				$parameters = \@parameterArray;
 			}
-		}		
-		$params->{'pluginWebAdminMethodsEditItemParameters'} = \%parameters;
-		$params->{'pluginWebAdminMethodsNewItemTemplate'} = $templateId;
+			for my $p (@$parameters) {
+				$self->parameterHandler->addValuesToTemplateParameter($p);
+				my $value = $self->parameterHandler->getXMLValueOfTemplateParameter($params,$p);
+				if(defined($value) && $value ne '') {
+					my $valueData = '<data>'.$value.'</data>';
+					my $xmlValue = eval { XMLin($valueData, forcearray => ['value'], keyattr => []) };
+					if(defined($xmlValue)) {
+						$xmlValue->{'id'} = $p->{'id'};
+						push @templateDataParameters,$xmlValue;
+					}
+				}
+			}			
+			my %currentParameterValues = ();
+			for my $p (@templateDataParameters) {
+				my $values = $p->{'value'};
+				my %valuesHash = ();
+				for my $v (@$values) {
+					if(ref($v) ne 'HASH') {
+						$valuesHash{$v} = $v;
+					}
+				}
+				if(!%valuesHash) {
+					$valuesHash{''} = '';
+				}
+				$currentParameterValues{$p->{'id'}} = \%valuesHash;
+			}
+
+			my @parametersToSelect = ();
+			for my $p (@$parameters) {
+				if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
+					my $useParameter = 1;
+					if(defined($p->{'requireplugins'})) {
+						$useParameter = isPluginsInstalled($client,$p->{'requireplugins'});
+					}
+					if($useParameter) {
+						$self->parameterHandler->setValueOfTemplateParameter($p,$currentParameterValues{$p->{'id'}});
+						push @parametersToSelect,$p;
+					}
+				}
+			}
+			$params->{'pluginWebAdminMethodsEditItemParameters'} = \@parametersToSelect;
+		}
+		$params->{'pluginWebAdminMethodsEditItemTemplate'} = $templateId;
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $params->{'file'};
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'pluginWebAdminMethodsEditItemFile'});
 		if ($::VERSION ge '6.5') {
@@ -1488,12 +1594,23 @@ sub getTemplate {
 	                        'utf8encode'    => \&Slim::Utils::Unicode::utf8encode,
 	                        'utf8on'        => \&Slim::Utils::Unicode::utf8on,
 	                        'utf8off'       => \&Slim::Utils::Unicode::utf8off,
+	                        'fileurl'       => \&fileURLFromPath,
 	                },
 	
 	                EVAL_PERL => 1,
 	        }));
 	}
 	return $self->template;
+}
+
+sub fileURLFromPath {
+	my $path = shift;
+	$path = Slim::Utils::Unicode::utf8off($path);
+	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
+	$path =~ s/\\/\\\\/g;
+	$path =~ s/%/\\%/g;
+	$path = encode_entities($path,"&<>\'\"");
+	return $path;
 }
 
 sub fillTemplate {

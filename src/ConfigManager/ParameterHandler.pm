@@ -59,13 +59,6 @@ sub addValuesToTemplateParameter {
 			);
 			unshift @$listValues,\%empty;
 		}
-		if(defined($currentValues)) {
-			for my $v (@$listValues) {
-				if($currentValues->{$v->{'value'}}) {
-					$v->{'selected'} = 1;
-				}
-			}
-		}
 		$p->{'values'} = $listValues;
 	}elsif($p->{'type'} =~ 'function.*') {
 		my $listValues = $self->getFunctionTemplateData($p->{'data'});
@@ -77,17 +70,9 @@ sub addValuesToTemplateParameter {
 			);
 			unshift @$listValues,\%empty;
 		}
-		if(defined($currentValues)) {
+		if($p->{'value'}) {
 			for my $v (@$listValues) {
-				if($currentValues->{$v->{'value'}}) {
-					$v->{'selected'} = 1;
-				}
-			}
-		}else {
-			for my $v (@$listValues) {
-				if($p->{'value'}) {
-					$v->{'selected'} = 1;
-				}
+				$v->{'selected'} = 1;
 			}
 		}
 		$p->{'values'} = $listValues;
@@ -115,17 +100,30 @@ sub addValuesToTemplateParameter {
 			);
 			unshift @listValues,\%empty;
 		}
-		if(defined($currentValues)) {
-			for my $v (@listValues) {
+		$p->{'values'} = \@listValues;
+	}
+	if(defined($currentValues)) {
+		$self->setValueOfTemplateParameter($p,$currentValues);
+	}
+}
+
+sub setValueOfTemplateParameter {
+	my $self = shift;
+	my $p = shift;
+	my $currentValues = shift;
+
+	if(defined($currentValues)) {
+		if($p->{'type'} =~ '^sql.*' || $p->{'type'} =~ 'function.*' || $p->{'type'} =~ '.*list$' || $p->{'type'} =~ '.*checkboxes$') {
+			my $listValues = $p->{'values'};
+			for my $v (@$listValues) {
 				if($currentValues->{$v->{'value'}}) {
 					$v->{'selected'} = 1;
 				}
 			}
-		}
-		$p->{'values'} = \@listValues;
-	}elsif(defined($currentValues)) {
-		for my $v (keys %$currentValues) {
-			$p->{'value'} = $v;
+		}else {
+			for my $v (keys %$currentValues) {
+				$p->{'value'} = $v;
+			}
 		}
 	}
 }
@@ -184,7 +182,11 @@ sub getValueOfTemplateParameter {
 				return encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}});
 			}
 		}else {
-			$result = '';
+			if($parameter->{'type'} =~ /.*checkbox$/) {
+				$result = '0';
+			}else {
+				$result = '';
+			}
 		}
 	}
 	return $result;
@@ -246,7 +248,11 @@ sub getXMLValueOfTemplateParameter {
 				$result = '<value>'.encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\"").'</value>';
 			}
 		}else {
-			$result = '';
+			if($parameter->{'type'} =~ /.*checkbox$/) {
+				$result = '<value>0</value>';
+			}else {
+				$result = '';
+			}
 		}
 	}
 	if(defined($result)) {

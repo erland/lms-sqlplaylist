@@ -74,6 +74,60 @@ sub getTemplateParametersForPublish {
 
 }
 
+sub checkSaveItem {
+	my $self = shift;
+	my $client = shift;
+	my $params = shift;
+	my $item = shift;
+	my $items = $params->{'items'};
+#	if(defined($items)) {
+#		my $id = unescape($params->{'file'});
+#		my $regexp = ".".$self->extension."\$";
+#		$regexp =~ s/\./\\./;
+#		$id =~ s/$regexp//;
+#		for my $key (keys %$items) {
+#			my $currentItem = $items->{$key};
+#			if($currentItem && $currentItem->{'name'} eq $item->{'name'} && $currentItem->{'id'} ne $id && !defined($currentItem->{'defaultitem'})) {
+#				return 'Playlist with that name already exists';
+#			}
+#		}
+#	}
+	return undef;
+}
+
+sub checkSaveSimpleItem {
+	my $self = shift;
+	my $client = shift;
+	my $params = shift;
+
+	my $items = $params->{'items'};
+#	if(defined($items)) {
+#		my $id = unescape($params->{'file'});
+#		my $regexp = ".".$self->simpleExtension."\$";
+#		$regexp =~ s/\./\\./;
+#		$id =~ s/$regexp//;
+#		for my $key (keys %$items) {
+#			my $currentItem = $items->{$key};
+#			if($currentItem && $currentItem->{'name'} eq $params->{'itemparameter_playlistname'} && $currentItem->{'id'} ne $id && !defined($currentItem->{'defaultitem'})) {
+#				return 'Playlist with that name already exists';
+#			}
+#		}
+#	}
+	return undef;
+}
+
+# don't use the external one because it doesn't know about the difference
+# between a param and not...
+#*unescape = \&URI::Escape::unescape;
+sub unescape {
+        my $in      = shift;
+        my $isParam = shift;
+
+        $in =~ s/\+/ /g if $isParam;
+        $in =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+
+        return $in;
+}
 1;
 
 __END__

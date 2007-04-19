@@ -89,6 +89,11 @@
 	</tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	<input type="hidden" name="itemtemplate" value="[% pluginWebAdminMethodsEditItemTemplate %]">
+	[% IF pluginWebAdminMethodsError %]
+	<tr><td colspan="2">
+	<br><div style="color:red;">Error:<br>[% pluginWebAdminMethodsError %]</div><br>
+	</td></tr>
+	[% END %]
 	<tr><td colspan="3"><input type="submit" value="[% "SAVE" | string %]">
 	<input type="button" value="[% "PLUGIN_SQLPLAYLIST_SAVEPLAY" | string %]" onclick='document.editForm.play.value = "1";document.editForm.submit();'></td>
 	</tr>
