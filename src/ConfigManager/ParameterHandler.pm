@@ -311,7 +311,6 @@ sub getSQLTemplateData {
 	my $self = shift;
 	my $sqlstatements = shift;
 	my @result =();
-	my $ds = getCurrentDS();
 	my $dbh = getCurrentDBH();
 	my $trackno = 0;
     	for my $sql (split(/[;]/,$sqlstatements)) {
@@ -379,19 +378,7 @@ sub getFunctionTemplateData {
 }
 
 sub getCurrentDBH {
-	if ($::VERSION ge '6.5') {
-		return Slim::Schema->storage->dbh();
-	}else {
-		return Slim::Music::Info::getCurrentDataStore()->dbh();
-	}
-}
-
-sub getCurrentDS {
-	if ($::VERSION ge '6.5') {
-		return 'Slim::Schema';
-	}else {
-		return Slim::Music::Info::getCurrentDataStore();
-	}
+	return Slim::Schema->storage->dbh();
 }
 
 # other people call us externally.

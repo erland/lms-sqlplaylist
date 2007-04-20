@@ -296,21 +296,13 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			if ($::VERSION ge '6.5') {
-				$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
-			}else {
-				$enabledPlugin = grep(/$plugin/,Slim::Buttons::Plugins::enabledPlugins($client));
-			}
+			$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
 		}
 	}
 	return $enabledPlugin;
 }
 sub getCurrentDBH {
-	if ($::VERSION ge '6.5') {
-		return Slim::Schema->storage->dbh();
-	}else {
-		return Slim::Music::Info::getCurrentDataStore()->dbh();
-	}
+	return Slim::Schema->storage->dbh();
 }
 
 # Overridable functions

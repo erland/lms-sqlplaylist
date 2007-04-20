@@ -55,12 +55,7 @@ sub readFromPlugins {
 	my $globalcontext = shift;
 
 	no strict 'refs';
-	my @enabledplugins;
-	if ($::VERSION ge '6.5') {
-		@enabledplugins = Slim::Utils::PluginManager::enabledPlugins();
-	}else {
-		@enabledplugins = Slim::Buttons::Plugins::enabledPlugins();
-	}
+	my @enabledplugins = Slim::Utils::PluginManager::enabledPlugins();
 	
 	my %excludePluginsHash = ();
 	if($excludePlugins) {

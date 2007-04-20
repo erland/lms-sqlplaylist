@@ -37,13 +37,10 @@ use FindBin qw($Bin);
 
 use Plugins::SQLPlayList::ConfigManager::Main;
 
-if ($::VERSION ge '6.5') {
-	eval "use Slim::Schema";
-}
+use Slim::Schema;
 
 # Information on each clients sqlplaylist
 my $htmlTemplate = 'plugins/SQLPlayList/sqlplaylist_list.html';
-my $ds = getCurrentDS();
 my $playLists = undef;
 my $playListTypes = undef;
 my $sqlerrors = '';
@@ -110,10 +107,8 @@ sub handlePlayOrAdd {
 		$item = "sqlplaylist_".$item;
 		$request = $client->execute(['dynamicplaylist', 'playlist', ($add?'add':'play'), $item]);
 	}
-	if ($::VERSION ge '6.5') {
-		# indicate request source
-		$request->source('PLUGIN_SQLPLAYLIST');
-	}
+	# indicate request source
+	$request->source('PLUGIN_SQLPLAYLIST');
 }
 
 sub getPlayList {
@@ -162,10 +157,8 @@ sub initPlayLists {
 	if(defined($client)) {
 		# We need to make sure the playlists in DynamicPlayList plugin is re-read
 		my $request = $client->execute(['dynamicplaylist', 'playlists']);
-		if ($::VERSION ge '6.5') {
-			# indicate request source
-			$request->source('PLUGIN_SQLPLAYLIST');
-		}
+		# indicate request source
+		$request->source('PLUGIN_SQLPLAYLIST');
 	}
 }
 
@@ -175,12 +168,7 @@ sub initPlugin {
 	$soapLiteError = 0;
 	eval "use SOAP::Lite";
 	if ($@) {
-		my @pluginDirs = ();
-		if ($::VERSION ge '6.5') {
-			@pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
-		}else {
-			@pluginDirs = catdir($Bin, "Plugins");
-		}
+		my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
 		for my $plugindir (@pluginDirs) {
 			next unless -d catdir($plugindir,"SQLPlayList","libs");
 			push @INC,catdir($plugindir,"SQLPlayList","libs");
@@ -295,9 +283,6 @@ sub handleWebList {
 
 	$params->{'pluginSQLPlayListPlayLists'} = \@webPlaylists;
 	$params->{'pluginSQLPlayListNowPlaying'} = $name;
-	if ($::VERSION ge '6.5') {
-		$params->{'pluginSQLPlayListSlimserver65'} = 1;
-	}
 	if(!UNIVERSAL::can("Plugins::DynamicPlayList::Plugin","getCurrentPlayList")) {
 		$params->{'pluginSQLPlayListError'} = "ERROR!!! Cannot find DynamicPlayList plugin, please make sure you have installed and enabled at least DynamicPlayList 1.3"
 	}
@@ -315,11 +300,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			if ($::VERSION ge '6.5') {
-				$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
-			}else {
-				$enabledPlugin = grep(/$plugin/,Slim::Buttons::Plugins::enabledPlugins($client));
-			}
+			$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
 		}
 	}
 	return $enabledPlugin;
@@ -380,7 +361,6 @@ sub handleWebTestPlaylist {
 	$params->{'pluginWebAdminMethodsEditItemFile'} = $params->{'file'};
 	$params->{'pluginWebAdminMethodsEditItemData'} = $params->{'text'};
 	$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'file'});
-	my $ds = getCurrentDS();
 	if($params->{'text'}) {
 		my $playlist = createSQLPlayList($client,Slim::Utils::Unicode::utf8decode($params->{'text'},'utf8'));
 		if($playlist) {
@@ -412,9 +392,6 @@ sub handleWebTestPlaylist {
 		$params->{'pluginWebAdminMethodsError'} = $sqlerrors;
 	}else {
 		$params->{'pluginWebAdminMethodsError'} = undef;
-	}
-	if ($::VERSION ge '6.5') {
-		$params->{'pluginWebAdminMethodsSlimserver65'} = 1;
 	}
 }
 
@@ -757,7 +734,7 @@ sub setupGroup
 	my %setupPrefs =
 	(
 	plugin_sqlplaylist_showmessages => {
-			'validate'     => \&validateTrueFalseWrapper
+			'validate'     => \&Slim::Utils::Validate::trueFalse
 			,'PrefChoose'  => string('PLUGIN_SQLPLAYLIST_SHOW_MESSAGES')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_SHOW_MESSAGES')
 			,'options' => {
@@ -767,14 +744,14 @@ sub setupGroup
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_showmessages"); }
 		},		
 	plugin_sqlplaylist_playlist_directory => {
-			'validate' => \&validateIsDirWrapper
+			'validate' => \&Slim::Utils::Validate::isDir
 			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
 			,'PrefSize' => 'large'
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"); }
 		},
 	plugin_sqlplaylist_template_directory => {
-			'validate' => \&validateIsDirWrapper
+			'validate' => \&Slim::Utils::Validate::isDir
 			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY')
 			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY')
 			,'PrefSize' => 'large'
@@ -895,7 +872,6 @@ sub executeSQLForPlaylist {
 	my $limit = shift;
 	my $playlist = shift;
 	my @result;
-	my $ds = getCurrentDS();
 	my $dbh = getCurrentDBH();
 	my $trackno = 0;
 	$sqlerrors = "";
@@ -1088,73 +1064,33 @@ sub getNextDynamicPlayListTracks {
 	return \@{$result};
 }
 
-sub validateIsDirWrapper {
-	my $arg = shift;
-	if ($::VERSION ge '6.5') {
-		return Slim::Utils::Validate::isDir($arg);
-	}else {
-		return Slim::Web::Setup::validateIsDir($arg);
-	}
-}
-
-sub validateTrueFalseWrapper {
-	my $arg = shift;
-	if ($::VERSION ge '6.5') {
-		return Slim::Utils::Validate::trueFalse($arg);
-	}else {
-		return Slim::Web::Setup::validateTrueFalse($arg);
-	}
-}
 
 sub objectForId {
 	my $type = shift;
 	my $id = shift;
-	if ($::VERSION ge '6.5') {
-		if($type eq 'artist') {
-			$type = 'Contributor';
-		}elsif($type eq 'album') {
-			$type = 'Album';
-		}elsif($type eq 'genre') {
-			$type = 'Genre';
-		}elsif($type eq 'track') {
-			$type = 'Track';
-		}elsif($type eq 'playlist') {
-			$type = 'Playlist';
-		}
-		return Slim::Schema->resultset($type)->find($id);
-	}else {
-		if($type eq 'playlist') {
-			$type = 'track';
-		}
-		return getCurrentDS()->objectForId($type,$id);
+	if($type eq 'artist') {
+		$type = 'Contributor';
+	}elsif($type eq 'album') {
+		$type = 'Album';
+	}elsif($type eq 'genre') {
+		$type = 'Genre';
+	}elsif($type eq 'track') {
+		$type = 'Track';
+	}elsif($type eq 'playlist') {
+		$type = 'Playlist';
 	}
+	return Slim::Schema->resultset($type)->find($id);
 }
 
 sub objectForUrl {
 	my $url = shift;
-	if ($::VERSION ge '6.5') {
-		return Slim::Schema->objectForUrl({
-			'url' => $url
-		});
-	}else {
-		return getCurrentDS()->objectForUrl($url,undef,undef,1);
-	}
+	return Slim::Schema->objectForUrl({
+		'url' => $url
+	});
 }
 
 sub getCurrentDBH {
-	if ($::VERSION ge '6.5') {
-		return Slim::Schema->storage->dbh();
-	}else {
-		return Slim::Music::Info::getCurrentDataStore()->dbh();
-	}
-}
-
-sub getCurrentDS {
-	if ($::VERSION ge '6.5') {
-		return 'Slim::Schema';
-	}else {
-		return Slim::Music::Info::getCurrentDataStore();
-	}
+	return Slim::Schema->storage->dbh();
 }
 
 sub commit {
@@ -1176,14 +1112,7 @@ sub displayAsHTML {
 	my $form = shift;
 	my $item = shift;
 	
-	if ($::VERSION ge '6.5') {
-		$item->displayAsHTML($form);
-	}else {
-		my $ds = getCurrentDS();
-		my $fieldInfo = Slim::DataStores::Base->fieldInfo;
-        my $levelInfo = $fieldInfo->{$type};
-        &{$levelInfo->{'listItem'}}($ds, $form, $item);
-	}
+	$item->displayAsHTML($form);
 }
 
 

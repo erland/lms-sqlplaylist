@@ -1,9 +1,4 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginWebAdminMethodsSlimserver65 %]
-	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
-	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
-	[% PROCESS plugins/SQLPlayList/css65 %]
-[% END %]
 
 [%- pwd_list = BLOCK -%]/
 	<a href="[% webroot %]plugins/SQLPlayList/sqlplaylist_list.html?player=[% player | uri %]">
@@ -13,9 +8,6 @@
 [%- pageHeaderInfo = BLOCK %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginWebAdminMethodsSlimserver65 %]
-	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
-[% END %]
 
 <form action="[% webroot %]plugins/SQLPlayList/webadminmethods_downloaditem.html" name="editForm" accept-charset="iso8859-1">
 	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]

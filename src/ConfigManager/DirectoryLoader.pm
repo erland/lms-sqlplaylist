@@ -58,7 +58,6 @@ sub readFromDir {
 	my @dircontents = Slim::Utils::Misc::readDirectory($dir,$self->extension);
 	my $extensionRegexp = "\\.".$self->extension."\$";
 	for my $item (@dircontents) {
-
 		next unless $item =~ /$extensionRegexp/;
 		next if -d catdir($dir, $item);
 

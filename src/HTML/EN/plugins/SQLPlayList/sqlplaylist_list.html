@@ -1,9 +1,4 @@
 [%- pagetitle = 'PLUGIN_SQLPLAYLIST' | string; pageicon = 'PLUGIN_SQLPLAYLIST' -%]
-[% IF !pluginSQLPlayListSlimserver65 %]
-	[% PROCESS plugins/SQLPlayList/hreftemplate65 %]
-	[% PROCESS plugins/SQLPlayList/cmdwrappers65 %]
-	[% PROCESS plugins/SQLPlayList/css65 %]
-[% END %]
 [% PROCESS plugins/SQLPlayList/css %]
 
 [%- pwd_list = BLOCK -%]/
@@ -18,9 +13,6 @@
 	[% END %]
 [% END -%]
 [% PROCESS pageheader.html %]
-[% IF !pluginSQLPlayListSlimserver65 %]
-	[% PROCESS plugins/SQLPlayList/pageheaderinfo65 %]
-[% END %]
 
 [%# Following block generates links that submit the form if javascript is enabled.  This allows
      users to make setting changes then click on a new mix without having to press the submit button. %]

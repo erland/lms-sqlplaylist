@@ -83,10 +83,6 @@ sub webEditItems {
 
         $params->{'pluginWebAdminMethodsItems'} = $items;
 
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
-
 	if(!$self->supportDownload) {
 		$params->{'pluginWebAdminMethodsDownloadMessage'} = $self->supportDownloadError;
 	}
@@ -104,9 +100,6 @@ sub webEditItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-		$params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	if(defined($itemId) && defined($itemHash->{$itemId})) {
 		if(!defined($itemHash->{$itemId}->{'simple'})) {
 			my $data = $self->contentPluginHandler->readDataFromPlugin($client,$itemHash->{$itemId});
@@ -187,9 +180,6 @@ sub webDeleteItemType {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	my $templateDir = $self->customTemplateDirectory;
 	if (defined $templateDir && -d $templateDir) {
 		my $templateId = $templateId;
@@ -224,9 +214,6 @@ sub webNewItemTypes {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	my @collections = ();
 	my $structuredTemplates = $self->structureItemTypes($templates);
 
@@ -270,9 +257,6 @@ sub webNewItemParameters {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	$params->{'pluginWebAdminMethodsNewItemTemplate'} = $templateId;
 	my $template = $templates->{$templateId};
 	if(defined($template->{'parameter'})) {
@@ -314,9 +298,6 @@ sub webPublishLogin {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	$params->{'pluginWebAdminMethodsLoginItem'} = $itemId;
 	$params->{'pluginWebAdminMethodsLoginUser'} = $username;
 	$params->{'pluginWebAdminMethodsLoginPassword'} = $password;
@@ -340,9 +321,6 @@ sub webPublishItemParameters {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 
 	if($params->{'anonymous'}) {
 		$params->{'username'} = undef;
@@ -440,9 +418,6 @@ sub webPublishItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 
 	$params->{'pluginWebAdminMethodsLoginItem'} = $itemId;
 	$params->{'pluginWebAdminMethodsLoginUser'} = $params->{'username'};
@@ -552,9 +527,6 @@ sub webDownloadItems {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	
 	my $versionError = $self->checkWebServiceVersion();
 	if(defined($versionError)) {
@@ -636,9 +608,6 @@ sub webDownloadNewItems {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 
 	my $error = '';
 	my $message = '';
@@ -678,9 +647,6 @@ sub webDownloadItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	my $result = $self->downloadItem($templateId,$params->{'customname'},$params->{'overwrite'});
 	if(defined($result->{'error'})) {
 		$params->{'pluginWebAdminMethodsError'} = $result->{'error'};
@@ -707,9 +673,6 @@ sub webNewItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	my $templateFile = $templateId;
 	my $itemFile = $templateFile;
 	my $regex1 = "\\.".$self->templateExtension."\$";
@@ -802,9 +765,6 @@ sub webSaveSimpleItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	my $templateFile = $templateId;
 	my $regex1 = "\\.".$self->templateExtension."\$";
 	my $regex2 = ".".$self->templateDataExtension;
@@ -911,9 +871,6 @@ sub webDeleteItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
-        if ($::VERSION ge '6.5') {
-                $params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-        }
 	my $dir = $self->customItemDirectory;
 	my $file = unescape($itemId);
 	if(defined($items->{$itemId}->{'simple'})) {
@@ -1138,9 +1095,6 @@ sub saveItem
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $params->{'file'};
 		$params->{'pluginWebAdminMethodsEditItemData'} = encode_entities($params->{'text'});
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'pluginWebAdminMethodsEditItemFile'});
-		if ($::VERSION ge '6.5') {
-			$params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-		}
 		return undef;
 	}else {
 		return 1;
@@ -1262,9 +1216,6 @@ sub saveSimpleItem {
 		$params->{'pluginWebAdminMethodsEditItemTemplate'} = $templateId;
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $params->{'file'};
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'pluginWebAdminMethodsEditItemFile'});
-		if ($::VERSION ge '6.5') {
-			$params->{'pluginWebAdminMethodsSlimserver65'} = 1;
-		}
 		return undef;
 	}else {
 		return 1;
@@ -1542,11 +1493,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			if ($::VERSION ge '6.5') {
-				$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
-			}else {
-				$enabledPlugin = grep(/$plugin/,Slim::Buttons::Plugins::enabledPlugins($client));
-			}
+			$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
 		}
 	}
 	return $enabledPlugin;
