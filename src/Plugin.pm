@@ -181,10 +181,6 @@ sub initPlugin {
 			msg("SQLPlayList: ERROR! Cant load internal implementation of SOAP::Lite, download/publish functionallity will not be available\n");
 		}
 	}
-	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
-	if(!defined($templateDir) || !-d $templateDir) {
-		$supportDownloadError = 'You have to specify a template directory before you can download playlists';
-	}
 	if(!defined($supportDownloadError) && $soapLiteError) {
 		$supportDownloadError = "Could not use the internal web service implementation, please download and install SOAP::Lite manually";
 	}
@@ -192,11 +188,16 @@ sub initPlugin {
 
 sub getConfigManager {
 	if(!defined($configManager)) {
+		my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+		if(!defined($templateDir) || !-d $templateDir) {
+			$supportDownloadError = 'You have to specify a template directory before you can download playlists';
+		}
 		my %parameters = (
 			'debugCallback' => \&debugMsg,
 			'errorCallback' => \&errorMsg,
 			'pluginId' => 'SQLPlayList',
 			'pluginVersion' => $PLUGINVERSION,
+			'downloadApplicationId' => 'SQLPlayList',
 			'supportDownloadError' => $supportDownloadError,
 			'addSqlErrorCallback' => \&addSQLError
 		);

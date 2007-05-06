@@ -32,7 +32,7 @@ use Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods;
 use FindBin qw($Bin);
 use File::Spec::Functions qw(:ALL);
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items) );
+__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId downloadApplicationId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items) );
 
 sub new {
 	my $class = shift;
@@ -43,6 +43,7 @@ sub new {
 		'errorCallback' => $parameters->{'errorCallback'},
 		'pluginId' => $parameters->{'pluginId'},
 		'pluginVersion' => $parameters->{'pluginVersion'},
+		'downloadApplicationId' => $parameters->{'downloadApplicationId'},
 		'supportDownloadError' => $parameters->{'supportDownloadError'},
 		'addSqlErrorCallback' => $parameters->{'addSqlErrorCallback'}
 	};
@@ -101,11 +102,13 @@ sub init {
 		$self->contentDirectoryHandler(Plugins::SQLPlayList::ConfigManager::DirectoryLoader->new(\%directoryHandlerParameters));
 
 		$directoryHandlerParameters{'extension'} = "sql.xml";
+		$directoryHandlerParameters{'identifierExtension'} = "sql.xml";
 		$directoryHandlerParameters{'parser'} = $self->templateParser;
 		$directoryHandlerParameters{'includeExtensionInIdentifier'} = 1;
 		$self->templateDirectoryHandler(Plugins::SQLPlayList::ConfigManager::DirectoryLoader->new(\%directoryHandlerParameters));
 
 		$directoryHandlerParameters{'extension'} = "sql.template";
+		$directoryHandlerParameters{'identifierExtension'} = "sql.xml";
 		$directoryHandlerParameters{'parser'} = $self->contentParser;
 		$directoryHandlerParameters{'includeExtensionInIdentifier'} = 1;
 		$self->templateDataDirectoryHandler(Plugins::SQLPlayList::ConfigManager::DirectoryLoader->new(\%directoryHandlerParameters));
@@ -175,6 +178,7 @@ sub init {
 		my %webAdminMethodsParameters = (
 			'pluginId' => $self->pluginId,
 			'pluginVersion' => $self->pluginVersion,
+			'downloadApplicationId' => $self->downloadApplicationId,
 			'extension' => 'sql',
 			'simpleExtension' => 'sql.values',
 			'debugCallback' => $self->debugCallback,

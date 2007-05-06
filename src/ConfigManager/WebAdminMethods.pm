@@ -35,7 +35,7 @@ use HTML::Entities;
 use Scalar::Util qw(blessed);
 use Data::Dumper;
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension) );
+__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension) );
 
 sub new {
 	my $class = shift;
@@ -46,6 +46,7 @@ sub new {
 		'errorCallback' => $parameters->{'errorCallback'},
 		'pluginId' => $parameters->{'pluginId'},
 		'pluginVersion' => $parameters->{'pluginVersion'},
+		'downloadApplicationId' => $parameters->{'downloadApplicationId'},
 		'extension' => $parameters->{'extension'},
 		'simpleExtension' => $parameters->{'simpleExtension'},
 		'contentPluginHandler' => $parameters->{'contentPluginHandler'},
@@ -82,9 +83,15 @@ sub webEditItems {
 	my $items = shift;
 
         $params->{'pluginWebAdminMethodsItems'} = $items;
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 
-	if(!$self->supportDownload) {
+	if($self->supportDownload) {
 		$params->{'pluginWebAdminMethodsDownloadMessage'} = $self->supportDownloadError;
+		$params->{'pluginWebAdminMethodsDownloadSupported'} = 1;
+	}else {
+		$params->{'pluginWebAdminMethodsDownloadSupported'} = 0;
 	}
         return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webEditItems'}, $params);
 }
@@ -99,6 +106,9 @@ sub webEditItem {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 	if(defined($itemId) && defined($itemHash->{$itemId})) {
 		if(!defined($itemHash->{$itemId}->{'simple'})) {
@@ -180,6 +190,9 @@ sub webDeleteItemType {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	my $templateDir = $self->customTemplateDirectory;
 	if (defined $templateDir && -d $templateDir) {
 		my $templateId = $templateId;
@@ -214,6 +227,9 @@ sub webNewItemTypes {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	my @collections = ();
 	my $structuredTemplates = $self->structureItemTypes($templates);
 
@@ -237,8 +253,11 @@ sub webNewItemTypes {
 		push @collections,\%collection;
 	}
 
-	if(!$self->supportDownload) {
+	if($self->supportDownload) {
 		$params->{'pluginWebAdminMethodsDownloadMessage'} = $self->supportDownloadError;
+		$params->{'pluginWebAdminMethodsDownloadSupported'} = 1;
+	}else {
+		$params->{'pluginWebAdminMethodsDownloadSupported'} = 0;
 	}
 
 	$params->{'pluginWebAdminMethodsTemplates'} = \@collections;
@@ -256,6 +275,9 @@ sub webNewItemParameters {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 	$params->{'pluginWebAdminMethodsNewItemTemplate'} = $templateId;
 	my $template = $templates->{$templateId};
@@ -298,6 +320,9 @@ sub webPublishLogin {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	$params->{'pluginWebAdminMethodsLoginItem'} = $itemId;
 	$params->{'pluginWebAdminMethodsLoginUser'} = $username;
 	$params->{'pluginWebAdminMethodsLoginPassword'} = $password;
@@ -320,6 +345,9 @@ sub webPublishItemParameters {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 
 	if($params->{'anonymous'}) {
@@ -418,6 +446,9 @@ sub webPublishItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 
 	$params->{'pluginWebAdminMethodsLoginItem'} = $itemId;
 	$params->{'pluginWebAdminMethodsLoginUser'} = $params->{'username'};
@@ -445,11 +476,11 @@ sub webPublishItem {
 			if(defined($templateData)) {
 				my $template = $templates->{lc($templateData->{'id'})};
 				if(defined($template)) {
-					my $templateFile = $itemId;
-					if(defined($template->{'templatefile'})) {
-						$templateFile = $template->{'templatefile'};
+					my $templateFile = $template->{'id'};
+					if(defined($templateData->{'templatefile'})) {
+						$templateFile = $templateData->{'templatefile'};
 					}
-					my $templateXml = $self->loadTemplateFromAnyDir($itemId);
+					my $templateXml = $self->loadTemplateFromAnyDir($template->{'id'});
 					$templateXml = $self->updateTemplateBeforePublish($client,$params,$templateXml);
 
 					$publishData = '';
@@ -502,7 +533,7 @@ sub webPublishItem {
 			$publishData .= '</entry>';
 		}
 		if(defined($publishData)) {
-			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->addDataEntry($params->{'username'},$params->{'password'},$self->pluginId,0,$overwriteFlag, $publishData);};
+			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->addDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $publishData);};
 			unless (!defined($answer) || $answer->fault) {
 				return $self->webCallbacks->webEditItems($client,$params);
 			}else {
@@ -527,14 +558,16 @@ sub webDownloadItems {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	
 	my $versionError = $self->checkWebServiceVersion();
 	if(defined($versionError)) {
 		$params->{'pluginWebAdminMethodsError'} = $versionError;
 		return $self->webCallbacks->webNewItemTypes($client,$params);
 	}
-
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->getEntries($self->pluginId);};
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->getEntries($self->downloadApplicationId);};
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
 		my $xml = eval { XMLin($result, forcearray => ['collection','entry'], keyattr => []) };
@@ -608,6 +641,9 @@ sub webDownloadNewItems {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 
 	my $error = '';
 	my $message = '';
@@ -647,6 +683,9 @@ sub webDownloadItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	my $result = $self->downloadItem($templateId,$params->{'customname'},$params->{'overwrite'});
 	if(defined($result->{'error'})) {
 		$params->{'pluginWebAdminMethodsError'} = $result->{'error'};
@@ -672,6 +711,9 @@ sub webNewItem {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 	my $templateFile = $templateId;
 	my $itemFile = $templateFile;
@@ -764,6 +806,9 @@ sub webSaveSimpleItem {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 	my $templateFile = $templateId;
 	my $regex1 = "\\.".$self->templateExtension."\$";
@@ -871,6 +916,9 @@ sub webDeleteItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	my $dir = $self->customItemDirectory;
 	my $file = unescape($itemId);
 	if(defined($items->{$itemId}->{'simple'})) {
@@ -897,6 +945,9 @@ sub webSaveNewSimpleItem {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 	$params->{'pluginWebAdminMethodsError'} = undef;
 
@@ -953,6 +1004,9 @@ sub webSaveNewItem {
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
 	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
+	}
 	$params->{'pluginWebAdminMethodsError'} = undef;
 
 	if (!$params->{'text'} || !$params->{'file'}) {
@@ -986,6 +1040,9 @@ sub webSaveItem {
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
+	}
+	if(defined($params->{'webadminmethodshandler'})) {
+		$params->{'pluginWebAdminMethodsHandler'} = $params->{'webadminmethodshandler'};
 	}
 	$params->{'pluginWebAdminMethodsError'} = undef;
 

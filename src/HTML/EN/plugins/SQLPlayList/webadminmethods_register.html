@@ -12,6 +12,7 @@
 <table border="0">
 <form action="[% webroot %]plugins/SQLPlayList/webadminmethods_publishitemparameters.html" name="editForm" accept-charset="iso8859-1">
 	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	[% IF pluginWebAdminMethodsHandler %]<input type="hidden" name="webadminmethodshandler" value="[% pluginWebAdminMethodsHandler %]">[% END %]
 	<input type="hidden" name="item" value="[% pluginWebAdminMethodsLoginItem %]">
 	<input type="hidden" name="register" value="1">
 	<input type="hidden" name="anonymous" value="0">

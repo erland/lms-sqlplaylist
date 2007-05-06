@@ -12,6 +12,7 @@
 
 <form action="[% webroot %]plugins/SQLPlayList/webadminmethods_savenewitem.html" name="editForm" accept-charset="iso8859-1">
 	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
+	[% IF pluginWebAdminMethodsHandler %]<input type="hidden" name="webadminmethodshandler" value="[% pluginWebAdminMethodsHandler %]">[% END %]
 	<input type="hidden" name="testonly" value=""/>
 	<input type="hidden" name="play" value=""/>
 	<table>

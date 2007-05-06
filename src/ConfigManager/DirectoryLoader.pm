@@ -29,7 +29,7 @@ use File::Spec::Functions qw(:ALL);
 use File::Slurp;
 use FindBin qw($Bin);
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback extension includeExtensionInIdentifier parser) );
+__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback extension includeExtensionInIdentifier identifierExtension parser) );
 
 sub new {
 	my $class = shift;
@@ -39,6 +39,7 @@ sub new {
 		'debugCallback' => $parameters->{'debugCallback'},
 		'errorCallback' => $parameters->{'errorCallback'},
 		'extension' => $parameters->{'extension'},
+		'identifierExtension' => $parameters->{'identifierExtension'},
 		'includeExtensionInIdentifier' => $parameters->{'includeExtensionInIdentifier'},
 		'parser' => $parameters->{'parser'}
 	};
@@ -92,7 +93,16 @@ sub readDataFromDir {
 	my $dir = shift;
 	my $itemId = shift;
 
-	my $file = $itemId.".".$self->extension;
+	my $file = $itemId;
+	if($self->includeExtensionInIdentifier) {
+		my $regExp = "\.".$self->identifierExtension."\$";
+		$regExp =~ s/\./\\./g;
+		$file =~ s/$regExp//;
+		$file .= ".".$self->extension;
+	}else {
+		$file .= ".".$self->extension;
+	}
+
 	$self->debugCallback->("Loading item data from: $dir/$file\n");
 
 	my $path = catfile($dir, $file);
