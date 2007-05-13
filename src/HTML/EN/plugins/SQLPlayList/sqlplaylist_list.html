@@ -50,8 +50,8 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplay
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_removeitem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM" | string %]</a>
 						[%- END %]
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM" | string %]</a>
-						[% PROCESS dynamicPlayListLink type="playlist.id" addOnly="0" %]
-						[% PROCESS dynamicPlayListLink type="playlist.id" addOnly="1" %]
+						[% PROCESS dynamicPlayListLink type=playlist.id addOnly="0" %]
+						[% PROCESS dynamicPlayListLink type=playlist.id addOnly="1" %]
 					[% END %]
 					[%- WRAPPER contentitem controls='controls' %]
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% playlist.name %]</a>
