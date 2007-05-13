@@ -16,7 +16,7 @@
 [%# Following block generates links that submit the form if javascript is enabled.  This allows
      users to make setting changes then click on a new mix without having to press the submit button. %]
 [% BLOCK href %]
-href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=sqlplaylist_[% type |uri %]&player=[% player | uri %]&addOnly=[% addOnly %]"
+href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=[% IF type!= 'disable' %]sqlplaylist_[% END %][% type |uri %]&player=[% player | uri %]&addOnly=[% addOnly %]"
 [% END %]
 
 [% BLOCK dynamicPlayListLink %]
