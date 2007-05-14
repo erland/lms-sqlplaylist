@@ -771,7 +771,7 @@ sub webNewItem {
 		}
 		$itemData = Slim::Utils::Unicode::utf8on($itemData);
 		$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
-		$itemData = encode_entities($itemData);
+		$itemData = encode_entities($itemData,"&<>\'\"");
 		if(length($itemData)>10000) {
 			$self->debugCallback->("Warning! Large configuration, ".length($itemData)." characters\n");
 		        $params->{'pluginWebAdminMethodsEditItemSizeWarning'} = "This configuration is very large, due to size limitations it might fail when you try to save it<br>Temporary solution: If save fails, click back in web browser and copy the information in the configuration field to a text file and save it to the ".$self->customItemDirectory." directory with a filename with extension .".$self->extension;
@@ -868,7 +868,7 @@ sub webSaveSimpleItem {
 		}
 		$itemData = Slim::Utils::Unicode::utf8on($itemData);
 		$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
-		$itemData = encode_entities($itemData);
+		$itemData = encode_entities($itemData,"&<>\'\"");
 		if(length($itemData)>10000) {
 			$self->debugCallback->("Warning! Large configuration, ".length($itemData)." characters\n");
 		        $params->{'pluginWebAdminMethodsEditItemSizeWarning'} = "This configuration is very large, due to size limitations it might fail when you try to save it<br>Temporary solution: If save fails, click back in web browser and copy the information in the configuration field to a text file and save it to the ".$self->customItemDirectory." directory with a filename with extension .".$self->extension;

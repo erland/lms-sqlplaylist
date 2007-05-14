@@ -120,9 +120,9 @@ sub parseTemplateContent {
 							$value .= ',';
 						}
 						if($p->{'quotevalue'}) {
-							$value .= $dbh->quote(encode_entities($v));
+							$value .= $dbh->quote(encode_entities($v,"&<>\'\""));
 						}else {
-							$value .= encode_entities($v);
+							$value .= encode_entities($v,"&<>\'\"");
 						}
 					}
 				}
@@ -221,12 +221,23 @@ sub getTemplate {
 	                        'utf8encode'    => \&Slim::Utils::Unicode::utf8encode,
 	                        'utf8on'        => \&Slim::Utils::Unicode::utf8on,
 	                        'utf8off'       => \&Slim::Utils::Unicode::utf8off,
+				'fileurl'       => \&templateFileURLFromPath,
 	                },
 	
 	                EVAL_PERL => 1,
 	        }));
 	}
 	return $self->templateHandler;
+}
+
+sub templateFileURLFromPath {
+	my $path = shift;
+	$path = Slim::Utils::Unicode::utf8off($path);
+	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
+	$path =~ s/\\/\\\\/g;
+	$path =~ s/%/\\%/g;
+	$path = encode_entities($path,"&<>\'\"");
+	return $path;
 }
 
 sub fillTemplate {

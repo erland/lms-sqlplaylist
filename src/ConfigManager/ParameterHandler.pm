@@ -149,9 +149,9 @@ sub getValueOfTemplateParameter {
 					$result = $result.',';
 				}
 				if($parameter->{'quotevalue'}) {
-					$result = $result.$dbh->quote(encode_entities($item->{'value'}));
+					$result = $result.$dbh->quote(encode_entities($item->{'value'},"&<>\'\""));
 				}else {
-					$result = $result.encode_entities($item->{'value'});
+					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				}
 			}
 		}
@@ -164,9 +164,9 @@ sub getValueOfTemplateParameter {
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
 				if($parameter->{'quotevalue'}) {
-					$result = $dbh->quote(encode_entities($item->{'value'}));
+					$result = $dbh->quote(encode_entities($item->{'value'},"&<>\'\""));
 				}else {
-					$result = encode_entities($item->{'value'});
+					$result = encode_entities($item->{'value'},"&<>\'\"");
 				}
 				last;
 			}
@@ -177,9 +177,9 @@ sub getValueOfTemplateParameter {
 	}else{
 		if($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) {
 			if($parameter->{'quotevalue'}) {
-				return $dbh->quote(encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}));
+				return $dbh->quote(encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\""));
 			}else {
-				return encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}});
+				return encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\"");
 			}
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
