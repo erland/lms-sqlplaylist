@@ -154,6 +154,9 @@ sub parseTemplateContent {
 								$templateParameters{$p->{'id'}} = undef;
 							}
 						}
+						if(defined($templateParameters{$p->{'id'}}))  {
+							$templateParameters{$p->{'id'}} = Slim::Utils::Unicode::utf8off($templateParameters{$p->{'id'}});
+						}
 					}
 				}
 			}
