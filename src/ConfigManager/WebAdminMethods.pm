@@ -1609,6 +1609,7 @@ sub getTemplate {
 
 sub fileURLFromPath {
 	my $path = shift;
+	$path = Slim::Utils::Unicode::utf8decode_locale($path);
 	$path = Slim::Utils::Unicode::utf8off($path);
 	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
 	$path =~ s/\\/\\\\/g;
