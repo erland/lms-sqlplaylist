@@ -25,8 +25,8 @@
 	</td><td>
 	<input type="checkbox" name="overwrite" id="overwrite" value="1">
 	</td></tr>
-	[%- FOREACH parameter IN pluginWebAdminMethodsEditItemParameters.keys.sort %]
-		<input type="hidden" name="[% parameter %]" value="[% pluginWebAdminMethodsEditItemParameters.$parameter | html %]">
+	[%- FOREACH parameter IN pluginWebAdminMethodsNewItemParameters.keys.sort %]
+		<input type="hidden" name="[% parameter %]" value="[% pluginWebAdminMethodsNewItemParameters.$parameter | html %]">
 	[% END %]
 	<input type="hidden" name="itemtemplate" value="[% pluginWebAdminMethodsNewItemTemplate %]">
 	[% IF pluginWebAdminMethodsError %]

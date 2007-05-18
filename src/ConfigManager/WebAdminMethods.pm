@@ -789,7 +789,7 @@ sub webNewItem {
 				$templateParameters{$p}=$params->{$p};
 			}
 		}
-		$params->{'pluginWebAdminMethodsEditItemParameters'} = \%templateParameters;
+		$params->{'pluginWebAdminMethodsNewItemParameters'} = \%templateParameters;
 		$params->{'pluginWebAdminMethodsNewItemTemplate'} = $templateId;
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $itemFile;
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($itemFile);
@@ -1268,8 +1268,18 @@ sub saveSimpleItem {
 					}
 				}
 			}
+			my %templateParameters = ();
+			for my $p (keys %$params) {
+				my $regexp = '^'.$self->parameterHandler->parameterPrefix.'_';
+				if($p =~ /$regexp/) {
+					$templateParameters{$p}=$params->{$p};
+				}
+			}
+
 			$params->{'pluginWebAdminMethodsEditItemParameters'} = \@parametersToSelect;
+			$params->{'pluginWebAdminMethodsNewItemParameters'} =\%templateParameters;
 		}
+		$params->{'pluginWebAdminMethodsNewItemTemplate'} = $templateId;
 		$params->{'pluginWebAdminMethodsEditItemTemplate'} = $templateId;
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $params->{'file'};
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'pluginWebAdminMethodsEditItemFile'});
