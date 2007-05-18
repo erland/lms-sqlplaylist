@@ -759,6 +759,7 @@ sub setupGroup
 			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory"); }
 		},
 	);
+	getConfigManager()->initWebAdminMethods();
 	return (\%setupGroup,\%setupPrefs);
 }
 sub replaceParametersInSQL {

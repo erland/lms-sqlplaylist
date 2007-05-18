@@ -141,67 +141,72 @@ sub init {
 		$pluginHandlerParameters{'templateContentParser'} = $self->templateContentParser;
 		$self->contentPluginHandler(Plugins::SQLPlayList::ConfigManager::PluginLoader->new(\%pluginHandlerParameters));
 
-		my %webTemplates = (
-			'webEditItems' => 'plugins/SQLPlayList/sqlplaylist_list.html',
-			'webEditItem' => 'plugins/SQLPlayList/webadminmethods_edititem.html',
-			'webEditSimpleItem' => 'plugins/SQLPlayList/webadminmethods_editsimpleitem.html',
-			'webNewItem' => 'plugins/SQLPlayList/webadminmethods_newitem.html',
-			'webNewSimpleItem' => 'plugins/SQLPlayList/webadminmethods_newsimpleitem.html',
-			'webNewItemParameters' => 'plugins/SQLPlayList/webadminmethods_newitemparameters.html',
-			'webNewItemTypes' => 'plugins/SQLPlayList/webadminmethods_newitemtypes.html',
-			'webDownloadItem' => 'plugins/SQLPlayList/webadminmethods_downloaditem.html',
-			'webSaveDownloadedItem' => 'plugins/SQLPlayList/webadminmethods_savedownloadeditem.html',
-			'webPublishLogin' => 'plugins/SQLPlayList/webadminmethods_login.html',
-			'webPublishRegister' => 'plugins/SQLPlayList/webadminmethods_register.html',
-			'webPublishItemParameters' => 'plugins/SQLPlayList/webadminmethods_publishitemparameters.html',
-		);
+		$self->initWebAdminMethods();
+}
+sub initWebAdminMethods {
+	my $self = shift;
 
-		my @itemDirectories = ();
-		my @templateDirectories = ();
-		my $dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
-		if (defined $dir && -d $dir) {
-			push @itemDirectories,$dir
+	my %webTemplates = (
+		'webEditItems' => 'plugins/SQLPlayList/sqlplaylist_list.html',
+		'webEditItem' => 'plugins/SQLPlayList/webadminmethods_edititem.html',
+		'webEditSimpleItem' => 'plugins/SQLPlayList/webadminmethods_editsimpleitem.html',
+		'webNewItem' => 'plugins/SQLPlayList/webadminmethods_newitem.html',
+		'webNewSimpleItem' => 'plugins/SQLPlayList/webadminmethods_newsimpleitem.html',
+		'webNewItemParameters' => 'plugins/SQLPlayList/webadminmethods_newitemparameters.html',
+		'webNewItemTypes' => 'plugins/SQLPlayList/webadminmethods_newitemtypes.html',
+		'webDownloadItem' => 'plugins/SQLPlayList/webadminmethods_downloaditem.html',
+		'webSaveDownloadedItem' => 'plugins/SQLPlayList/webadminmethods_savedownloadeditem.html',
+		'webPublishLogin' => 'plugins/SQLPlayList/webadminmethods_login.html',
+		'webPublishRegister' => 'plugins/SQLPlayList/webadminmethods_register.html',
+		'webPublishItemParameters' => 'plugins/SQLPlayList/webadminmethods_publishitemparameters.html',
+	);
+
+	my @itemDirectories = ();
+	my @templateDirectories = ();
+	my $dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
+	if (defined $dir && -d $dir) {
+		push @itemDirectories,$dir
+	}
+	$dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory");
+	if (defined $dir && -d $dir) {
+		push @templateDirectories,$dir
+	}
+	my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
+	for my $plugindir (@pluginDirs) {
+		if( -d catdir($plugindir,"SQLPlayList","Playlists")) {
+			push @itemDirectories, catdir($plugindir,"SQLPlayList","Playlists")
 		}
-		$dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory");
-		if (defined $dir && -d $dir) {
-			push @templateDirectories,$dir
+		if( -d catdir($plugindir,"SQLPlayList","Templates")) {
+			push @templateDirectories, catdir($plugindir,"SQLPlayList","Templates")
 		}
-		my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
-		for my $plugindir (@pluginDirs) {
-			if( -d catdir($plugindir,"SQLPlayList","Playlists")) {
-				push @itemDirectories, catdir($plugindir,"SQLPlayList","Playlists")
-			}
-			if( -d catdir($plugindir,"SQLPlayList","Templates")) {
-				push @templateDirectories, catdir($plugindir,"SQLPlayList","Templates")
-			}
-		}
-		my %webAdminMethodsParameters = (
-			'pluginId' => $self->pluginId,
-			'pluginVersion' => $self->pluginVersion,
-			'downloadApplicationId' => $self->downloadApplicationId,
-			'extension' => 'sql',
-			'simpleExtension' => 'sql.values',
-			'debugCallback' => $self->debugCallback,
-			'errorCallback' => $self->errorCallback,
-			'contentPluginHandler' => $self->contentPluginHandler,
-			'templatePluginHandler' => $self->templatePluginHandler,
-			'contentDirectoryHandler' => $self->contentDirectoryHandler,
-			'contentTemplateDirectoryHandler' => $self->templateContentDirectoryHandler,
-			'templateDirectoryHandler' => $self->templateDirectoryHandler,
-			'templateDataDirectoryHandler' => $self->templateDataDirectoryHandler,
-			'parameterHandler' => $self->parameterHandler,
-			'contentParser' => $self->contentParser,
-			'templateDirectories' => \@templateDirectories,
-			'itemDirectories' => \@itemDirectories,
-			'customTemplateDirectory' => Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory"),
-			'customItemDirectory' => Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"),
-			'supportDownload' => 1,
-			'supportDownloadError' => $self->supportDownloadError,
-			'webCallbacks' => $self,
-			'webTemplates' => \%webTemplates,
-			'downloadUrl' => Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url")
-		);
-		$self->webAdminMethods(Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods->new(\%webAdminMethodsParameters));
+	}
+	my %webAdminMethodsParameters = (
+		'pluginId' => $self->pluginId,
+		'pluginVersion' => $self->pluginVersion,
+		'downloadApplicationId' => $self->downloadApplicationId,
+		'extension' => 'sql',
+		'simpleExtension' => 'sql.values',
+		'debugCallback' => $self->debugCallback,
+		'errorCallback' => $self->errorCallback,
+		'contentPluginHandler' => $self->contentPluginHandler,
+		'templatePluginHandler' => $self->templatePluginHandler,
+		'contentDirectoryHandler' => $self->contentDirectoryHandler,
+		'contentTemplateDirectoryHandler' => $self->templateContentDirectoryHandler,
+		'templateDirectoryHandler' => $self->templateDirectoryHandler,
+		'templateDataDirectoryHandler' => $self->templateDataDirectoryHandler,
+		'parameterHandler' => $self->parameterHandler,
+		'contentParser' => $self->contentParser,
+		'templateDirectories' => \@templateDirectories,
+		'itemDirectories' => \@itemDirectories,
+		'customTemplateDirectory' => Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory"),
+		'customItemDirectory' => Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"),
+		'supportDownload' => 1,
+		'supportDownloadError' => $self->supportDownloadError,
+		'webCallbacks' => $self,
+		'webTemplates' => \%webTemplates,
+		'downloadUrl' => Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url")
+	);
+	$self->webAdminMethods(Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods->new(\%webAdminMethodsParameters));
 
 }
 
