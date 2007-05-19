@@ -186,7 +186,7 @@ sub parseTemplateContent {
 				$itemData = $templateFileData;
 			}
 			$itemData = Slim::Utils::Unicode::utf8on($itemData);
-			$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
+#			$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
 			#$itemData = encode_entities($itemData);
 			
 			my $result = $self->parseContentImplementation($client,$item,$itemData,$items,$globalcontext,$localcontext);
