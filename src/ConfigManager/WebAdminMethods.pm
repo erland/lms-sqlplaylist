@@ -380,7 +380,7 @@ sub webPublishItemParameters {
 		if(!defined($email)) {
 			$email = '';
 		}
-		my $answer= eval { SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email); };
+		my $answer= eval { SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email); };
 		unless (!defined($answer) || $answer->fault) {
 			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_user",$params->{'username'});
 			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_password",$params->{'password'});
@@ -393,7 +393,7 @@ sub webPublishItemParameters {
 			return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webPublishRegister'}, $params);
 		}
 	}elsif(!$params->{'anonymous'}){
-		my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->loginUser($params->{'username'},$params->{'password'});};
+		my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->loginUser($params->{'username'},$params->{'password'});};
 		unless (!defined($answer) || $answer->fault) {
 			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_user",$params->{'username'});
 			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_password",$params->{'password'});
@@ -533,7 +533,7 @@ sub webPublishItem {
 			$publishData .= '</entry>';
 		}
 		if(defined($publishData)) {
-			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->addDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $publishData);};
+			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->addDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $publishData);};
 			unless (!defined($answer) || $answer->fault) {
 				return $self->webCallbacks->webEditItems($client,$params);
 			}else {
@@ -567,7 +567,7 @@ sub webDownloadItems {
 		$params->{'pluginWebAdminMethodsError'} = $versionError;
 		return $self->webCallbacks->webNewItemTypes($client,$params);
 	}
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->getEntries($self->downloadApplicationId);};
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getEntries($self->downloadApplicationId);};
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
 		my $xml = eval { XMLin($result, forcearray => ['collection','entry'], keyattr => []) };
@@ -1296,7 +1296,7 @@ sub downloadItem {
 	my $overwrite = shift;
 	my $onlyOverwrite = shift;
 
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->getEntry($id) };
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getEntry($id) };
 	my %result = ();
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
@@ -1570,7 +1570,7 @@ sub checkWebServiceVersion {
 	my $self = shift;
 	my $answer = undef;
 	eval {
-		$answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl)->apiVersion();
+		$answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->apiVersion();
 	};
 	if ($@) {
 		return "Unable to contact download/publish site";
@@ -1651,6 +1651,16 @@ sub niceFault {
 	return $fault;
 }
 
+sub getProxy {
+	my $self = shift;
+        my $proxy = Slim::Utils::Prefs::get('webproxy');
+	if(defined($proxy) && $proxy ne '') {
+		$self->debugCallback->("Connecting through proxy: $proxy\n");
+		return proxy => ['http' => 'http://'.$proxy]
+	}else {
+		return ();
+	}
+}
 # other people call us externally.
 *escape   = \&URI::Escape::uri_escape_utf8;
 
