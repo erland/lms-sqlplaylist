@@ -10,7 +10,7 @@
 [% PROCESS pageheader.html %]
 [% PROCESS plugins/SQLPlayList/catchtab.js %]
 
-<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_saveitem.html" name="editForm" accept-charset="iso8859-1">
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_saveitem.html" name="editForm" method="post" accept-charset="iso8859-1">
 	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
 	<input type="hidden" name="testonly" value=""/>
 	<input type="hidden" name="play" value=""/>

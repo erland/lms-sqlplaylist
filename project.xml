@@ -13,7 +13,7 @@
   
   <!-- The version of the project under development, e.g.
        1.1, 1.2, 2.0-SNAPSHOT -->
-  <currentVersion>1.19</currentVersion>
+  <currentVersion>1.19.1</currentVersion>
   
   <organization>
         <name>Erland Isaksson</name>
