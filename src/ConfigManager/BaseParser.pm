@@ -113,6 +113,13 @@ sub parseTemplateContent {
 			my $notLibrarySupported = 0;
 			for my $p (@$parameters) {
 				my $values = $p->{'value'};
+				if(!defined($values)) {
+					my $tmp = $p->{'content'};
+					if(defined($tmp)) {
+						my @tmpArray = ($tmp);
+						$values = \@tmpArray;
+					}
+				}
 				my $value = '';
 				for my $v (@$values) {
 					if(ref($v) ne 'HASH') {
@@ -144,7 +151,13 @@ sub parseTemplateContent {
 						if(!defined($templateParameters{$p->{'id'}})) {
 							my $value = $p->{'value'};
 							if(!defined($value) || ref($value) eq 'HASH') {
-								$value='';
+								my $tmp = $p->{'content'};
+								if(defined($tmp)) {
+									my @tmpArray = ($tmp);
+									$value = \@tmpArray;
+								}else {
+									$value='';
+								}
 							}
 							#$self->debugCallback->("Setting default value ".$template->{'id'}." ".$p->{'id'}."=".$value."\n");
 							$templateParameters{$p->{'id'}} = $value;

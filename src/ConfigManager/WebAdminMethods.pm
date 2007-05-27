@@ -135,6 +135,13 @@ sub webEditItem {
 					my $templateDataParameters = $templateData->{'parameter'};
 					for my $p (@$templateDataParameters) {
 						my $values = $p->{'value'};
+						if(!defined($values)) {
+							my $tmp = $p->{'content'};
+							if(defined($tmp)) {
+								my @tmpArray = ($tmp);
+								$values = \@tmpArray;
+							}
+						}
 						my %valuesHash = ();
 						for my $v (@$values) {
 							if(ref($v) ne 'HASH') {
