@@ -118,6 +118,8 @@ sub setValueOfTemplateParameter {
 			for my $v (@$listValues) {
 				if($currentValues->{$v->{'value'}}) {
 					$v->{'selected'} = 1;
+				}else {
+					$v->{'selected'} = undef;
 				}
 			}
 		}else {
