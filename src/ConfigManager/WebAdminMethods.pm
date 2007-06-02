@@ -37,6 +37,8 @@ use Data::Dumper;
 
 __PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension) );
 
+my $utf8filenames = 1;
+
 sub new {
 	my $class = shift;
 	my $parameters = shift;
@@ -67,6 +69,9 @@ sub new {
 		'webTemplates' => $parameters->{'webTemplates'},
 		'downloadUrl' => $parameters->{'downloadUrl'}
 	};
+	if(defined($parameters->{'utf8filenames'})) {
+		$utf8filenames = $parameters->{'utf8filenames'};
+	}
 
 	$self->{'template'} = undef;
 	$self->{'templateExtension'} = $parameters->{'templateDirectoryHandler'}->extension;
@@ -118,7 +123,9 @@ sub webEditItem {
 			}
 
 			if($data) {
-				$data = encode_entities($data);
+				$data = Slim::Utils::Unicode::utf8on($data);
+				$data = Slim::Utils::Unicode::utf8encode_locale($data);
+				$data = encode_entities($data,"&<>\'\"");
 			}
 		        $params->{'pluginWebAdminMethodsEditItemData'} = $data;
 			$params->{'pluginWebAdminMethodsEditItemFile'} = $itemId.".".$self->extension;
@@ -1627,10 +1634,15 @@ sub getTemplate {
 sub fileURLFromPath {
 	my $path = shift;
 	$path = Slim::Utils::Unicode::utf8decode_locale($path);
-	$path = Slim::Utils::Unicode::utf8off($path);
+	if($utf8filenames) {
+		$path = Slim::Utils::Unicode::utf8off($path);
+	}else {
+		$path = Slim::Utils::Unicode::utf8on($path);
+	}
 	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
 	$path =~ s/\\/\\\\/g;
 	$path =~ s/%/\\%/g;
+	$path =~ s/\'/\\\'/g;
 	$path = encode_entities($path,"&<>\'\"");
 	return $path;
 }

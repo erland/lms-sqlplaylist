@@ -32,6 +32,8 @@ use HTML::Entities;
 
 __PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion contentType templateHandler) );
 
+my $utf8filenames = 1;
+
 sub new {
 	my $class = shift;
 	my $parameters = shift;
@@ -44,6 +46,9 @@ sub new {
 		'contentType' => $parameters->{'contentType'},
 		'templateHandler' => undef
 	};
+	if(defined($parameters->{'utf8filenames'})) {
+		$utf8filenames = $parameters->{'utf8filenames'};
+	}
 	bless $self,$class;
 	return $self;
 }
@@ -248,10 +253,15 @@ sub getTemplate {
 
 sub templateFileURLFromPath {
 	my $path = shift;
-	$path = Slim::Utils::Unicode::utf8off($path);
+	if($utf8filenames) {
+		$path = Slim::Utils::Unicode::utf8off($path);
+	}else {
+		$path = Slim::Utils::Unicode::utf8on($path);
+	}
 	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
 	$path =~ s/\\/\\\\/g;
 	$path =~ s/%/\\%/g;
+	$path =~ s/\'/\\\'/g;
 	$path = encode_entities($path,"&<>\'\"");
 	return $path;
 }

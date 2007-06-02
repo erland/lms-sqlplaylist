@@ -66,6 +66,7 @@ sub readFromDir {
 		# read_file from File::Slurp
 		my $content = eval { read_file($path) };
 		if ( $content ) {
+			$content = Slim::Utils::Unicode::latin1toUTF8($content);
 			if(defined($self->parser)) {
 				my $extension = $self->extension;
 				$extension =~ s/\./\\./;
@@ -114,6 +115,7 @@ sub readDataFromDir {
 		$self->debugCallback->("Failed to load item data because:\n$@\n");
 	}
 	if(defined($content)) {
+		$content = Slim::Utils::Unicode::latin1toUTF8($content);
 		$self->debugCallback->("Loading of item data succeeded\n");
 	}
 	return $content;
