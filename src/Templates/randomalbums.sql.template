@@ -22,6 +22,10 @@ create temporary table sqlplaylist_random_albums (primary key (album))
 		left join dynamicplaylist_history on
 			tracks.id=dynamicplaylist_history.id
 		[%- END %]
+		[%- IF recentlyplayed %]
+		left join track_statistics on
+			tracks.url=track_statistics.url
+		[%- END %]
 		where
 			audio=1
 		[%- IF notrepeat %]
@@ -39,6 +43,9 @@ create temporary table sqlplaylist_random_albums (primary key (album))
 								genres.name in ([% excludedgenres %]))
 		[%- END %]
 		group by tracks.album
+		[%- IF recentlyplayed %]
+		having max(ifnull(track_statistics.lastplayed,0))<(unix_timestamp()-[% recentlyplayed %])
+		[%- END %]
 		order by rand()
 		limit 1;
 select tracks.url from tracks

@@ -20,6 +20,10 @@ select tracks.url from tracks
 	left join dynamicplaylist_history on
 		tracks.id=dynamicplaylist_history.id
 	[%- END %]
+	[%- IF recentlyplayed %]
+	left join track_statistics on
+		tracks.url=track_statistics.url
+	[%- END %]
 	where
 		audio=1
 	[%- IF notrepeat %]
@@ -35,6 +39,9 @@ select tracks.url from tracks
 							tracks.id=genre_track.track and 
 							genre_track.genre=genres.id and
 							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
 	[%- END %]
 	[%- IF includedgenres%]
 	group by tracks.id
