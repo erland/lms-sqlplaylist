@@ -878,7 +878,10 @@ sub executeSQLForPlaylist {
 	my $trackno = 0;
 	$sqlerrors = "";
 	my $contentType = getPlaylistOption($playlist,'ContentType');
-	my $limit = getPlaylistOption($playlist,'NoOfTracks');
+	my $hardcodedlimit = getPlaylistOption($playlist,'NoOfTracks');
+	if(defined($hardcodedlimit)) {
+		$limit = $hardcodedlimit;
+	}
 	my $noRepeat = getPlaylistOption($playlist,'DontRepeatTracks');
 	if(defined($contentType)) {
 		debugMsg("Executing SQL for content type: $contentType\n");
