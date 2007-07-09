@@ -15,7 +15,7 @@ select tracks.url from tracks
 		tracks.id=multilibrary_track.track and
 		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
 	[%- END %]
-	[%- IF minrating %]
+	[%- IF minrating or recentlyplayed %]
 	join track_statistics on
 		tracks.url=track_statistics.url
 	[%- END %]
@@ -32,7 +32,10 @@ select tracks.url from tracks
 	[%- IF minrating %]
 		and track_statistics.rating>=[% minrating %]
 	[%- END %]
-	[%- IF minrating or notrepeat %]
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
+	[%- END %]
+	[%- IF minrating or notrepeat or recentlyplayed %]
 	group by tracks.id
 	[%- END %]
 	order by rand()

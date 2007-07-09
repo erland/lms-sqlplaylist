@@ -39,6 +39,9 @@ create temporary table randomweightedratingslow select tracks.url from tracks
 							genre_track.genre=genres.id and
 							genres.name in ([% excludedgenres %]))
 	[%- END %]
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
+	[%- END %]
 	[%- IF includedgenres%]
 	group by tracks.id
 	[%- END %]
@@ -80,6 +83,9 @@ create temporary table randomweightedratingshigh select tracks.url from tracks
 							tracks.id=genre_track.track and 
 							genre_track.genre=genres.id and
 							genres.name in ([% excludedgenres %]))
+	[%- END %]
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
 	[%- END %]
 	[%- IF includedgenres%]
 	group by tracks.id

@@ -26,6 +26,10 @@ select tracks.url from tracks
 	join comments on
 		tracks.id=comments.track and comments.value like [% includedcomment %]
 	[%- END %]
+	[%- IF recentlyplayed %]
+	left join track_statistics on
+		tracks.url=track_statistics.url
+	[%- END %]
 	[%- IF excludedcomment %]
 	left join comments as excludecomments on
 		tracks.id=excludecomments.track and excludecomments.value like [% excludedcomment %]
@@ -79,6 +83,9 @@ select tracks.url from tracks
 	[%- END %]
 	[%- IF lossless %]
 		and tracks.lossless=1
+	[%- END %]
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
 	[%- END %]
 	[%- IF includedcomment or includedartist or includedgenres%]
 	group by tracks.id

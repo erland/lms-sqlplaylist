@@ -26,6 +26,9 @@ select tracks.url from tracks
 		and dynamicplaylist_history.id is null
 	[%- END %]
 		and track_statistics.rating>=('PlaylistParameter1'-10) and track_statistics.rating<('PlaylistParameter1'+10)
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
+	[%- END %]
 	group by tracks.id
 	order by rand()
 	limit 10;
