@@ -22,10 +22,14 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=[% IF t
 [% BLOCK dynamicPlayListLink %]
 	[% IF addOnly;link='addlink';ELSE;link='playlink';END %]
 	[% IF type == 'disable' %]
-		<a [% PROCESS href %] >[% "PLUGIN_SQLPLAYLIST_DISABLE" | string %]</a>
-	[% ELSE %]
+		<a target="status" href="[% webroot %][% statusroot %]?p0=dynamicplaylist&p1=playlist&p2=[% IF addOnly %]add[% ELSE %]play[% END %]&p3=[% type %]&player=[% player |uri%]" onClick="setTimeout('document.location.reload(true)',500)">[% "PLUGIN_DYNAMICPLAYLIST_DISABLE" | string %]</a>
+	[% ELSIF parameters %]
 		[% WRAPPER $link noTarget=1 %]
 			[% PROCESS href %]
+		[% END %]
+	[% ELSE %]
+		[% WRAPPER $link %]
+			href="[% webroot %][% statusroot %]?p0=dynamicplaylist&p1=playlist&p2=[% IF addOnly %]add[% ELSE %]play[% END %]&p3=[% IF type!= 'disable' %]sqlplaylist_[% END %][% type |uri %]&player=[% player |uri%]" onClick="setTimeout('document.location.reload(true)',500)"
 		[% END %]
 	[% END %]
 [% END %]
@@ -50,8 +54,8 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=[% IF t
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_removeitem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM" | string %]</a>
 						[%- END %]
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM" | string %]</a>
-						[% PROCESS dynamicPlayListLink type=playlist.id addOnly="0" %]
-						[% PROCESS dynamicPlayListLink type=playlist.id addOnly="1" %]
+						[% PROCESS dynamicPlayListLink type=playlist.id addOnly="0" parameters=playlist.parameters %]
+						[% PROCESS dynamicPlayListLink type=playlist.id addOnly="1" parameters=playlist.parameters %]
 					[% END %]
 					[%- WRAPPER contentitem controls='controls' %]
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% playlist.name %]</a>
