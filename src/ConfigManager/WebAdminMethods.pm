@@ -172,6 +172,15 @@ sub webEditItem {
 						my @parametersToSelect = ();
 						for my $p (@$parameters) {
 							if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
+								if(!defined($currentParameterValues{$p->{'id'}})) {
+									my $value = $p->{'value'};
+									if(defined($value) || ref($value) ne 'HASH') {
+										my %valuesHash = ();
+										$valuesHash{$value} = $value;
+										$currentParameterValues{$p->{'id'}} = \%valuesHash;
+									}
+								}
+
 								my $useParameter = 1;
 								if(defined($p->{'requireplugins'})) {
 									$useParameter = isPluginsInstalled($client,$p->{'requireplugins'});
