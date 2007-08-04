@@ -363,7 +363,7 @@ sub handleWebTestPlaylist {
 	$params->{'pluginWebAdminMethodsEditItemData'} = $params->{'text'};
 	$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($params->{'file'});
 	if($params->{'text'}) {
-		my $playlist = createSQLPlayList($client,Slim::Utils::Unicode::utf8decode($params->{'text'},'utf8'));
+		my $playlist = createSQLPlayList($client,$params->{'text'});
 		if($playlist) {
 			if(handleWebTestParameters($client,$params,$playlist)) {
 				my $sql = $playlist->{'sql'};
