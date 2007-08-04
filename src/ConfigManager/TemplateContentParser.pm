@@ -78,6 +78,15 @@ sub loadTemplate {
 			$templateFileData = eval { read_file($path) };
 			if ($@) {
 				$self->errorCallback->("Unable to open file: $path\nBecause of:\n$@\n");
+			}else {
+				my $encoding = Slim::Utils::Unicode::encodingFromString($templateFileData);
+				if($encoding ne 'utf8') {
+					$templateFileData = Slim::Utils::Unicode::latin1toUTF8($templateFileData);
+					$self->debugCallback->("Loading $templateFile and converting from latin1\n");
+				}else {
+					$templateFileData = Slim::Utils::Unicode::utf8decode($templateFileData,'utf8');
+					$self->debugCallback->("Loading $templateFile without conversion with encoding ".$encoding."\n");
+				}
 			}
 		}
 	}

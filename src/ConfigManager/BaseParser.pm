@@ -64,7 +64,6 @@ sub parseContent {
 
 	my $errorMsg = undef;
         if ( $content ) {
-		$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
 		my $result = $self->parseContentImplementation($client,$item,$content,$items,$globalcontext,$localcontext);
 		if(defined($result)) {
 			$items->{$item} = $result;
@@ -99,12 +98,11 @@ sub parseTemplateContent {
 
 	my $errorMsg = undef;
         if ( $content ) {
-		$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
 		my $valuesXml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
 		#$self->debugCallback->(Dumper($valuesXml));
 		if ($@) {
 			$errorMsg = "$@";
-			$self->errorCallback->("Failed to parse ".$self->contentType." configuration because:\n$@\n");
+			$self->errorCallback->("Failed to parse ".$self->contentType." configuration ($item) because:\n$@\n");
 		}else {
 			my $templateId = lc($valuesXml->{'template'}->{'id'});
 			my $template = $templates->{$templateId};
@@ -131,10 +129,13 @@ sub parseTemplateContent {
 						if($value ne '') {
 							$value .= ',';
 						}
+						$v =~ s/\\/\\\\/g;
+						$v =~ s/\"/\\\"/g;
+						$v =~ s/\'/\\\'/g;
 						if($p->{'quotevalue'}) {
-							$value .= $dbh->quote(encode_entities($v,"&<>\'\""));
+							$value .= "'".encode_entities($v,"&<>")."'";
 						}else {
-							$value .= encode_entities($v,"&<>\'\"");
+							$value .= encode_entities($v,"&<>");
 						}
 					}
 				}
@@ -173,7 +174,9 @@ sub parseTemplateContent {
 							}
 						}
 						if(defined($templateParameters{$p->{'id'}}))  {
-							$templateParameters{$p->{'id'}} = Slim::Utils::Unicode::utf8off($templateParameters{$p->{'id'}});
+							if(Slim::Utils::Unicode::encodingFromString($templateParameters{$p->{'id'}}) ne 'utf8') {
+								$templateParameters{$p->{'id'}} = Slim::Utils::Unicode::latin1toUTF8($templateParameters{$p->{'id'}});
+							}
 						}
 					}
 				}
@@ -203,9 +206,6 @@ sub parseTemplateContent {
 			}else {
 				$itemData = $templateFileData;
 			}
-			$itemData = Slim::Utils::Unicode::utf8on($itemData);
-#			$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
-			#$itemData = encode_entities($itemData);
 			
 			my $result = $self->parseContentImplementation($client,$item,$itemData,$items,$globalcontext,$localcontext);
 			if(defined($result)) {
@@ -259,6 +259,7 @@ sub templateFileURLFromPath {
 		$path = Slim::Utils::Unicode::utf8on($path);
 	}
 	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
+	$path = Slim::Utils::Unicode::utf8on($path);
 	$path =~ s/\\/\\\\/g;
 	$path =~ s/%/\\%/g;
 	$path =~ s/\'/\\\'/g;
@@ -364,7 +365,7 @@ sub parseContentImplementation {
 	my $xml = eval { 	XMLin($content, forcearray => ["item"], keyattr => []) };
 	#$self->debugCallback->(Dumper($xml));
 	if ($@) {
-		$self->errorCallback->("Failed to parse configuration because:\n$@\n");
+		$self->errorCallback->("Failed to parse configuration ($item) because:\n$@\n");
 	}else {
 		my $include = $self->isEnabled($client,$xml);
 		if(defined($xml->{$self->contentType})) {

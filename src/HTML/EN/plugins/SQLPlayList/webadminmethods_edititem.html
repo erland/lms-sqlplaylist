@@ -10,7 +10,7 @@
 [% PROCESS pageheader.html %]
 [% PROCESS plugins/SQLPlayList/catchtab.js %]
 
-<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_saveitem.html" name="editForm" method="post" accept-charset="iso8859-1">
+<form action="[% webroot %]plugins/SQLPlayList/webadminmethods_saveitem.html" name="editForm" method="post">
 	[% IF pluginWebAdminMethodsRedirect %]<input type="hidden" name="redirect" value="[% pluginWebAdminMethodsRedirect %]">[% END %]
 	<input type="hidden" name="testonly" value=""/>
 	<input type="hidden" name="play" value=""/>
@@ -22,7 +22,7 @@
 	</td></tr>
 	<tr valign="top"><td colspan="2">
 	[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM_DATA" | string %]: <br>
-	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% pluginWebAdminMethodsEditItemData %]</textarea>
+	<textarea name="text" cols="100" rows="15" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% pluginWebAdminMethodsEditItemData |utf8on %]</textarea>
 	</td></tr>
 	[% IF pluginWebAdminMethodsEditItemDeleteSimple %]
 	<input type="hidden" name="deletesimple" value="[% pluginWebAdminMethodsEditItemDeleteSimple %]">

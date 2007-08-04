@@ -66,7 +66,14 @@ sub readFromDir {
 		# read_file from File::Slurp
 		my $content = eval { read_file($path) };
 		if ( $content ) {
-			$content = Slim::Utils::Unicode::latin1toUTF8($content);
+			my $encoding = Slim::Utils::Unicode::encodingFromString($content);
+			if($encoding ne 'utf8') {
+				$content = Slim::Utils::Unicode::latin1toUTF8($content);
+				$self->debugCallback->("Loading $item and converting from latin1\n");
+			}else {
+				$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
+				$self->debugCallback->("Loading $item without conversion with encoding ".$encoding."\n");
+			}
 			if(defined($self->parser)) {
 				my $extension = $self->extension;
 				$extension =~ s/\./\\./;
@@ -115,7 +122,14 @@ sub readDataFromDir {
 		$self->debugCallback->("Failed to load item data because:\n$@\n");
 	}
 	if(defined($content)) {
-		$content = Slim::Utils::Unicode::latin1toUTF8($content);
+		my $encoding = Slim::Utils::Unicode::encodingFromString($content);
+		if($encoding ne 'utf8') {
+			$content = Slim::Utils::Unicode::latin1toUTF8($content);
+			$self->debugCallback->("Loading $itemId and converting from latin1 to $encoding\n");
+		}else {
+			$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
+			$self->debugCallback->("Loading $itemId without conversion with encoding ".$encoding."\n");
+		}
 		$self->debugCallback->("Loading of item data succeeded\n");
 	}
 	return $content;

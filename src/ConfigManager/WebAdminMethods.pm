@@ -121,10 +121,7 @@ sub webEditItem {
 			if(!defined($data)) {
 				$data = $self->loadItemDataFromAnyDir($itemId);
 			}
-
 			if($data) {
-				$data = Slim::Utils::Unicode::utf8on($data);
-				$data = Slim::Utils::Unicode::utf8encode_locale($data);
 				$data = encode_entities($data,"&<>\'\"");
 			}
 		        $params->{'pluginWebAdminMethodsEditItemData'} = $data;
@@ -337,8 +334,8 @@ sub webPublishLogin {
 	my $params = shift;
 	my $itemId = shift;
 
-	my $username = Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_user");
-	my $password = Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_password");
+	my $username = Slim::Utils::Prefs::get("plugin_".lc($self->pluginId)."_login_user");
+	my $password = Slim::Utils::Prefs::get("plugin_".lc($self->pluginId)."_login_password");
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
@@ -770,6 +767,9 @@ sub webNewItem {
 					if($useParameter) {
 						$self->parameterHandler->addValuesToTemplateParameter($p);
 						my $value = $self->parameterHandler->getValueOfTemplateParameter($params,$p);
+#						if(Slim::Utils::Unicode::encodingFromString($value) ne 'utf8') {
+#							$value = Slim::Utils::Unicode::latin1toUTF8($value);
+#						}
 						$templateParameters{$p->{'id'}} = $value;
 					}
 				}
@@ -792,8 +792,6 @@ sub webNewItem {
 		}else {
 			$itemData = $templateFileData;
 		}
-		$itemData = Slim::Utils::Unicode::utf8on($itemData);
-		$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
 		$itemData = encode_entities($itemData,"&<>\'\"");
 		if(length($itemData)>10000) {
 			$self->debugCallback->("Warning! Large configuration, ".length($itemData)." characters\n");
@@ -867,11 +865,15 @@ sub webSaveSimpleItem {
 					if($useParameter) {
 						$self->parameterHandler->addValuesToTemplateParameter($p);
 						my $value = $self->parameterHandler->getValueOfTemplateParameter($params,$p);
+#						if(Slim::Utils::Unicode::encodingFromString($value) ne 'utf8') {
+#							$value = Slim::Utils::Unicode::latin1toUTF8($value);
+#						}
 						$templateParameters{$p->{'id'}} = $value;
 					}
 				}
 			}
 		}
+
 		my $templateFileData = undef;
 		my $doParsing = 1;
 		if(defined($template->{lc($self->templatePluginHandler->pluginId).'_plugin_'.$self->templatePluginHandler->contentType})) {
@@ -889,8 +891,6 @@ sub webSaveSimpleItem {
 		}else {
 			$itemData = $templateFileData;
 		}
-		$itemData = Slim::Utils::Unicode::utf8on($itemData);
-		$itemData = Slim::Utils::Unicode::utf8encode_locale($itemData);
 		$itemData = encode_entities($itemData,"&<>\'\"");
 		if(length($itemData)>10000) {
 			$self->debugCallback->("Warning! Large configuration, ".length($itemData)." characters\n");
@@ -1145,7 +1145,8 @@ sub saveItem
 		my %globalcontext = (
 			'source' => 'custom'
 		);
-		my $error =  $self->contentParser->parse($client,'test',$params->{'text'},\%items,\%globalcontext);
+		my $data = Slim::Utils::Unicode::utf8decode_locale($params->{'text'});
+		my $error =  $self->contentParser->parse($client,'test',$data,\%items,\%globalcontext);
 
 		if($error) {
 			$params->{'pluginWebAdminMethodsError'} = "Reading configuration: <br>".$error;
@@ -1166,7 +1167,12 @@ sub saveItem
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 
 		$self->debugCallback->("Writing to file: $url\n");
-		print $fh $params->{'text'};
+		my $data = $params->{'text'};
+		my $encoding = Slim::Utils::Unicode::encodingFromString($data);
+		if($encoding eq 'utf8') {
+			$data = Slim::Utils::Unicode::utf8toLatin1($data);
+		}
+		print $fh $data;
 		$self->debugCallback->("Writing to file succeeded\n");
 		close $fh;
 	}
@@ -1233,6 +1239,10 @@ sub saveSimpleItem {
 			}
 		}
 		$data .= "\n\t</template>\n</".lc($self->pluginId).">\n";
+		my $encoding = Slim::Utils::Unicode::encodingFromString($data);
+		if($encoding eq 'utf8') {
+			$data = Slim::Utils::Unicode::utf8toLatin1($data);
+		}
 		$self->debugCallback->("Writing to file: $url\n");
 		print $fh $data;
 		$self->debugCallback->("Writing to file succeeded\n");
@@ -1547,7 +1557,6 @@ sub loadTemplateValues {
 	#my $itemItem = $items->{$item};
 	my $content  = $self->contentPluginHandler->readDataFromPlugin($client,$item);
 	if ( $content ) {
-		$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
 		my $xml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
 		#$self->debugCallback->(Dumper($valuesXml));
 		if ($@) {
@@ -1561,7 +1570,6 @@ sub loadTemplateValues {
 	for my $dir (@$itemDirectories) {
 		$content = $self->contentTemplateDirectoryHandler->readDataFromDir($dir,$itemId);
 		if(defined($content)) {
-			$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
 			my $xml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
 			#$self->debugCallback->(Dumper($valuesXml));
 			if ($@) {
@@ -1642,13 +1650,13 @@ sub getTemplate {
 
 sub fileURLFromPath {
 	my $path = shift;
-	$path = Slim::Utils::Unicode::utf8decode_locale($path);
 	if($utf8filenames) {
 		$path = Slim::Utils::Unicode::utf8off($path);
 	}else {
 		$path = Slim::Utils::Unicode::utf8on($path);
 	}
 	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
+	$path = Slim::Utils::Unicode::utf8on($path);
 	$path =~ s/\\/\\\\/g;
 	$path =~ s/%/\\%/g;
 	$path =~ s/\'/\\\'/g;

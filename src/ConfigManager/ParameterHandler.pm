@@ -150,10 +150,14 @@ sub getValueOfTemplateParameter {
 				if(defined($result)) {
 					$result = $result.',';
 				}
+				my $thisvalue = $item->{'value'};
+				$thisvalue =~ s/\\/\\\\/g;
+				$thisvalue =~ s/\"/\\\"/g;
+				$thisvalue =~ s/\'/\\\'/g;
 				if($parameter->{'quotevalue'}) {
-					$result = $result.$dbh->quote(encode_entities($item->{'value'},"&<>\'\""));
+					$result .= "'".encode_entities($thisvalue,"&<>\'\"")."'";
 				}else {
-					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
+					$result .= encode_entities($thisvalue,"&<>\'\"");
 				}
 			}
 		}
@@ -163,12 +167,17 @@ sub getValueOfTemplateParameter {
 	}elsif($parameter->{'type'} =~ /.*singlelist$/) {
 		my $values = $parameter->{'values'};
 		my $selectedValue = $params->{$self->parameterPrefix.'_'.$parameter->{'id'}};
+		$selectedValue = Slim::Utils::Unicode::utf8decode_locale($selectedValue);
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
+				my $thisvalue = $item->{'value'};
+				$thisvalue =~ s/\\/\\\\/g;
+				$thisvalue =~ s/\"/\\\"/g;
+				$thisvalue =~ s/\'/\\\'/g;
 				if($parameter->{'quotevalue'}) {
-					$result = $dbh->quote(encode_entities($item->{'value'},"&<>\'\""));
+					$result = "'".encode_entities($thisvalue,"&<>\'\"")."'";
 				}else {
-					$result = encode_entities($item->{'value'},"&<>\'\"");
+					$result = encode_entities($thisvalue,"&<>\'\"");
 				}
 				last;
 			}
@@ -178,10 +187,15 @@ sub getValueOfTemplateParameter {
 		}
 	}else{
 		if($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) {
+			my $thisvalue = $params->{$self->parameterPrefix.'_'.$parameter->{'id'}};
+			$thisvalue = Slim::Utils::Unicode::utf8decode_locale($thisvalue);
+			$thisvalue =~ s/\\/\\\\/g;
+			$thisvalue =~ s/\"/\\\"/g;
+			$thisvalue =~ s/\'/\\\'/g;
 			if($parameter->{'quotevalue'}) {
-				return $dbh->quote(encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\""));
+				return "'".encode_entities($thisvalue,"&<>\'\"").".";
 			}else {
-				return encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\"");
+				return encode_entities($thisvalue,"&<>\'\"");
 			}
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
@@ -213,11 +227,7 @@ sub getXMLValueOfTemplateParameter {
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
 				$result = $result.'<value>';
-				if($parameter->{'quotevalue'}) {
-					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
-				}else {
-					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
-				}
+				$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				$result = $result.'</value>';
 			}
 		}
@@ -227,14 +237,11 @@ sub getXMLValueOfTemplateParameter {
 	}elsif($parameter->{'type'} =~ /.*singlelist$/) {
 		my $values = $parameter->{'values'};
 		my $selectedValue = $params->{$self->parameterPrefix.'_'.$parameter->{'id'}};
+		$selectedValue = Slim::Utils::Unicode::utf8decode_locale($selectedValue);
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
 				$result = $result.'<value>';
-				if($parameter->{'quotevalue'}) {
-					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
-				}else {
-					$result = $result.encode_entities($item->{'value'},"&<>\'\"");
-				}
+				$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				$result = $result.'</value>';
 				last;
 			}
@@ -244,11 +251,8 @@ sub getXMLValueOfTemplateParameter {
 		}
 	}else{
 		if(defined($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) && $params->{$self->parameterPrefix.'_'.$parameter->{'id'}} ne '') {
-			if($parameter->{'quotevalue'}) {
-				$result = '<value>'.encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\"").'</value>';
-			}else {
-				$result = '<value>'.encode_entities($params->{$self->parameterPrefix.'_'.$parameter->{'id'}},"&<>\'\"").'</value>';
-			}
+			my $value = Slim::Utils::Unicode::utf8decode_locale($params->{$self->parameterPrefix.'_'.$parameter->{'id'}});
+			$result = '<value>'.encode_entities($value,"&<>\'\"").'</value>';
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
 				$result = '<value>0</value>';
@@ -256,10 +260,6 @@ sub getXMLValueOfTemplateParameter {
 				$result = '';
 			}
 		}
-	}
-	if(defined($result)) {
-		$result = Slim::Utils::Unicode::utf8on($result);
-		$result = Slim::Utils::Unicode::utf8encode_locale($result);
 	}
 	return $result;
 }
@@ -303,6 +303,10 @@ sub getCheckBoxesQueryParameter {
 		my $pattern = '^'.$parameter.'_(.*)';
 		if ($key =~ /$pattern/) {
 			my $id  = unescape($1);
+			if ($id ne '*' && $id ne '') {
+				$id = Slim::Utils::Unicode::utf8on($id);
+				$id = Slim::Utils::Unicode::utf8encode_locale($id);
+			}
 			$result{$id} = 1;
 		}
 	}
@@ -336,7 +340,7 @@ sub getSQLTemplateData {
 				$sth->bind_col( 3, \$value);
 				while( $sth->fetch() ) {
 					my %item = (
-						'id' => $id,
+						'id' => Slim::Utils::Unicode::utf8decode($id,'utf8'),
 						'name' => Slim::Utils::Unicode::utf8decode($name,'utf8'),
 						'value' => Slim::Utils::Unicode::utf8decode($value,'utf8')
 					);
