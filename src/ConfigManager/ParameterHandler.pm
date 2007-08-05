@@ -44,6 +44,14 @@ sub new {
 	return $self;
 }
 
+sub quoteValue {
+	my $value = shift;
+	$value =~ s/\'/\\\'/g;
+	$value =~ s/\"/\\\"/g;
+	$value =~ s/\\/\\\\/g;
+	return $value;
+}
+
 sub addValuesToTemplateParameter {
 	my $self = shift;
 	my $p = shift;
@@ -150,10 +158,7 @@ sub getValueOfTemplateParameter {
 				if(defined($result)) {
 					$result = $result.',';
 				}
-				my $thisvalue = $item->{'value'};
-				$thisvalue =~ s/\\/\\\\/g;
-				$thisvalue =~ s/\"/\\\"/g;
-				$thisvalue =~ s/\'/\\\'/g;
+				my $thisvalue = quoteValue($item->{'value'});
 				if($parameter->{'quotevalue'}) {
 					$result .= "'".encode_entities($thisvalue,"&<>\'\"")."'";
 				}else {
@@ -170,10 +175,7 @@ sub getValueOfTemplateParameter {
 		$selectedValue = Slim::Utils::Unicode::utf8decode_locale($selectedValue);
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
-				my $thisvalue = $item->{'value'};
-				$thisvalue =~ s/\\/\\\\/g;
-				$thisvalue =~ s/\"/\\\"/g;
-				$thisvalue =~ s/\'/\\\'/g;
+				my $thisvalue = quoteValue($item->{'value'});
 				if($parameter->{'quotevalue'}) {
 					$result = "'".encode_entities($thisvalue,"&<>\'\"")."'";
 				}else {
@@ -188,10 +190,7 @@ sub getValueOfTemplateParameter {
 	}else{
 		if($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) {
 			my $thisvalue = $params->{$self->parameterPrefix.'_'.$parameter->{'id'}};
-			$thisvalue = Slim::Utils::Unicode::utf8decode_locale($thisvalue);
-			$thisvalue =~ s/\\/\\\\/g;
-			$thisvalue =~ s/\"/\\\"/g;
-			$thisvalue =~ s/\'/\\\'/g;
+			$thisvalue = quoteValue(Slim::Utils::Unicode::utf8decode_locale($thisvalue));
 			if($parameter->{'quotevalue'}) {
 				return "'".encode_entities($thisvalue,"&<>\'\"").".";
 			}else {
@@ -340,9 +339,9 @@ sub getSQLTemplateData {
 				$sth->bind_col( 3, \$value);
 				while( $sth->fetch() ) {
 					my %item = (
-						'id' => Slim::Utils::Unicode::utf8decode($id,'utf8'),
-						'name' => Slim::Utils::Unicode::utf8decode($name,'utf8'),
-						'value' => Slim::Utils::Unicode::utf8decode($value,'utf8')
+						'id' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($id,'utf8')),
+						'name' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($name,'utf8')),
+						'value' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($value,'utf8'))
 					);
 					push @result, \%item;
 				}
