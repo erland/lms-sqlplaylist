@@ -204,10 +204,10 @@ sub parseContentImplementation {
 	}else {
 		if ($@) {
 			$errorMsg = "Incorrect information in playlist data: $@";
-			$self->errorCallback->("Unable to read menu configuration:\n$@\n");
+			$self->errorCallback->("Unable to read playlist configuration:\n$@\n");
 		}else {
 			$errorMsg = "Incorrect information in playlist data";
-			$self->errorCallback->("Unable to to read menu configuration\n");
+			$self->errorCallback->("Unable to to read playlist configuration\n");
 		}
 	}
 	return undef;
