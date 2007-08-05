@@ -1140,12 +1140,14 @@ sub saveItem
 	if(!($url =~ /$regexp/)) {
 		$params->{'pluginWebAdminMethodsError'} = 'Filename must end with .'.$self->extension;
 	}
+	my $data = undef;
+	$data = Slim::Utils::Unicode::utf8decode_locale($params->{'text'});
+	$data =~ s/\r+\n/\n/g; # Remove any extra \r character, will create duplicate linefeeds on Windows if not removed
 	if(!($params->{'pluginWebAdminMethodsError'}) && defined($self->contentParser)) {
 		my %items = ();
 		my %globalcontext = (
 			'source' => 'custom'
 		);
-		my $data = Slim::Utils::Unicode::utf8decode_locale($params->{'text'});
 		my $error =  $self->contentParser->parse($client,'test',$data,\%items,\%globalcontext);
 
 		if($error) {
@@ -1167,7 +1169,6 @@ sub saveItem
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 
 		$self->debugCallback->("Writing to file: $url\n");
-		my $data = $params->{'text'};
 		my $encoding = Slim::Utils::Unicode::encodingFromString($data);
 		if($encoding eq 'utf8') {
 			$data = Slim::Utils::Unicode::utf8toLatin1($data);
