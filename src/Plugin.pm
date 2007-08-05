@@ -45,7 +45,7 @@ my $playLists = undef;
 my $playListTypes = undef;
 my $sqlerrors = '';
 my $soapLiteError = 0;
-my $PLUGINVERSION = '1.20';
+my $PLUGINVERSION = '1.20.1';
 
 my $configManager = undef;
 
