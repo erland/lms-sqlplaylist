@@ -244,6 +244,12 @@ sub webPages {
 # Draws the plugin's web page
 sub handleWebList {
 	my ($client, $params) = @_;
+	
+	if(defined($params->{'redirect'})) {
+		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_redirect.html', $params);
+	}elsif($params->{'reload'}) { 	
+		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_reload.html', $params);
+	}
 
 	# Pass on the current pref values and now playing info
 	if(!defined($params->{'donotrefresh'})) {
@@ -288,11 +294,7 @@ sub handleWebList {
 		$params->{'pluginSQLPlayListError'} = "ERROR!!! Cannot find DynamicPlayList plugin, please make sure you have installed and enabled at least DynamicPlayList 1.3"
 	}
 	$params->{'pluginSQLPlayListVersion'} = $PLUGINVERSION;
-	if(defined($params->{'redirect'})) {
-		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_redirect.html', $params);
-	}else {
-		return Slim::Web::HTTP::filltemplatefile($htmlTemplate, $params);
-	}
+	return Slim::Web::HTTP::filltemplatefile($htmlTemplate, $params);
 }
 
 sub isPluginsInstalled {

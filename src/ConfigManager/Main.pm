@@ -307,6 +307,7 @@ sub changedTemplateConfiguration {
 sub webEditItems {
         my ($self, $client, $params) = @_;
 
+	$params->{'reload'} = 1;
 	return Plugins::SQLPlayList::Plugin::handleWebList($client,$params);
 }
 
