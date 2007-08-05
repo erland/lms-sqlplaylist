@@ -88,6 +88,7 @@ sub readFromPlugins {
 							my $encoding = Slim::Utils::Unicode::encodingFromString($itemData);
 							if($encoding ne 'utf8') {
 								$itemData = Slim::Utils::Unicode::latin1toUTF8($itemData);
+								$itemData = Slim::Utils::Unicode::utf8on($itemData);
 								$self->debugCallback->("Loading $itemId configuration from $plugin and converting from latin1\n");
 							}else {
 								$itemData = Slim::Utils::Unicode::utf8decode($itemData,'utf8');
@@ -110,6 +111,7 @@ sub readFromPlugins {
 							my $encoding = Slim::Utils::Unicode::encodingFromString($itemData);
 							if($encoding ne 'utf8') {
 								$itemData = Slim::Utils::Unicode::latin1toUTF8($itemData);
+								$itemData = Slim::Utils::Unicode::utf8on($itemData);
 								$self->debugCallback->("Loading $itemId configuration from $plugin and converting from latin1\n");
 							}else {
 								$itemData = Slim::Utils::Unicode::utf8decode($itemData,'utf8');
@@ -146,6 +148,7 @@ sub readDataFromPlugin {
 			my $encoding = Slim::Utils::Unicode::encodingFromString($content);
 			if($encoding ne 'utf8') {
 				$content = Slim::Utils::Unicode::latin1toUTF8($content);
+				$content = Slim::Utils::Unicode::utf8on($content);
 				$self->debugCallback->("Loading ".($itemData->{'id'}." data from ".$itemData->{lc($self->pluginId).'_plugin'})." and converting from latin1\n");
 			}else {
 				$content = Slim::Utils::Unicode::utf8decode($content,'utf8');

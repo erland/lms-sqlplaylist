@@ -82,6 +82,7 @@ sub loadTemplate {
 				my $encoding = Slim::Utils::Unicode::encodingFromString($templateFileData);
 				if($encoding ne 'utf8') {
 					$templateFileData = Slim::Utils::Unicode::latin1toUTF8($templateFileData);
+					$templateFileData = Slim::Utils::Unicode::utf8on($templateFileData);
 					$self->debugCallback->("Loading $templateFile and converting from latin1\n");
 				}else {
 					$templateFileData = Slim::Utils::Unicode::utf8decode($templateFileData,'utf8');

@@ -69,6 +69,7 @@ sub readFromDir {
 			my $encoding = Slim::Utils::Unicode::encodingFromString($content);
 			if($encoding ne 'utf8') {
 				$content = Slim::Utils::Unicode::latin1toUTF8($content);
+				$content = Slim::Utils::Unicode::utf8on($content);
 				$self->debugCallback->("Loading $item and converting from latin1\n");
 			}else {
 				$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
@@ -125,6 +126,7 @@ sub readDataFromDir {
 		my $encoding = Slim::Utils::Unicode::encodingFromString($content);
 		if($encoding ne 'utf8') {
 			$content = Slim::Utils::Unicode::latin1toUTF8($content);
+			$content = Slim::Utils::Unicode::utf8on($content);
 			$self->debugCallback->("Loading $itemId and converting from latin1 to $encoding\n");
 		}else {
 			$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
