@@ -98,7 +98,7 @@ sub readFromPlugins {
 						my $errorMsg = $self->templateContentParser->parse($client,$itemId,$itemData,$items,$globalcontext);
 						if($errorMsg) {
 		                			$self->errorCallback->("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
-						}else {
+						}elsif(defined($items->{$itemId})) {
 							$items->{$itemId}->{'id'} = $itemId;
 							$items->{$itemId}->{lc($self->pluginId).'_plugin_'.$self->contentType}=$item;
 							$items->{$itemId}->{lc($self->pluginId).'_plugin'} = "Plugins::${plugin}";
