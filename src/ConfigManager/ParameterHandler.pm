@@ -46,9 +46,9 @@ sub new {
 
 sub quoteValue {
 	my $value = shift;
+	$value =~ s/\\/\\\\/g;
 	$value =~ s/\'/\\\'/g;
 	$value =~ s/\"/\\\"/g;
-	$value =~ s/\\/\\\\/g;
 	return $value;
 }
 

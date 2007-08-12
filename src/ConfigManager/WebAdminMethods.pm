@@ -1656,7 +1656,11 @@ sub fileURLFromPath {
 	}else {
 		$path = Slim::Utils::Unicode::utf8on($path);
 	}
-	$path = Slim::Utils::Misc::fileURLFromPath(decode_entities($path));
+	$path = decode_entities($path);
+	$path =~ s/\\\\/\\/g;
+	$path =~ s/\\\"/\"/g;
+	$path =~ s/\\\'/\'/g;
+	$path = Slim::Utils::Misc::fileURLFromPath($path);
 	$path = Slim::Utils::Unicode::utf8on($path);
 	$path =~ s/\\/\\\\/g;
 	$path =~ s/%/\\%/g;

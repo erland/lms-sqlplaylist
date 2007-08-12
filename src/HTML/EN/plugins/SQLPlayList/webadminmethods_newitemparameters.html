@@ -22,7 +22,7 @@
 			<td>&nbsp;&nbsp;&nbsp;</td>
 			<td>
 			[% IF parameter.type == 'text' %]
-				<input type="text" name="itemparameter_[% parameter.id %]" value="[% parameter.value %]">
+				<input type="text" name="itemparameter_[% parameter.id %]" value="[% parameter.value | html %]">
 			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'functionsinglelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqloptionalsinglelist' or parameter.type == 'functionoptionalsinglelist'%]
 				<table border="0">
 					<tr><td>
