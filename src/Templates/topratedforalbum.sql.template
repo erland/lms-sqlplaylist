@@ -35,5 +35,5 @@ select tracks.url from tracks
 	[%- IF minrating or notrepeat %]
 	group by tracks.id
 	[%- END %]
-	order by rand()
+	order by [% IF order=='bytrack' %]tracks.tracknum asc[% ELSE %]rand()[% END %]
 	limit 10;

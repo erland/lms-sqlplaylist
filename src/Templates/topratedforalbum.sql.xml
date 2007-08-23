@@ -13,6 +13,7 @@
 		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
 		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
 		<parameter type="functionoptionalsinglelist" id="customskipfilter" requireplugins="CustomSkip::Plugin" name="Custom Skip filter" value="" data="Plugins::CustomSkip::Plugin,getAvailableFilters"/>
+		<parameter type="singlelist" id="order" name="Play order" value="byrandom" data="byrandom=By random,bytrack=By song number"/>
 	</template>
 </sqlplaylist>
 

@@ -37,5 +37,5 @@ select tracks.url from tracks
 		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
 	[%- END %]
 	group by tracks.id
-	order by rand()
+	order by [% IF order=='byalbum' %]tracks.album,tracks.tracknum[% ELSE %]rand()[% END %]
 	limit 10;
