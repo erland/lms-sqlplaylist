@@ -253,6 +253,10 @@ sub handleWebList {
 
 	# Pass on the current pref values and now playing info
 	if(!defined($params->{'donotrefresh'})) {
+		if(defined($params->{'cleancache'}) && $params->{'cleancache'}) {
+			my $cache = Slim::Utils::Cache->new("FileCache/SQLPlayList");
+			$cache->clear();
+		}
 		initPlayLists($client);
 	}
 	my $playlist = undef;
@@ -1492,6 +1496,9 @@ PLUGIN_SQLPLAYLIST_EDIT_ITEM_OVERWRITE
 
 PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION
 	EN	This operation will download latest version of all playlists, this might take some time. Please note that this will overwrite any local changes you have made in built-in or previously downloaded playlist types. Are you sure you want to continue ?
+
+PLUGIN_SQLPLAYLIST_REFRESH_PLAYLISTS
+	EN	Refresh playlists
 EOF
 
 }

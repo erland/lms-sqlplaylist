@@ -29,8 +29,9 @@ use File::Spec::Functions qw(:ALL);
 use XML::Simple;
 use Data::Dumper;
 use HTML::Entities;
+use Cache::Cache qw( $EXPIRES_NEVER);
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion contentType templateHandler) );
+__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion contentType templateHandler cache cacheName cacheItems) );
 
 my $utf8filenames = 1;
 
@@ -44,13 +45,44 @@ sub new {
 		'pluginId' => $parameters->{'pluginId'},
 		'pluginVersion' => $parameters->{'pluginVersion'},
 		'contentType' => $parameters->{'contentType'},
-		'templateHandler' => undef
+		'cacheName' => $parameters->{'cacheName'},
+		'cacheItems' => undef,
+		'cache' => undef,
+		'templateHandler' => undef,
 	};
+	if(defined($self->{'cacheName'})) {
+		$self->{'cache'} = Slim::Utils::Cache->new($self->{'cacheName'})
+	}
 	if(defined($parameters->{'utf8filenames'})) {
 		$utf8filenames = $parameters->{'utf8filenames'};
 	}
 	bless $self,$class;
 	return $self;
+}
+
+sub readFromCache {
+	my $self = shift;
+
+	if(defined($self->cacheName) && defined($self->cache)) {
+		$self->cacheItems($self->cache->get($self->cacheName));
+		if(!defined($self->cacheItems)) {
+			my %noItems = ();
+			my %empty = (
+				'items' => \%noItems,
+				'timestamp' => undef,
+			);
+			$self->cacheItems(\%empty);
+		}
+	}
+}
+
+sub writeToCache {
+	my $self = shift;
+
+	if(defined($self->cacheName) && defined($self->cache) && defined($self->cacheItems)) {
+		$self->cacheItems->{'timestamp'} = time();
+		$self->cache->set($self->cacheName,$self->cacheItems,$EXPIRES_NEVER);
+	}
 }
 
 sub parseContent {
@@ -94,11 +126,33 @@ sub parseTemplateContent {
 	my $globalcontext = shift;
 	my $localcontext = shift;
 
+	my $cacheName = $item;
+	if(defined($localcontext->{'cacheNamePrefix'})) {
+		$cacheName = $localcontext->{'cacheNamePrefix'}.$cacheName;
+	}
+
 	my $dbh = getCurrentDBH();
 
 	my $errorMsg = undef;
         if ( $content ) {
-		my $valuesXml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
+		my $timestamp = undef;
+		if(defined($localcontext->{'timestamp'})) {
+			$timestamp = $localcontext->{'timestamp'};
+		}
+		my $valuesXml = undef;
+		if(defined($timestamp) && defined($self->cacheItems) && defined($self->cacheItems->{'items'}->{'values_'.$cacheName}) && $self->cacheItems->{'items'}->{'values_'.$cacheName}->{'timestamp'}>=$timestamp) {
+			$valuesXml = $self->cacheItems->{'items'}->{'values_'.$cacheName}->{'data'};
+		}else {
+			$valuesXml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
+			if(defined($timestamp) && defined($self->cacheItems)) {
+				my %entry = (
+					'data' => $valuesXml,
+					'timestamp' => $timestamp,
+				);
+				delete $self->cacheItems->{'items'}->{'values_'.$cacheName};
+				$self->cacheItems->{'items'}->{'values_'.$cacheName} = \%entry;
+			}
+		}
 		#$self->debugCallback->(Dumper($valuesXml));
 		if ($@) {
 			$errorMsg = "$@";
@@ -111,105 +165,120 @@ sub parseTemplateContent {
 				undef $content;
 				return undef;
 			}
-			my %templateParameters = ();
-			my $parameters = $valuesXml->{'template'}->{'parameter'};
-			my $notLibrarySupported = 0;
-			for my $p (@$parameters) {
-				my $values = $p->{'value'};
-				if(!defined($values)) {
-					my $tmp = $p->{'content'};
-					if(defined($tmp)) {
-						my @tmpArray = ($tmp);
-						$values = \@tmpArray;
-					}
-				}
-				my $value = '';
-				for my $v (@$values) {
-					if(ref($v) ne 'HASH') {
-						if($value ne '') {
-							$value .= ',';
-						}
-						$v =~ s/\\/\\\\/g;
-						$v =~ s/\"/\\\"/g;
-						$v =~ s/\'/\\\'/g;
-						if($p->{'quotevalue'}) {
-							$value .= "'".encode_entities($v,"&<>")."'";
-						}else {
-							$value .= encode_entities($v,"&<>");
-						}
-					}
-				}
-				#$self->debugCallback->("Setting: ".$p->{'id'}."=".$value."\n");
-				$templateParameters{$p->{'id'}}=$value;
+			if(defined($template->{'timestamp'}) && defined($timestamp) && $template->{'timestamp'}>$timestamp) {
+				$timestamp = $template->{'timestamp'};
+				$localcontext->{'timestamp'} = $timestamp;
 			}
-			my $librarySupported = 0;
-			if(defined($template->{'parameter'})) {
-				my $parameters = $template->{'parameter'};
-				if(ref($parameters) ne 'ARRAY') {
-					my @parameterArray = ();
-					if(defined($parameters)) {
-						push @parameterArray,$parameters;
-					}
-					$parameters = \@parameterArray;
-				}
+			my $itemData = undef;
+			if(defined($timestamp) && defined($self->cacheItems) && defined($self->cacheItems->{'items'}->{'templatecontent_'.$cacheName}) && $self->cacheItems->{'items'}->{'templatecontent_'.$cacheName}->{'timestamp'}>=$timestamp) {
+				$itemData = $self->cacheItems->{'items'}->{'templatecontent_'.$cacheName}->{'data'};
+			}else {
+				my %templateParameters = ();
+				my $parameters = $valuesXml->{'template'}->{'parameter'};
+				my $notLibrarySupported = 0;
 				for my $p (@$parameters) {
-					if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
-						if(!defined($templateParameters{$p->{'id'}})) {
-							my $value = $p->{'value'};
-							if(!defined($value) || ref($value) eq 'HASH') {
-								my $tmp = $p->{'content'};
-								if(defined($tmp)) {
-									my @tmpArray = ($tmp);
-									$value = \@tmpArray;
-								}else {
-									$value='';
+					my $values = $p->{'value'};
+					if(!defined($values)) {
+						my $tmp = $p->{'content'};
+						if(defined($tmp)) {
+							my @tmpArray = ($tmp);
+							$values = \@tmpArray;
+						}
+					}
+					my $value = '';
+					for my $v (@$values) {
+						if(ref($v) ne 'HASH') {
+							if($value ne '') {
+								$value .= ',';
+							}
+							$v =~ s/\\/\\\\/g;
+							$v =~ s/\"/\\\"/g;
+							$v =~ s/\'/\\\'/g;
+							if($p->{'quotevalue'}) {
+								$value .= "'".encode_entities($v,"&<>")."'";
+							}else {
+								$value .= encode_entities($v,"&<>");
+							}
+						}
+					}
+					#$self->debugCallback->("Setting: ".$p->{'id'}."=".$value."\n");
+					$templateParameters{$p->{'id'}}=$value;
+				}
+				my $librarySupported = 0;
+				if(defined($template->{'parameter'})) {
+					my $parameters = $template->{'parameter'};
+					if(ref($parameters) ne 'ARRAY') {
+						my @parameterArray = ();
+						if(defined($parameters)) {
+							push @parameterArray,$parameters;
+						}
+						$parameters = \@parameterArray;
+					}
+					for my $p (@$parameters) {
+						if(defined($p->{'type'}) && defined($p->{'id'}) && defined($p->{'name'})) {
+							if(!defined($templateParameters{$p->{'id'}})) {
+								my $value = $p->{'value'};
+								if(!defined($value) || ref($value) eq 'HASH') {
+									my $tmp = $p->{'content'};
+									if(defined($tmp)) {
+										my @tmpArray = ($tmp);
+										$value = \@tmpArray;
+									}else {
+										$value='';
+									}
+								}
+								#$self->debugCallback->("Setting default value ".$template->{'id'}." ".$p->{'id'}."=".$value."\n");
+								$templateParameters{$p->{'id'}} = $value;
+							}
+							if(defined($p->{'requireplugins'})) {
+								if(!isPluginsInstalled($client,$p->{'requireplugins'})) {
+									$templateParameters{$p->{'id'}} = undef;
 								}
 							}
-							#$self->debugCallback->("Setting default value ".$template->{'id'}." ".$p->{'id'}."=".$value."\n");
-							$templateParameters{$p->{'id'}} = $value;
-						}
-						if(defined($p->{'requireplugins'})) {
-							if(!isPluginsInstalled($client,$p->{'requireplugins'})) {
-								$templateParameters{$p->{'id'}} = undef;
-							}
-						}
-						if(defined($templateParameters{$p->{'id'}}))  {
-							if(Slim::Utils::Unicode::encodingFromString($templateParameters{$p->{'id'}}) ne 'utf8') {
-								$templateParameters{$p->{'id'}} = Slim::Utils::Unicode::latin1toUTF8($templateParameters{$p->{'id'}});
+							if(defined($templateParameters{$p->{'id'}}))  {
+								if(Slim::Utils::Unicode::encodingFromString($templateParameters{$p->{'id'}}) ne 'utf8') {
+									$templateParameters{$p->{'id'}} = Slim::Utils::Unicode::latin1toUTF8($templateParameters{$p->{'id'}});
+								}
 							}
 						}
 					}
 				}
+				if(!$self->checkTemplateValues($template,$valuesXml,$globalcontext,$localcontext)) {
+					$self->debugCallback->("Ignoring $item due to checkTemplateValues\n");
+					undef $content;
+					return undef;
+				}
+				if(!$self->checkTemplateParameters($template,\%templateParameters,$globalcontext,$localcontext)) {
+					$self->debugCallback->("Ignoring $item due to checkTemplateParameters\n");
+					undef $content;
+					return undef;
+				}
+				my $templateData = $self->loadTemplate($client,$template,\%templateParameters);
+				if(!defined($templateData)) {
+					$self->debugCallback->("Ignoring $item due to loadTemplate\n");
+					undef $content;
+					return undef;
+				}
+				my $templateFileData = $templateData->{'data'};
+				my $doParsing = 1;
+				if(!defined($templateData->{'parse'})) {
+					$doParsing = 0;
+				}
+				
+				if($doParsing) {
+					$itemData = $self->fillTemplate($templateFileData,\%templateParameters);
+				}else {
+					$itemData = $templateFileData;
+				}
+				if(defined($timestamp) && defined($self->cacheItems)) {
+					my %entry = (
+						'data' => $itemData,
+						'timestamp' => $timestamp,
+					);
+					delete $self->cacheItems->{'items'}->{'templatecontent_'.$cacheName};
+					$self->cacheItems->{'items'}->{'templatecontent_'.$cacheName} = \%entry;
+				}
 			}
-			if(!$self->checkTemplateValues($template,$valuesXml,$globalcontext,$localcontext)) {
-				$self->debugCallback->("Ignoring $item due to checkTemplateValues\n");
-				undef $content;
-				return undef;
-			}
-			if(!$self->checkTemplateParameters($template,\%templateParameters,$globalcontext,$localcontext)) {
-				$self->debugCallback->("Ignoring $item due to checkTemplateParameters\n");
-				undef $content;
-				return undef;
-			}
-			my $templateData = $self->loadTemplate($client,$template,\%templateParameters);
-			if(!defined($templateData)) {
-				$self->debugCallback->("Ignoring $item due to loadTemplate\n");
-				undef $content;
-				return undef;
-			}
-			my $templateFileData = $templateData->{'data'};
-			my $doParsing = 1;
-			if(!defined($templateData->{'parse'})) {
-				$doParsing = 0;
-			}
-			
-			my $itemData = undef;
-			if($doParsing) {
-				$itemData = $self->fillTemplate($templateFileData,\%templateParameters);
-			}else {
-				$itemData = $templateFileData;
-			}
-			
 			my $result = $self->parseContentImplementation($client,$item,$itemData,$items,$globalcontext,$localcontext);
 			if(defined($result)) {
 				$items->{$item} = $result;
@@ -369,14 +438,39 @@ sub parseContentImplementation {
 	my $globalcontext = shift;
 	my $localcontext = shift;
 
-	my $xml = eval { 	XMLin($content, forcearray => ["item"], keyattr => []) };
+	my $timestamp = undef;
+	if(defined($localcontext->{'timestamp'})) {
+		$timestamp = $localcontext->{'timestamp'};
+	}
+	my $cacheName = $item;
+	if(defined($localcontext->{'cacheNamePrefix'})) {
+		$cacheName = $localcontext->{'cacheNamePrefix'}.$cacheName;
+	}
+
+	my $xml = undef;
+	if(defined($timestamp) && defined($self->cacheItems) && defined($self->cacheItems->{'items'}->{'content_'.$cacheName}) && $self->cacheItems->{'items'}->{'content_'.$cacheName}->{'timestamp'}>=$timestamp) {
+		$xml = $self->cacheItems->{'items'}->{'content_'.$cacheName}->{'data'};
+	}else {
+		$xml = eval { 	XMLin($content, forcearray => ["item"], keyattr => []) };
+	}
 	#$self->debugCallback->(Dumper($xml));
 	if ($@) {
 		$self->errorCallback->("Failed to parse configuration ($item) because:\n$@\n");
 	}else {
+		if(defined($timestamp) && defined($self->cacheItems)) {
+			my %entry = (
+				'data' => $xml,
+				'timestamp' => $timestamp,
+			);
+			delete $self->cacheItems->{'items'}->{'content_'.$cacheName};
+			$self->cacheItems->{'items'}->{'content_'.$cacheName} = \%entry;
+		}
 		my $include = $self->isEnabled($client,$xml);
 		if(defined($xml->{$self->contentType})) {
 			$xml->{$self->contentType}->{'id'} = escape($item);
+			if(defined($timestamp)) {
+				$xml->{$self->contentType}->{'timestamp'} = $timestamp;
+			}
 		}
 		if($include) {
 			if($self->checkContent($xml,$globalcontext,$localcontext)) {

@@ -81,7 +81,9 @@ sub init {
 			'debugCallback' => $self->debugCallback,
 			'errorCallback' => $self->errorCallback
 		);
+		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Templates";
 		$self->templateParser(Plugins::SQLPlayList::ConfigManager::TemplateParser->new(\%parserParameters));
+		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Playlists";
 		$self->contentParser(Plugins::SQLPlayList::ConfigManager::ContentParser->new(\%parserParameters));
 
 		my %parameters = (
@@ -95,6 +97,7 @@ sub init {
 		my %directoryHandlerParameters = (
 			'debugCallback' => $self->debugCallback,
 			'errorCallback' => $self->errorCallback,
+			'cacheName' => "FileCache/SQLPlayList/".$self->pluginVersion."/Files",
 		);
 		$directoryHandlerParameters{'extension'} = "sql";
 		$directoryHandlerParameters{'parser'} = $self->contentParser;
@@ -127,6 +130,7 @@ sub init {
 		$self->templatePluginHandler(Plugins::SQLPlayList::ConfigManager::PluginLoader->new(\%pluginHandlerParameters));
 
 		$parserParameters{'templatePluginHandler'} = $self->templatePluginHandler;
+		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Playlists";
 		$self->templateContentParser(Plugins::SQLPlayList::ConfigManager::TemplateContentParser->new(\%parserParameters));
 
 		$directoryHandlerParameters{'extension'} = "sql.values";

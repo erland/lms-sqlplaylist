@@ -44,9 +44,9 @@ sub parse {
 	my $content = shift;
 	my $items = shift;
 	my $globalcontext = shift;
+	my $localcontext = shift;
 
-	my %localcontext = ();
-	return $self->parseContent($client,$item,$content,$items,$globalcontext,\%localcontext);
+	return $self->parseContent($client,$item,$content,$items,$globalcontext,$localcontext);
 }
 
 sub parseContentImplementation {

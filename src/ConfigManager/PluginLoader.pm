@@ -64,6 +64,12 @@ sub readFromPlugins {
 			$excludePluginsHash{$item} = 1;
 		}
 	}
+	if(defined($self->templateContentParser)) {
+		$self->templateContentParser->readFromCache();
+	}
+	if(defined($self->contentParser)) {
+		$self->contentParser->readFromCache();
+	}
 	for my $plugin (@enabledplugins) {
 		if($excludePluginsHash{$plugin}) {
 			next;
@@ -82,6 +88,10 @@ sub readFromPlugins {
 				if($plugin =~ /^([^:]+)::.*$/) {
 					$itemId = lc($1)."_".$item->{'id'};
 				}
+				my %localcontext = ();
+				if(defined($item->{'timestamp'})) {
+					$localcontext{'timestamp'} = $item->{'timestamp'};
+				}
 				if($item->{'type'} eq 'simple') {
 					if(defined($self->templateContentParser)) {
 						if(ref($itemData) ne 'HASH') {
@@ -95,7 +105,7 @@ sub readFromPlugins {
 								$self->debugCallback->("Loading $itemId configuration from $plugin without conversion with encoding ".$encoding."\n");
 							}
 						}
-						my $errorMsg = $self->templateContentParser->parse($client,$itemId,$itemData,$items,$globalcontext);
+						my $errorMsg = $self->templateContentParser->parse($client,$itemId,$itemData,$items,$globalcontext,\%localcontext);
 						if($errorMsg) {
 		                			$self->errorCallback->("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
 						}elsif(defined($items->{$itemId})) {
@@ -118,7 +128,7 @@ sub readFromPlugins {
 								$self->debugCallback->("Loading $itemId configuration from $plugin without conversion with encoding ".$encoding."\n");
 							}
 						}
-						$errorMsg = $self->contentParser->parse($client,$itemId,$itemData,$items,$globalcontext);
+						$errorMsg = $self->contentParser->parse($client,$itemId,$itemData,$items,$globalcontext,\%localcontext);
 					}
 					if(defined($errorMsg)) {
 	                			$self->errorCallback->("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
@@ -134,6 +144,13 @@ sub readFromPlugins {
 			}
 		}
 	}
+	if(defined($self->templateContentParser)) {
+		$self->templateContentParser->writeToCache();
+	}
+	if(defined($self->contentParser)) {
+		$self->contentParser->writeToCache();
+	}
+
 	use strict 'refs';
 }
 

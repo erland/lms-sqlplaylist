@@ -108,9 +108,9 @@ sub parse {
 	my $content = shift;
 	my $items = shift;
 	my $globalcontext = shift;
-	my %localcontext = ();
-        $localcontext{'simple'} = 1;
-	return $self->parseTemplateContent($client,$item,$content,$items,$globalcontext->{'templates'},$globalcontext,\%localcontext);
+	my $localcontext = shift;
+        $localcontext->{'simple'} = 1;
+	return $self->parseTemplateContent($client,$item,$content,$items,$globalcontext->{'templates'},$globalcontext,$localcontext);
 }
 
 sub checkTemplateValues {
