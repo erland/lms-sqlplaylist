@@ -8,6 +8,7 @@
 [%- pageHeaderInfo = BLOCK %]
 [% END -%]
 [% PROCESS pageheader.html %]
+[% PROCESS plugins/SQLPlayList/catchtab.js %]
 
 <table border="0">
 <form action="[% webroot %]plugins/SQLPlayList/webadminmethods_savesimpleitem.html" name="editForm" method="post">
@@ -23,6 +24,8 @@
 			<td>
 			[% IF parameter.type == 'text' %]
 				<input type="text" name="itemparameter_[% parameter.id %]" value="[% parameter.value | html %]">
+			[% ELSIF parameter.type == 'multilinetext' %]
+				<textarea name="itemparameter_[% parameter.id %]" cols="60" rows="10" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% parameter.value | html %]</textarea>
 			[% ELSIF parameter.type == 'singlelist' or parameter.type == 'sqlsinglelist' or parameter.type == 'functionsinglelist' or parameter.type == 'optionalsinglelist' or parameter.type == 'sqloptionalsinglelist' or parameter.type == 'functionoptionalsinglelist'%]
 				<table border="0">
 					<tr><td>
