@@ -1154,261 +1154,198 @@ sub strings {
 	return <<EOF;
 PLUGIN_SQLPLAYLIST
 	EN	SQL Playlist
+	DA	SQL Playlist
 
 PLUGIN_SQLPLAYLIST_DISABLED
 	EN	SQL Playlist Stopped
+	DA	SQL Playlist stoppet
 
 PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS
 	EN	Now Playing will show
+	DA	Aktiv playliste vil vise
 
 PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS
 	EN	upcoming songs and
+	DA	kommende sange og
 
 PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
 	EN	recently played songs.
+	DA	fornylig afspillede sange.
 
 PLUGIN_SQLPLAYLIST_SETUP_GROUP
 	EN	SQL PlayList
+	DA	SQL Playlist
 
 PLUGIN_SQLPLAYLIST_SETUP_GROUP_DESC
 	EN	SQL PlayList is a smart playlist plugins based on SQL queries
+	DA	SQL Playlist er et plugin til smarte playlister, baseret på SQL forespørgsler
 
 PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
 	EN	Playlist directory
+	DA	Playliste folder
 
 PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
 	EN	Template directory
+	DA	Skabelon folder
 
 PLUGIN_SQLPLAYLIST_SHOW_MESSAGES
 	EN	Show debug messages
+	DA	Vis fejlfindings beskeder
 
 PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
 	EN	Number of tracks
+	DA	Antal spor
 
 PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
 	EN	Number of old tracks
+	DA	Antal gamle spor
 
 SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
 	EN	Playlist directory
+	DA	Playliste folder
 
 SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
 	EN	Template directory
+	DA	Skabelon folder
 
 SETUP_PLUGIN_SQLPLAYLIST_SHOWMESSAGES
 	EN	Debugging
+	DA	Fejlfinding
 
 SETUP_PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
 	EN	Number of tracks
+	DA	Antal spor
 
 SETUP_PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
 	EN	Number of old tracks
+	DA	Antal gamle spor
 
 PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS
 	EN	Now Playing will show
+	DA	Aktiv playlist vil vise
 
 PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS
 	EN	upcoming songs and
+	DA	kommende sange og
 
 PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
 	EN	recently played songs.
+	DA	fornylig afspillede sange.
 
 PLUGIN_SQLPLAYLIST_CHOOSE_BELOW
 	EN	Choose a playlist with music from your library:
+	DA	Vælg en playliste med musik fra din samling:
 
 PLUGIN_SQLPLAYLIST_CONTEXT_CHOOSE_BELOW
 	EN	Choose a playlist with music from your library related to
+	DA	Vælg en playliste med musik fra din samling relateret til:
 
 PLUGIN_SQLPLAYLIST_PLAYING
 	EN	Playing
+	DA	Afspiller
 
 PLUGIN_SQLPLAYLIST_PRESS_RIGHT
 	EN	Press RIGHT to stop adding songs
+	DA	Tryk HØJRE for at stoppe med at tilføje sange
 
 PLUGIN_SQLPLAYLIST_GENERAL_HELP
 	EN	You can add or remove songs from your mix at any time. To stop adding songs, clear your playlist or click to
+	DA	Du kan tilføje eller fjerne sange fra dit mix til enhver tid. For at stoppe med at tilføje sange, ryd playlisten eller klik for at
 
 PLUGIN_SQLPLAYLIST_DISABLE
 	EN	Stop adding songs
+	DA	Stop med at tilføje sange
 
 PLUGIN_SQLPLAYLIST_CONTINUOUS_MODE
 	EN	Add new items when old ones finish
+	DA	Tilføj nye sange når de gamle er færdige
 
 PLUGIN_SQLPLAYLIST_NOW_PLAYING_FAILED
 	EN	Failed 
+	DA	Fejlet
 
 PLUGIN_SQLPLAYLIST_EDIT_ITEM
 	EN	Edit
+	DA	Rediger
 
 PLUGIN_SQLPLAYLIST_NEW_ITEM
 	EN	Create new playlist
+	DA	Opret en ny playliste
 
 PLUGIN_SQLPLAYLIST_NEW_ITEM_TYPES_TITLE
 	EN	Select type of playlist
+	DA	Vælg type af playliste
 
 PLUGIN_SQLPLAYLIST_EDIT_ITEM_DATA
 	EN	SQL Query
+	DA	SQL forespørgsel
 
 PLUGIN_SQLPLAYLIST_EDIT_ITEM_NAME
 	EN	Playlist Name
+	DA	Playliste navn
 
 PLUGIN_SQLPLAYLIST_EDIT_ITEM_FILENAME
 	EN	Filename
+	DA	Filnavn
 
 PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_GROUPS
 	EN	Groups
+	DA	Grupper
 
 PLUGIN_SQLPLAYLIST_REMOVE_ITEM
 	EN	Delete
+	DA	Slet
 
 PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION
 	EN	Are you sure you want to delete this playlist ?
+	DA	Er du sikker på at du vil slette denne playliste ?
 
 PLUGIN_SQLPLAYLIST_REMOVE_ITEM_TYPE_QUESTION
 	EN	Removing a playlist type might cause problems later if it is used in existing playlists, are you really sure you want to delete this playlist type ?
 
-PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_TITLE
-	EN	Genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_NONE
-	EN	No Genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_GENRES_SELECT_ALL
-	EN	All Genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_SELECT_NONE
-	EN	No Artists
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_SELECT_ALL
-	EN	All Artists
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_CUSTOM
-	EN	Blank playlist
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_ARTISTS_TITLE
-	EN	Artists
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES
-	EN	Playlist including songs for selected genres only
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_ARTISTS
-	EN	Playlist including songs for selected artists only
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDING_GENRES_INCLUDING_ARTISTS
-	EN	Playlist including songs for selected genres and selected artists only
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES
-	EN	Playlist excluding all songs for selected genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_ARTISTS
-	EN	Playlist excluding all songs for selected aritsts
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDING_GENRES_EXCLUDING_ARTISTS
-	EN	Playlist excluding all songs for selected aritsts and excluding all songs for selected genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_RANDOM
-	EN	Playlist with all songs
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED
-	EN	Playlist with all top rated songs (4 and 5)
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES
-	EN	Playlist with all top rated songs (4 and 5) for the selected genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_GENRES_INCLUDING_ARTISTS
-	EN	Playlist with all top rated songs (4 and 5) for the selected genres and selected artists only
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_INCLUDING_ARTISTS
-	EN	Playlist with all top rated songs (4 and 5) for the selected artists
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES
-	EN	Playlist with all top rated songs (4 and 5) excluding songs in selected genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_ARTISTS
-	EN	Playlist with all top rated songs (4 and 5) excluding songs in selected artists
-
 PLUGIN_SQLPLAYLIST_TESTPLAYLIST
 	EN	Test
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATED_EXCLUDING_GENRES_EXCLUDING_ARTISTS
-	EN	Playlist with all top rated songs (4 and 5) excluding all songs for selected aritsts and excluding all songs for selected genres
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_MAXTRACKLENGTH
-	EN	Max track length (in seconds)
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_MINTRACKLENGTH
-	EN	Min track length (in seconds)
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_MAXTRACKYEAR
-	EN	Only include tracks before or equal to this year
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_MINTRACKYEAR
-	EN	Only include tracks after or equal to this year
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_NOTREPEAT
-	EN	Do not repeat tracks within same playlist
+	DA	Test
 
 PLUGIN_SQLPLAYLIST_SAVE
 	EN	Save
+	DA	Gem
 
 PLUGIN_SQLPLAYLIST_SAVEPLAY
 	EN	Save &amp; Play
+	DA	Gem &amp; afspil
 
 PLUGIN_SQLPLAYLIST_NEXT
 	EN	Next
+	DA	Næste
 
 PLUGIN_SQLPLAYLIST_NEXTPLAY
 	EN	Next &amp; Play
+	DA	Næste &amp; afspil
 
 PLUGIN_SQLPLAYLIST_TEST_CHOOSE_PARAMETERS
 	EN	This playlist requires parameters, please select values
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_PARAMETER_PLAYLISTS
-	EN	Playlists with user selectable parameters
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORYEAR
-	EN	Playlist with top rated songs (4 and 5) for user selectable year
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORGENRE
-	EN	Playlist with top rated songs (4 and 5) for user selectable genre
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORARTIST
-	EN	Playlist with top rated songs (4 and 5) for user selectable artist
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORALBUM
-	EN	Playlist with top rated songs (4 and 5) for user selectable album
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TOPRATEDFORPLAYLIST
-	EN	Playlist with top rated songs (4 and 5) for user selectable playlist
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATING
-	EN	Playlist with songs with user selectable rating
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_WITHSPECIFICRATINGFORARTIST
-	EN	Playlist with songs with user selectable rating and artist
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_TRACKSTAT_PLAYLISTS
-	EN	All the following playlists requires that the TrackStat plugin is installed
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_INCLUDE_COMMENT
-	EN	Include tracks with COMMENT tag
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_EXCLUDE_COMMENT
-	EN	Exclude tracks with COMMENT tag
+	DA	Denne playliste kræver parametre, vælg venligst nogle værdier
 
 PLUGIN_SQLPLAYLIST_ITEMTYPE
 	EN	Customize SQL
+	DA	Tilpas SQL
 	
 PLUGIN_SQLPLAYLIST_ITEMTYPE_SIMPLE
 	EN	Use predefined
+	DA	Brug foruddefineret
 
 PLUGIN_SQLPLAYLIST_ITEMTYPE_ADVANCED
 	EN	Customize SQL
+	DA	Tilpas SQL
 
 PLUGIN_SQLPLAYLIST_NEW_ITEM_PARAMETERS_TITLE
 	EN	Please enter playlist parameters
+	DA	Angiv venligst playliste parametre
 
 PLUGIN_SQLPLAYLIST_EDIT_ITEM_PARAMETERS_TITLE
 	EN	Please enter playlist parameters
+	DA	Angiv venligst playliste parametre
 
 PLUGIN_SQLPLAYLIST_LOGIN_USER
 	EN	Username
