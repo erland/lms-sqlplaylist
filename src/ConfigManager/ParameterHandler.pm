@@ -158,7 +158,10 @@ sub getValueOfTemplateParameter {
 				if(defined($result)) {
 					$result = $result.',';
 				}
-				my $thisvalue = quoteValue($item->{'value'});
+				my $thisvalue = $item->{'value'};
+				if(!defined($parameter->{'rawvalue'}) || !$parameter->{'rawvalue'}) {
+					$thisvalue = quoteValue($thisvalue);
+				}
 				if($parameter->{'quotevalue'}) {
 					$result .= "'".encode_entities($thisvalue,"&<>\'\"")."'";
 				}else {
@@ -175,7 +178,10 @@ sub getValueOfTemplateParameter {
 		$selectedValue = Slim::Utils::Unicode::utf8decode_locale($selectedValue);
 		for my $item (@$values) {
 			if($selectedValue eq $item->{'id'}) {
-				my $thisvalue = quoteValue($item->{'value'});
+				my $thisvalue = $item->{'value'};
+				if(!defined($parameter->{'rawvalue'}) || !$parameter->{'rawvalue'}) {
+					$thisvalue = quoteValue($thisvalue);
+				}
 				if($parameter->{'quotevalue'}) {
 					$result = "'".encode_entities($thisvalue,"&<>\'\"")."'";
 				}else {
@@ -190,7 +196,10 @@ sub getValueOfTemplateParameter {
 	}else{
 		if($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) {
 			my $thisvalue = $params->{$self->parameterPrefix.'_'.$parameter->{'id'}};
-			$thisvalue = quoteValue(Slim::Utils::Unicode::utf8decode_locale($thisvalue));
+			$thisvalue = Slim::Utils::Unicode::utf8decode_locale($thisvalue);
+			if(!defined($parameter->{'rawvalue'}) || !$parameter->{'rawvalue'}) {
+				$thisvalue=quoteValue($thisvalue);
+			}
 			if($parameter->{'quotevalue'}) {
 				return "'".encode_entities($thisvalue,"&<>\'\"").".";
 			}else {

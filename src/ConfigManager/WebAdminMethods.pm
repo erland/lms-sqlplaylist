@@ -1229,10 +1229,14 @@ sub saveSimpleItem {
 					if($useParameter) {
 						$self->parameterHandler->addValuesToTemplateParameter($p);
 						my $value = $self->parameterHandler->getXMLValueOfTemplateParameter($params,$p);
+						my $rawValue = '';
+						if(defined($p->{'rawvalue'}) && $p->{'rawvalue'}) {
+							$rawValue = " rawvalue=\"1\"";
+						}
 						if($p->{'quotevalue'}) {
-							$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\" quotevalue=\"1\">";
+							$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\" quotevalue=\"1\"$rawValue>";
 						}else {
-							$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\">";
+							$data .= "\n\t\t<parameter type=\"text\" id=\"".$p->{'id'}."\"$rawValue>";
 						}
 						$data .= $value.'</parameter>';
 					}
