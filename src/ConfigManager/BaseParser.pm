@@ -165,6 +165,11 @@ sub parseTemplateContent {
 				undef $content;
 				return undef;
 			}
+			if(!$self->checkTemplateValues($template,$valuesXml,$globalcontext,$localcontext)) {
+				$self->debugCallback->("Ignoring $item due to checkTemplateValues\n");
+				undef $content;
+				return undef;
+			}
 			if(defined($template->{'timestamp'}) && defined($timestamp) && $template->{'timestamp'}>$timestamp) {
 				$timestamp = $template->{'timestamp'};
 				$localcontext->{'timestamp'} = $timestamp;
@@ -244,11 +249,6 @@ sub parseTemplateContent {
 							}
 						}
 					}
-				}
-				if(!$self->checkTemplateValues($template,$valuesXml,$globalcontext,$localcontext)) {
-					$self->debugCallback->("Ignoring $item due to checkTemplateValues\n");
-					undef $content;
-					return undef;
 				}
 				if(!$self->checkTemplateParameters($template,\%templateParameters,$globalcontext,$localcontext)) {
 					$self->debugCallback->("Ignoring $item due to checkTemplateParameters\n");
