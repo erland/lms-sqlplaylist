@@ -1040,7 +1040,7 @@ sub getDynamicPlayLists {
 		);
 		if(defined($current->{'parameters'})) {
 			my $parameters = $current->{'parameters'};
-			foreach my $pk (%$parameters) {
+			foreach my $pk (keys %$parameters) {
 				my %parameter = (
 					'id' => $pk,
 					'type' => $parameters->{$pk}->{'type'},
