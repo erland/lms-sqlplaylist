@@ -138,6 +138,34 @@ sub setValueOfTemplateParameter {
 	}
 }
 
+sub parameterIsSpecified {
+	my $self = shift;
+	my $params = shift;
+	my $parameter = shift;
+
+	if($parameter->{'type'} =~ /.*multiplelist$/ || $parameter->{'type'} =~ /.*checkboxes$/) {
+		my $selectedValues = undef;
+		if($parameter->{'type'} =~ /.*multiplelist$/) {
+			$selectedValues = $self->getMultipleListQueryParameter($params,$self->parameterPrefix.'_'.$parameter->{'id'});
+		}else {
+			$selectedValues = $self->getCheckBoxesQueryParameter($params,$self->parameterPrefix.'_'.$parameter->{'id'});
+		}
+		if(scalar(keys %$selectedValues)>0) {
+			return 1;
+		}
+	}elsif($parameter->{'type'} =~ /.*singlelist$/) {
+		my $selectedValue = $params->{$self->parameterPrefix.'_'.$parameter->{'id'}};
+		if(defined($selectedValue)) {
+			return 1;
+		}
+	}else{
+		if($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 sub getValueOfTemplateParameter {
 	my $self = shift;
 	my $params = shift;
@@ -152,6 +180,7 @@ sub getValueOfTemplateParameter {
 		}else {
 			$selectedValues = $self->getCheckBoxesQueryParameter($params,$self->parameterPrefix.'_'.$parameter->{'id'});
 		}
+		$self->debugCallback->("Got ".scalar(keys %$selectedValues)." values for ".$parameter->{'id'}."\n");
 		my $values = $parameter->{'values'};
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
@@ -167,6 +196,7 @@ sub getValueOfTemplateParameter {
 				}else {
 					$result .= encode_entities($thisvalue,"&<>\'\"");
 				}
+				$self->debugCallback->("Got ".$parameter->{'id'}."=$thisvalue\n");
 			}
 		}
 		if(!defined($result)) {
@@ -187,6 +217,7 @@ sub getValueOfTemplateParameter {
 				}else {
 					$result = encode_entities($thisvalue,"&<>\'\"");
 				}
+				$self->debugCallback->("Got ".$parameter->{'id'}."=$thisvalue\n");
 				last;
 			}
 		}
@@ -205,12 +236,14 @@ sub getValueOfTemplateParameter {
 			}else {
 				return encode_entities($thisvalue,"&<>\'\"");
 			}
+			$self->debugCallback->("Got ".$parameter->{'id'}."=$thisvalue\n");
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
 				$result = '0';
 			}else {
 				$result = '';
 			}
+			$self->debugCallback->("Got ".$parameter->{'id'}."=$result\n");
 		}
 	}
 	return $result;
@@ -231,12 +264,14 @@ sub getXMLValueOfTemplateParameter {
 		}else {
 			$selectedValues = $self->getCheckBoxesQueryParameter($params,$self->parameterPrefix.'_'.$parameter->{'id'});
 		}
+		$self->debugCallback->("Got ".scalar(keys %$selectedValues)." values for ".$parameter->{'id'}." to convert to XML\n");
 		my $values = $parameter->{'values'};
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
 				$result = $result.'<value>';
 				$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				$result = $result.'</value>';
+				$self->debugCallback->("Got ".$parameter->{'id'}."=".$item->{'value'}."\n");
 			}
 		}
 		if(!defined($result)) {
@@ -251,6 +286,7 @@ sub getXMLValueOfTemplateParameter {
 				$result = $result.'<value>';
 				$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				$result = $result.'</value>';
+				$self->debugCallback->("Got ".$parameter->{'id'}."=".$item->{'value'}."\n");
 				last;
 			}
 		}
@@ -261,12 +297,14 @@ sub getXMLValueOfTemplateParameter {
 		if(defined($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) && $params->{$self->parameterPrefix.'_'.$parameter->{'id'}} ne '') {
 			my $value = Slim::Utils::Unicode::utf8decode_locale($params->{$self->parameterPrefix.'_'.$parameter->{'id'}});
 			$result = '<value>'.encode_entities($value,"&<>\'\"").'</value>';
+			$self->debugCallback->("Got ".$parameter->{'id'}."=".$value."\n");
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
 				$result = '<value>0</value>';
 			}else {
 				$result = '';
 			}
+			$self->debugCallback->("Got ".$parameter->{'id'}."=".$result."\n");
 		}
 	}
 	return $result;
@@ -281,7 +319,7 @@ sub getMultipleListQueryParameter {
 	my %result = ();
 	if($query) {
 		foreach my $param (split /\&/, $query) {
-			if ($param =~ /([^=]+)=(.*)/) {
+			if ($param =~ /^([^=]+)=(.*)$/) {
 				my $name  = unescape($1);
 				my $value = unescape($2);
 				if($name eq $parameter) {

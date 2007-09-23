@@ -863,7 +863,9 @@ sub webSaveSimpleItem {
 						$useParameter = isPluginsInstalled($client,$p->{'requireplugins'});
 					}
 					if($useParameter) {
-						$self->parameterHandler->addValuesToTemplateParameter($p);
+						if($self->parameterHandler->parameterIsSpecified($params,$p)) {
+							$self->parameterHandler->addValuesToTemplateParameter($p);
+						}
 						my $value = $self->parameterHandler->getValueOfTemplateParameter($params,$p);
 #						if(Slim::Utils::Unicode::encodingFromString($value) ne 'utf8') {
 #							$value = Slim::Utils::Unicode::latin1toUTF8($value);
@@ -1227,7 +1229,9 @@ sub saveSimpleItem {
 						$useParameter = isPluginsInstalled($client,$p->{'requireplugins'});
 					}
 					if($useParameter) {
-						$self->parameterHandler->addValuesToTemplateParameter($p);
+						if($self->parameterHandler->parameterIsSpecified($params,$p)) {
+							$self->parameterHandler->addValuesToTemplateParameter($p);
+						}
 						my $value = $self->parameterHandler->getXMLValueOfTemplateParameter($params,$p);
 						my $rawValue = '';
 						if(defined($p->{'rawvalue'}) && $p->{'rawvalue'}) {
