@@ -1,0 +1,288 @@
+PLUGIN_SQLPLAYLIST
+	EN	SQL Playlist
+	DA	SQL Playlist
+
+PLUGIN_SQLPLAYLIST_SETTINGS
+	EN	Various Settings
+
+PLUGIN_SQLPLAYLIST_DISABLED
+	EN	SQL Playlist Stopped
+	DA	SQL Playlist stoppet
+
+PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS
+	EN	Now Playing will show
+	DA	Aktiv playliste vil vise
+
+PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS
+	EN	upcoming songs and
+	DA	kommende sange og
+
+PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
+	EN	recently played songs.
+	DA	fornylig afspillede sange.
+
+SETUP_PLUGIN_SQLPLAYLIST_GROUP
+	EN	SQL PlayList
+	DA	SQL Playlist
+
+SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC
+	EN	SQL PlayList is a smart playlist plugins based on SQL queries
+	DA	SQL Playlist er et plugin til smarte playlister, baseret på SQL forespørgsler
+
+PLUGIN_SQLPLAYLIST_SHOW_MESSAGES
+	EN	Show debug messages
+	DA	Vis fejlfindings beskeder
+
+PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
+	EN	Number of tracks
+	DA	Antal spor
+
+PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
+	EN	Number of old tracks
+	DA	Antal gamle spor
+
+SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
+	EN	Playlist directory
+	DA	Playliste folder
+
+SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY_DESC
+	EN	Playlist directory
+	DA	Playliste folder
+
+SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
+	EN	Template directory
+	DA	Skabelon folder
+
+SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY_DESC
+	EN	Template directory
+	DA	Skabelon folder
+
+SETUP_PLUGIN_SQLPLAYLIST_SHOWMESSAGES
+	EN	Debugging
+	DA	Fejlfinding
+
+SETUP_PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
+	EN	Number of tracks
+	DA	Antal spor
+
+SETUP_PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
+	EN	Number of old tracks
+	DA	Antal gamle spor
+
+PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS
+	EN	Now Playing will show
+	DA	Aktiv playlist vil vise
+
+PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS
+	EN	upcoming songs and
+	DA	kommende sange og
+
+PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
+	EN	recently played songs.
+	DA	fornylig afspillede sange.
+
+PLUGIN_SQLPLAYLIST_CHOOSE_BELOW
+	EN	Choose a playlist with music from your library:
+	DA	Vælg en playliste med musik fra din samling:
+
+PLUGIN_SQLPLAYLIST_CONTEXT_CHOOSE_BELOW
+	EN	Choose a playlist with music from your library related to
+	DA	Vælg en playliste med musik fra din samling relateret til:
+
+PLUGIN_SQLPLAYLIST_PLAYING
+	EN	Playing
+	DA	Afspiller
+
+PLUGIN_SQLPLAYLIST_PRESS_RIGHT
+	EN	Press RIGHT to stop adding songs
+	DA	Tryk HØJRE for at stoppe med at tilføje sange
+
+PLUGIN_SQLPLAYLIST_GENERAL_HELP
+	EN	You can add or remove songs from your mix at any time. To stop adding songs, clear your playlist or click to
+	DA	Du kan tilføje eller fjerne sange fra dit mix til enhver tid. For at stoppe med at tilføje sange, ryd playlisten eller klik for at
+
+PLUGIN_SQLPLAYLIST_DISABLE
+	EN	Stop adding songs
+	DA	Stop med at tilføje sange
+
+PLUGIN_SQLPLAYLIST_CONTINUOUS_MODE
+	EN	Add new items when old ones finish
+	DA	Tilføj nye sange når de gamle er færdige
+
+PLUGIN_SQLPLAYLIST_NOW_PLAYING_FAILED
+	EN	Failed 
+	DA	Fejlet
+
+PLUGIN_SQLPLAYLIST_EDIT_ITEM
+	EN	Edit
+	DA	Rediger
+
+PLUGIN_SQLPLAYLIST_NEW_ITEM
+	EN	Create new playlist
+	DA	Opret en ny playliste
+
+PLUGIN_SQLPLAYLIST_NEW_ITEM_TYPES_TITLE
+	EN	Select type of playlist
+	DA	Vælg type af playliste
+
+PLUGIN_SQLPLAYLIST_EDIT_ITEM_DATA
+	EN	SQL Query
+	DA	SQL forespørgsel
+
+PLUGIN_SQLPLAYLIST_EDIT_ITEM_NAME
+	EN	Playlist Name
+	DA	Playliste navn
+
+PLUGIN_SQLPLAYLIST_EDIT_ITEM_FILENAME
+	EN	Filename
+	DA	Filnavn
+
+PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_GROUPS
+	EN	Groups
+	DA	Grupper
+
+PLUGIN_SQLPLAYLIST_REMOVE_ITEM
+	EN	Delete
+	DA	Slet
+
+PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION
+	EN	Are you sure you want to delete this playlist ?
+	DA	Er du sikker på at du vil slette denne playliste ?
+
+PLUGIN_SQLPLAYLIST_REMOVE_ITEM_TYPE_QUESTION
+	EN	Removing a playlist type might cause problems later if it is used in existing playlists, are you really sure you want to delete this playlist type ?
+
+PLUGIN_SQLPLAYLIST_TESTPLAYLIST
+	EN	Test
+	DA	Test
+
+PLUGIN_SQLPLAYLIST_SAVE
+	EN	Save
+	DA	Gem
+
+PLUGIN_SQLPLAYLIST_SAVEPLAY
+	EN	Save &amp; Play
+	DA	Gem &amp; afspil
+
+PLUGIN_SQLPLAYLIST_NEXT
+	EN	Next
+	DA	Næste
+
+PLUGIN_SQLPLAYLIST_NEXTPLAY
+	EN	Next &amp; Play
+	DA	Næste &amp; afspil
+
+PLUGIN_SQLPLAYLIST_TEST_CHOOSE_PARAMETERS
+	EN	This playlist requires parameters, please select values
+	DA	Denne playliste kræver parametre, vælg venligst nogle værdier
+
+PLUGIN_SQLPLAYLIST_ITEMTYPE
+	EN	Customize SQL
+	DA	Tilpas SQL
+	
+PLUGIN_SQLPLAYLIST_ITEMTYPE_SIMPLE
+	EN	Use predefined
+	DA	Brug foruddefineret
+
+PLUGIN_SQLPLAYLIST_ITEMTYPE_ADVANCED
+	EN	Customize SQL
+	DA	Tilpas SQL
+
+PLUGIN_SQLPLAYLIST_NEW_ITEM_PARAMETERS_TITLE
+	EN	Please enter playlist parameters
+	DA	Angiv venligst playliste parametre
+
+PLUGIN_SQLPLAYLIST_EDIT_ITEM_PARAMETERS_TITLE
+	EN	Please enter playlist parameters
+	DA	Angiv venligst playliste parametre
+
+PLUGIN_SQLPLAYLIST_LOGIN_USER
+	EN	Username
+
+PLUGIN_SQLPLAYLIST_LOGIN_PASSWORD
+	EN	Password
+
+PLUGIN_SQLPLAYLIST_LOGIN_FIRSTNAME
+	EN	First name
+
+PLUGIN_SQLPLAYLIST_LOGIN_LASTNAME
+	EN	Last name
+
+PLUGIN_SQLPLAYLIST_LOGIN_EMAIL
+	EN	e-mail
+
+PLUGIN_SQLPLAYLIST_ANONYMOUSLOGIN
+	EN	Anonymous
+
+PLUGIN_SQLPLAYLIST_LOGIN
+	EN	Login
+
+PLUGIN_SQLPLAYLIST_REGISTERLOGIN
+	EN	Register &amp; Login
+
+PLUGIN_SQLPLAYLIST_REGISTER_TITLE
+	EN	Register a new user
+
+PLUGIN_SQLPLAYLIST_LOGIN_TITLE
+	EN	Login
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_ITEMS
+	EN	Download more playlists
+
+PLUGIN_SQLPLAYLIST_PUBLISH_ITEM
+	EN	Publish
+
+PLUGIN_SQLPLAYLIST_PUBLISH
+	EN	Publish
+
+PLUGIN_SQLPLAYLIST_PUBLISHPARAMETERS_TITLE
+	EN	Please specify information about the playlist
+
+PLUGIN_SQLPLAYLIST_PUBLISH_NAME
+	EN	Name
+
+PLUGIN_SQLPLAYLIST_PUBLISH_DESCRIPTION
+	EN	Description
+
+PLUGIN_SQLPLAYLIST_PUBLISH_ID
+	EN	Unique identifier
+
+PLUGIN_SQLPLAYLIST_LASTCHANGED
+	EN	Last changed
+
+PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE
+	EN	Thanks for choosing to publish your playlist. The advantage of publishing a playlist is that other users can use it and it will also be used for ideas of new functionallity in the SQLPlayList plugin. Publishing a playlist is also a great way of improving the functionality in the SQLPlayList plugin by showing the developer what types of playlists you use, besides those already included with the plugin.
+
+PLUGIN_SQLPLAYLIST_REGISTERMESSAGE
+	EN	You can choose to publish your playlist either anonymously or by registering a user and login. The advantage of registering is that other people will be able to see that you have published the playlist, you will get credit for it and you will also be sure that no one else can update or change your published playlist. The e-mail adress will only be used to contact you if I have some questions to you regarding one of your playlists, it will not show up on any web pages. If you already have registered a user, just hit the Login button.
+
+PLUGIN_SQLPLAYLIST_LOGINMESSAGE
+	EN	You can choose to publish your playlist either anonymously or by registering a user and login. The advantage of registering is that other people will be able to see that you have published the playlist, you will get credit for it and you will also be sure that no one else can update or change your published playlist. Hit the &quot;Register &amp; Login&quot; button if you have not previously registered.
+
+PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE_DESCRIPTION
+	EN	It is important that you enter a good description of your playlist, describe what your playlist do and if it is based on one of the existing playlists it is a good idea to mention this and describe which extensions you have made. <br><br>It is also a good idea to try to make the &quot;Unique identifier&quot; as uniqe as possible as this will be used for filename when downloading the playlist. This is especially important if you have choosen to publish your playlist anonymously as it can easily be overwritten if the identifier is not unique. Please try to not use spaces and language specific characters in the unique identifier since these could cause problems on some operating systems.
+
+PLUGIN_SQLPLAYLIST_REFRESH_DOWNLOADED_ITEMS
+	EN	Download last version of existing playlists
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE_WARNING
+	EN	A playlist type with that name already exists, please change the name or select to overwrite the existing playlist type
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE
+	EN	Overwrite existing
+
+PLUGIN_SQLPLAYLIST_PUBLISH_OVERWRITE
+	EN	Overwrite existing
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME
+	EN	Unique identifier
+
+PLUGIN_SQLPLAYLIST_EDIT_ITEM_OVERWRITE
+	EN	Overwrite existing
+
+PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION
+	EN	This operation will download latest version of all playlists, this might take some time. Please note that this will overwrite any local changes you have made in built-in or previously downloaded playlist types. Are you sure you want to continue ?
+
+PLUGIN_SQLPLAYLIST_REFRESH_PLAYLISTS
+	EN	Refresh playlists
+

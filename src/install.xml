@@ -1,0 +1,19 @@
+<?xml version='1.0' standalone='yes'?>
+<extension>
+  <name>PLUGIN_SQLPLAYLIST</name>
+  <creator>Erland Isaksson</creator>
+  <defaultState>enabled</defaultState>
+  <description>SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC</description>
+  <email>erland_i@hotmail.com</email>
+  <homepageURL>http://wiki.erland.homeip.net</homepageURL>
+  <id>ED8D4FA4-7169-11DC-ACA7-9D5635810EEF</id>
+  <module>Plugins::SQLPlayList::Plugin</module>
+  <optionsURL>plugins/SQLPlayList/settings/basic.html</optionsURL>
+  <targetApplication>
+    <id>SlimServer</id>
+    <maxVersion>7.0+</maxVersion>
+    <minVersion>7.0a</minVersion>
+  </targetApplication>
+  <type>2</type>
+  <version>2.0</version>
+</extension>

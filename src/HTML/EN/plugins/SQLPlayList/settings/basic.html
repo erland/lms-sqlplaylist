@@ -1,0 +1,20 @@
+[% page = "PLUGIN_SQLPLAYLIST" %]
+[% PROCESS settings/header.html %]
+
+[% PROCESS plugins/SQLPlayList/settings/subpage_chooser.html %]
+
+	<div class="settingSection">
+		<div class="prefHead">[% "SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY" | string | upper %]</div>
+		<div class="prefDesc">[% "SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY_DESC" | string %]</div>
+		
+		<input type="text" class="stdedit selectFolder" name="playlist_directory" id="playlist_directory" value="[% prefs.playlist_directory %]" size="40">
+	</div>
+
+	<div class="settingSection">
+		<div class="prefHead">[% "SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY" | string | upper %]</div>
+		<div class="prefDesc">[% "SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY_DESC" | string %]</div>
+		
+		<input type="text" class="stdedit selectFolder" name="template_directory" id="template_directory" value="[% prefs.template_directory %]" size="40">
+	</div>
+
+[% PROCESS settings/footer.html %]

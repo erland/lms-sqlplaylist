@@ -1,0 +1,15 @@
+[% BLOCK sqlPlayListLink %]
+	[% IF addOnly;link='addlink';ELSE;link='playlink';END %]
+	[% IF type == 'disable' %]
+		<a target="status" href="[% webroot %][% statusroot %]?p0=dynamicplaylist&p1=playlist&p2=[% IF addOnly %]add[% ELSE %]play[% END %]&p3=sqlplaylist_[% type %]&player=[% player |uri%]" onClick="setTimeout('document.location.reload(true)',500)">[% "PLUGIN_DYNAMICPLAYLIST_DISABLE" | string %]</a>
+	[% ELSIF parameters %]
+		[% WRAPPER $link noTarget=1 %]
+			[% PROCESS href %]
+		[% END %]
+	[% ELSE %]
+		[% WRAPPER $link %]
+			href="[% webroot %][% statusroot %]?p0=dynamicplaylist&p1=playlist&p2=[% IF addOnly %]add[% ELSE %]play[% END %]&p3=sqlplaylist_[% type %]&player=[% player |uri%]" onClick="setTimeout('document.location.reload(true)',500)"
+		[% END %]
+	[% END %]
+[% END %]
+
