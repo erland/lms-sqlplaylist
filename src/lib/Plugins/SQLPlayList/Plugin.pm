@@ -249,8 +249,8 @@ sub handleWebList {
 	my $playlist = undef;
 	if($params->{'play'}) {
 		my $playlistId = $params->{'file'};
-		$playlistId =~ s/\.sql$//;
-		$playlistId =~ s/\.sql\.values$//;
+		$playlistId =~ s/\.sql\.xml$//;
+		$playlistId =~ s/\.sql\.values\.xml$//;
 		$playlist = getPlayList($client,escape($playlistId,"^A-Za-z0-9\-_"));
 		handlePlayOrAdd($client, $playlist->{'id'});
 	}

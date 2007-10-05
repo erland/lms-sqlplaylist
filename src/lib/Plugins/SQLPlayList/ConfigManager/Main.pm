@@ -99,7 +99,7 @@ sub init {
 			'logHandler' => $self->logHandler,
 			'cacheName' => "FileCache/SQLPlayList/".$self->pluginVersion."/Files",
 		);
-		$directoryHandlerParameters{'extension'} = "sql";
+		$directoryHandlerParameters{'extension'} = "sql.xml";
 		$directoryHandlerParameters{'parser'} = $self->contentParser;
 		$directoryHandlerParameters{'includeExtensionInIdentifier'} = undef;
 		$self->contentDirectoryHandler(Plugins::SQLPlayList::ConfigManager::DirectoryLoader->new(\%directoryHandlerParameters));
@@ -132,7 +132,7 @@ sub init {
 		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Playlists";
 		$self->templateContentParser(Plugins::SQLPlayList::ConfigManager::TemplateContentParser->new(\%parserParameters));
 
-		$directoryHandlerParameters{'extension'} = "sql.values";
+		$directoryHandlerParameters{'extension'} = "sql.values.xml";
 		$directoryHandlerParameters{'parser'} = $self->templateContentParser;
 		$directoryHandlerParameters{'includeExtensionInIdentifier'} = undef;
 		$self->templateContentDirectoryHandler(Plugins::SQLPlayList::ConfigManager::DirectoryLoader->new(\%directoryHandlerParameters));
@@ -188,8 +188,8 @@ sub initWebAdminMethods {
 		'pluginId' => $self->pluginId,
 		'pluginVersion' => $self->pluginVersion,
 		'downloadApplicationId' => $self->downloadApplicationId,
-		'extension' => 'sql',
-		'simpleExtension' => 'sql.values',
+		'extension' => 'sql.xml',
+		'simpleExtension' => 'sql.values.xml',
 		'logHandler' => $self->logHandler,
 		'contentPluginHandler' => $self->contentPluginHandler,
 		'templatePluginHandler' => $self->templatePluginHandler,

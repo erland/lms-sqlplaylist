@@ -139,7 +139,7 @@ sub parseContentImplementation {
 			my $playlistid = $item;
 			my $file = $item;
 			if($globalcontext->{'source'} ne "plugin") {
-				$file = $item.".sql";
+				$file = $item.".sql.xml";
 			}
 			my %playlist = (
 				'id' => $playlistid, 
