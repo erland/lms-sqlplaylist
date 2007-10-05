@@ -22,6 +22,7 @@ use strict;
 
 use base 'Class::Data::Accessor';
 
+use Slim::Utils::Prefs;
 use Plugins::SQLPlayList::ConfigManager::TemplateParser;
 use Plugins::SQLPlayList::ConfigManager::ContentParser;
 use Plugins::SQLPlayList::ConfigManager::TemplateContentParser;
@@ -32,15 +33,17 @@ use Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods;
 use FindBin qw($Bin);
 use File::Spec::Functions qw(:ALL);
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId downloadApplicationId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items) );
+__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId downloadApplicationId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items) );
+
+my $prefs = preferences('plugin.sqlplaylist');
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
 	my $self = {
-		'debugCallback' => $parameters->{'debugCallback'},
-		'errorCallback' => $parameters->{'errorCallback'},
+		'logHandler' => $parameters->{'logHandler'},
+		'pluginPrefs' => $parameters->{'pluginPrefs'},
 		'pluginId' => $parameters->{'pluginId'},
 		'pluginVersion' => $parameters->{'pluginVersion'},
 		'downloadApplicationId' => $parameters->{'downloadApplicationId'},
@@ -78,8 +81,7 @@ sub init {
 		my %parserParameters = (
 			'pluginId' => $self->pluginId,
 			'pluginVersion' => $self->pluginVersion,
-			'debugCallback' => $self->debugCallback,
-			'errorCallback' => $self->errorCallback
+			'logHandler' => $self->logHandler,
 		);
 		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Templates";
 		$self->templateParser(Plugins::SQLPlayList::ConfigManager::TemplateParser->new(\%parserParameters));
@@ -87,16 +89,14 @@ sub init {
 		$self->contentParser(Plugins::SQLPlayList::ConfigManager::ContentParser->new(\%parserParameters));
 
 		my %parameters = (
-			'debugCallback' => $self->debugCallback,
-			'errorCallback' => $self->errorCallback,
+			'logHandler' => $self->logHandler,
 			'criticalErrorCallback' => $self->addSqlErrorCallback,
 			'parameterPrefix' => 'itemparameter'
 		);
 		$self->parameterHandler(Plugins::SQLPlayList::ConfigManager::ParameterHandler->new(\%parameters));
 
 		my %directoryHandlerParameters = (
-			'debugCallback' => $self->debugCallback,
-			'errorCallback' => $self->errorCallback,
+			'logHandler' => $self->logHandler,
 			'cacheName' => "FileCache/SQLPlayList/".$self->pluginVersion."/Files",
 		);
 		$directoryHandlerParameters{'extension'} = "sql";
@@ -117,8 +117,7 @@ sub init {
 		$self->templateDataDirectoryHandler(Plugins::SQLPlayList::ConfigManager::DirectoryLoader->new(\%directoryHandlerParameters));
 
 		my %pluginHandlerParameters = (
-			'debugCallback' => $self->debugCallback,
-			'errorCallback' => $self->errorCallback,
+			'logHandler' => $self->logHandler,
 			'pluginId' => $self->pluginId,
 		);
 
@@ -167,11 +166,11 @@ sub initWebAdminMethods {
 
 	my @itemDirectories = ();
 	my @templateDirectories = ();
-	my $dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
+	my $dir = $prefs->get("playlist_directory");
 	if (defined $dir && -d $dir) {
 		push @itemDirectories,$dir
 	}
-	$dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory");
+	$dir = $prefs->get("template_directory");
 	if (defined $dir && -d $dir) {
 		push @templateDirectories,$dir
 	}
@@ -185,13 +184,13 @@ sub initWebAdminMethods {
 		}
 	}
 	my %webAdminMethodsParameters = (
+		'pluginPrefs' => $self->pluginPrefs,
 		'pluginId' => $self->pluginId,
 		'pluginVersion' => $self->pluginVersion,
 		'downloadApplicationId' => $self->downloadApplicationId,
 		'extension' => 'sql',
 		'simpleExtension' => 'sql.values',
-		'debugCallback' => $self->debugCallback,
-		'errorCallback' => $self->errorCallback,
+		'logHandler' => $self->logHandler,
 		'contentPluginHandler' => $self->contentPluginHandler,
 		'templatePluginHandler' => $self->templatePluginHandler,
 		'contentDirectoryHandler' => $self->contentDirectoryHandler,
@@ -202,13 +201,13 @@ sub initWebAdminMethods {
 		'contentParser' => $self->contentParser,
 		'templateDirectories' => \@templateDirectories,
 		'itemDirectories' => \@itemDirectories,
-		'customTemplateDirectory' => Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory"),
-		'customItemDirectory' => Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"),
+		'customTemplateDirectory' => $prefs->get("template_directory"),
+		'customItemDirectory' => $prefs->get("playlist_directory"),
 		'supportDownload' => 1,
 		'supportDownloadError' => $self->supportDownloadError,
 		'webCallbacks' => $self,
 		'webTemplates' => \%webTemplates,
-		'downloadUrl' => Slim::Utils::Prefs::get("plugin_sqlplaylist_download_url")
+		'downloadUrl' => $prefs->get("download_url")
 	);
 	$self->webAdminMethods(Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods->new(\%webAdminMethodsParameters));
 
@@ -222,6 +221,7 @@ sub readTemplateConfiguration {
 	my %globalcontext = ();
 	my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
 	for my $plugindir (@pluginDirs) {
+		$self->logHandler->debug("Checking for dir: ".catdir($plugindir,"SQLPlayList","Templates")."\n");
 		next unless -d catdir($plugindir,"SQLPlayList","Templates");
 		$globalcontext{'source'} = 'builtin';
 		$self->templateDirectoryHandler()->readFromDir($client,catdir($plugindir,"SQLPlayList","Templates"),\%templates,\%globalcontext);
@@ -230,7 +230,8 @@ sub readTemplateConfiguration {
 	$globalcontext{'source'} = 'plugin';
 	$self->templatePluginHandler()->readFromPlugins($client,\%templates,undef,\%globalcontext);
 
-	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+	my $templateDir = $prefs->get('template_directory');
+	$self->logHandler->debug("Checking for dir: $templateDir\n");
 	if($templateDir && -d $templateDir) {
 		$globalcontext{'source'} = 'custom';
 		$self->templateDirectoryHandler()->readFromDir($client,$templateDir,\%templates,\%globalcontext);
@@ -243,8 +244,8 @@ sub readItemConfiguration {
 	my $client = shift;
 	my $storeInCache = shift;
 	
-	my $dir = Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory");
-    	$self->debugCallback->("Searching for item configuration in: $dir\n");
+	my $dir = $prefs->get("playlist_directory");
+    	$self->logHandler->debug("Searching for item configuration in: $dir\n");
     
 	my %items = ();
 	my %customItems = ();
@@ -260,13 +261,15 @@ sub readItemConfiguration {
 	$self->contentPluginHandler->readFromPlugins($client,\%items,undef,\%globalcontext);
 	for my $plugindir (@pluginDirs) {
 		$globalcontext{'source'} = 'builtin';
+		$self->logHandler->debug("Checking for dir: ".catdir($plugindir,"SQLPlayList","Playlists")."\n");
 		if( -d catdir($plugindir,"SQLPlayList","Playlists")) {
 			$self->contentDirectoryHandler()->readFromDir($client,catdir($plugindir,"SQLPlayList","Playlists"),\%items,\%globalcontext);
 			$self->templateContentDirectoryHandler()->readFromDir($client,catdir($plugindir,"SQLPlayList","Playlists"),\%items, \%globalcontext);
 		}
 	}
+	$self->logHandler->debug("Checking for dir: $dir\n");
 	if (!defined $dir || !-d $dir) {
-		$self->debugCallback->("Skipping custom configuration scan - directory is undefined\n");
+		$self->logHandler->debug("Skipping custom configuration scan - directory is undefined\n");
 	}else {
 		$globalcontext{'source'} = 'custom';
 		$self->contentDirectoryHandler()->readFromDir($client,$dir,\%customItems,\%globalcontext);

@@ -30,15 +30,14 @@ use File::Slurp;
 use FindBin qw($Bin);
 use Cache::Cache qw( $EXPIRES_NEVER);
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback extension includeExtensionInIdentifier identifierExtension parser cacheName cache cacheItems) );
+__PACKAGE__->mk_classaccessors( qw(logHandler extension includeExtensionInIdentifier identifierExtension parser cacheName cache cacheItems) );
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
 	my $self = {
-		'debugCallback' => $parameters->{'debugCallback'},
-		'errorCallback' => $parameters->{'errorCallback'},
+		'logHandler' => $parameters->{'logHandler'},
 		'extension' => $parameters->{'extension'},
 		'identifierExtension' => $parameters->{'identifierExtension'},
 		'includeExtensionInIdentifier' => $parameters->{'includeExtensionInIdentifier'},
@@ -93,7 +92,7 @@ sub readFromDir {
 	my $items = shift;
 	my $globalcontext = shift;
 
-	$self->debugCallback->("Loading configuration from: $dir\n");
+	$self->logHandler->debug("Loading configuration from: $dir\n");
 	$self->readFromCache();
 	my @dircontents = Slim::Utils::Misc::readDirectory($dir,$self->extension);
 	my $extensionRegexp = "\\.".$self->extension."\$";
@@ -115,7 +114,7 @@ sub readFromDir {
 		# read_file from File::Slurp
 		my $content = undef;
 		if(defined($self->cacheItems) && defined($self->cacheItems->{'items'}->{$path}) && defined($timestamp) && $self->cacheItems->{'items'}->{$path}->{'timestamp'}>=$timestamp) {
-			#$self->debugCallback->("Reading $item from cache\n");
+			#$self->logHandler->debug("Reading $item from cache\n");
 			$content = $self->cacheItems->{'items'}->{$path}->{'data'};
 		}else {
 			$content = eval { read_file($path) };
@@ -124,10 +123,10 @@ sub readFromDir {
 				if($encoding ne 'utf8') {
 					$content = Slim::Utils::Unicode::latin1toUTF8($content);
 					$content = Slim::Utils::Unicode::utf8on($content);
-					$self->debugCallback->("Loading $item and converting from latin1\n");
+					$self->logHandler->debug("Loading $item and converting from latin1\n");
 				}else {
 					$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
-					$self->debugCallback->("Loading $item without conversion with encoding ".$encoding."\n");
+					$self->logHandler->debug("Loading $item without conversion with encoding ".$encoding."\n");
 				}
 			}
 		}
@@ -146,16 +145,17 @@ sub readFromDir {
 					$localcontext{'timestamp'} = $timestamp;
 				}
 				$localcontext{'cacheNamePrefix'} = $dir.$self->extension;
+	                	$self->logHandler->debug("Parsing file: $path\n");
 				my $errorMsg = $self->parser->parse($client,$item,$content,$items,$globalcontext,\%localcontext);
 				if($errorMsg) {
-		                	$self->errorCallback->("Unable to open file: $path\n$errorMsg\n");
+		                	$self->logHandler->warn("Unable to open file: $path\n$errorMsg\n");
 				}
 			}
 		}else {
 			if ($@) {
-				$self->errorCallback->("Unable to open file: $path\nBecause of:\n$@\n");
+				$self->logHandler->warn("Unable to open file: $path\nBecause of:\n$@\n");
 			}else {
-				$self->errorCallback->("Unable to open file: $path\n");
+				$self->logHandler->warn("Unable to open file: $path\n");
 			}
 		}
 	}
@@ -177,7 +177,7 @@ sub readDataFromDir {
 		$file .= ".".$self->extension;
 	}
 
-	$self->debugCallback->("Loading item data from: $dir/$file\n");
+	$self->logHandler->debug("Loading item data from: $dir/$file\n");
 
 	my $path = catfile($dir, $file);
     
@@ -185,23 +185,23 @@ sub readDataFromDir {
 
 	my $timestamp = (stat ($path) )[9];
 	if(defined($self->cacheItems) && defined($self->cacheItems->{'items'}->{$path}) && defined($timestamp) && $self->cacheItems->{'items'}->{$path}->{'timestamp'}>=$timestamp) {
-		#$self->debugCallback->("Reading $item from cache\n");
+		#$self->logHandler->debug("Reading $item from cache\n");
 		return $self->cacheItems->{'items'}->{$path}->{'data'};
 	}
 
 	my $content = eval { read_file($path) };
 	if ($@) {
-		$self->debugCallback->("Failed to load item data because:\n$@\n");
+		$self->logHandler->warn("Failed to load item data because:\n$@\n");
 	}
 	if(defined($content)) {
 		my $encoding = Slim::Utils::Unicode::encodingFromString($content);
 		if($encoding ne 'utf8') {
 			$content = Slim::Utils::Unicode::latin1toUTF8($content);
 			$content = Slim::Utils::Unicode::utf8on($content);
-			$self->debugCallback->("Loading $itemId and converting from latin1 to $encoding\n");
+			$self->logHandler->debug("Loading $itemId and converting from latin1 to $encoding\n");
 		}else {
 			$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
-			$self->debugCallback->("Loading $itemId without conversion with encoding ".$encoding."\n");
+			$self->logHandler->debug("Loading $itemId without conversion with encoding ".$encoding."\n");
 		}
 		if(defined($timestamp) && defined($self->cacheItems)) {
 			my %entry = (
@@ -210,7 +210,7 @@ sub readDataFromDir {
 			);
 			$self->cacheItems->{'items'}->{$path} = \%entry;
 		}
-		$self->debugCallback->("Loading of item data succeeded\n");
+		$self->logHandler->debug("Loading of item data succeeded\n");
 	}
 	return $content;
 }

@@ -18,7 +18,7 @@
 	<tr><td colspan="3"><b>[% "PLUGIN_SQLPLAYLIST_NEW_ITEM_PARAMETERS_TITLE" | string %]</b></td></tr>
 	<tr><td colspan="3">&nbsp;</td></tr>
 	[%- FOREACH parameter = pluginWebAdminMethodsNewItemParameters %]
-		[% IF !(parameter.type.match('list') or parameter.type.match('checkboxes')) or parameter.values.size!=0 %]
+		[% IF !(parameter.type.match('list') or parameter.type.match('checkboxes')) or (parameter.values.size!=0 and !(parameter.0=='' and parameter.values.size==1))%]
 		<tr>
 			<td>[% parameter.name %]</td>
 			<td>&nbsp;&nbsp;&nbsp;</td>

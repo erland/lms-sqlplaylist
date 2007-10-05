@@ -25,6 +25,9 @@ package Plugins::SQLPlayList::Plugin;
 
 use strict;
 
+use base qw(Slim::Plugin::Base);
+
+use Slim::Utils::Prefs;
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
@@ -34,18 +37,18 @@ use XML::Simple;
 use Data::Dumper;
 use HTML::Entities;
 use FindBin qw($Bin);
+use SOAP::Lite;
+use Plugins::SQLPlayList::Settings;
 
 use Plugins::SQLPlayList::ConfigManager::Main;
 
 use Slim::Schema;
 
 # Information on each clients sqlplaylist
-my $htmlTemplate = 'plugins/SQLPlayList/sqlplaylist_list.html';
 my $playLists = undef;
 my $playListTypes = undef;
 my $sqlerrors = '';
-my $soapLiteError = 0;
-my $PLUGINVERSION = '1.21';
+my $PLUGINVERSION = undef;
 
 my $configManager = undef;
 
@@ -58,6 +61,22 @@ my %disable = (
 	'sql' => '', 
 	'fulltext' => ''
 );
+
+my $prefs = preferences('plugin.sqlplaylist');
+my $multiLibraryPrefs = preferences('plugin.multilibrary');
+my $serverPrefs = preferences('server');
+my $log = Slim::Utils::Log->addLogCategory({
+	'category'     => 'plugin.sqlplaylist',
+	'defaultLevel' => 'WARN',
+	'description'  => 'PLUGIN_SQLPLAYLIST',
+});
+
+$prefs->migrate(1, sub {
+	$prefs->set('playlist_directory', Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_playlist_directory') || $serverPrefs->get('playlistdir')  );
+	$prefs->set('template_directory',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_template_directory')   || 1  );
+	$prefs->set('download_url',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_download_url')   || 'http://erland.homeip.net/datacollection/services/DataCollection'  );
+	1;
+});
 	
 sub getDisplayName {
 	return 'PLUGIN_SQLPLAYLIST';
@@ -84,7 +103,7 @@ sub getCurrentPlayList {
 # Do what's necessary when play or add button is pressed
 sub handlePlayOrAdd {
 	my ($client, $item, $add) = @_;
-	debugMsg("".($add ? 'Add' : 'Play')."$item\n");
+	$log->debug("".($add ? 'Add' : 'Play')."$item\n");
 	
 	my $currentPlaying = getCurrentPlayList($client);
 
@@ -117,7 +136,7 @@ sub getPlayList {
 	
 	return undef unless $type;
 
-	debugMsg("Get playlist: $type\n");
+	$log->debug("Get playlist: $type\n");
 	if(!$playLists) {
 		initPlayLists($client);
 	}
@@ -164,37 +183,22 @@ sub initPlayLists {
 
 
 sub initPlugin {
+	my $class = shift;
+	$class->SUPER::initPlugin(@_);
+	$PLUGINVERSION = Slim::Utils::PluginManager->dataForPlugin($class)->{'version'};
 	checkDefaults();
-	$soapLiteError = 0;
-	eval "use SOAP::Lite";
-	if ($@) {
-		my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
-		for my $plugindir (@pluginDirs) {
-			next unless -d catdir($plugindir,"SQLPlayList","libs");
-			push @INC,catdir($plugindir,"SQLPlayList","libs");
-			last;
-		}
-		debugMsg("Using internal implementation of SOAP::Lite\n");
-		eval "use SOAP::Lite";
-		if ($@) {
-			$soapLiteError = 1;
-			msg("SQLPlayList: ERROR! Cant load internal implementation of SOAP::Lite, download/publish functionallity will not be available\n");
-		}
-	}
-	if(!defined($supportDownloadError) && $soapLiteError) {
-		$supportDownloadError = "Could not use the internal web service implementation, please download and install SOAP::Lite manually";
-	}
+	Plugins::SQLPlayList::Settings->new($class);
 }
 
 sub getConfigManager {
 	if(!defined($configManager)) {
-		my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+		my $templateDir = $prefs->get('template_directory');
 		if(!defined($templateDir) || !-d $templateDir) {
 			$supportDownloadError = 'You have to specify a template directory before you can download playlists';
 		}
 		my %parameters = (
-			'debugCallback' => \&debugMsg,
-			'errorCallback' => \&errorMsg,
+			'pluginPrefs' => $prefs,
+			'logHandler' => $log,
 			'pluginId' => 'SQLPlayList',
 			'pluginVersion' => $PLUGINVERSION,
 			'downloadApplicationId' => 'SQLPlayList',
@@ -229,22 +233,28 @@ sub webPages {
 		"webadminmethods_removeitem\.(?:htm|xml)"      => \&handleWebRemovePlaylist,
 	);
 
-	my $value = $htmlTemplate;
+	for my $page (keys %pages) {
+		Slim::Web::HTTP::addPageFunction($page, $pages{$page});
+	}
 
-	if (grep { /^SQLPlayList::Plugin$/ } Slim::Utils::Prefs::getArray('disabledplugins')) {
+	Slim::Web::Pages->addPageLinks("plugins", { 'PLUGIN_SQLPLAYLIST' => 'plugins/SQLPlayList/sqlplaylist_list.html' });
 
-		$value = undef;
-	} 
-
-	#Slim::Web::Pages->addPageLinks("browse", { 'PLUGIN_SQLPLAYLIST' => $value });
-
-	return (\%pages,$value);
+	#Slim::Web::Pages->addPageLinks("browse", { 'PLUGIN_SQLPLAYLIST' => 'plugins/SQLPlayList/sqlplaylist_list.html' });
 }
 
 # Draws the plugin's web page
 sub handleWebList {
 	my ($client, $params) = @_;
 	
+	my $playlist = undef;
+	if($params->{'play'}) {
+		my $playlistId = $params->{'file'};
+		$playlistId =~ s/\.sql$//;
+		$playlistId =~ s/\.sql\.values$//;
+		$playlist = getPlayList($client,escape($playlistId,"^A-Za-z0-9\-_"));
+		handlePlayOrAdd($client, $playlist->{'id'});
+	}
+
 	if(defined($params->{'redirect'})) {
 		return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_redirect.html', $params);
 	}elsif($params->{'reload'}) { 	
@@ -259,15 +269,6 @@ sub handleWebList {
 		}
 		initPlayLists($client);
 	}
-	my $playlist = undef;
-	if($params->{'play'}) {
-		my $playlistId = $params->{'file'};
-		$playlistId =~ s/\.sql$//;
-		$playlistId =~ s/\.sql\.values$//;
-		$playlist = getPlayList($client,escape($playlistId,"^A-Za-z0-9\-_"));
-		handlePlayOrAdd($client, $playlist->{'id'});
-	}
-
 	my $currentPlaying = eval { Plugins::DynamicPlayList::Plugin::getCurrentPlayList($client) };
 	if ($@) {
 		warn("SQLPlayList: Error getting current playlist from DynamicPlayList plugin: $@\n");
@@ -282,7 +283,7 @@ sub handleWebList {
 	if($playlist) {
 		$name = $playlist->{'name'};
 	}
-	my $templateDir = Slim::Utils::Prefs::get('plugin_sqlplaylist_template_directory');
+	my $templateDir = $prefs->get('template_directory');
 	if(!defined($templateDir) || !-d $templateDir) {
 		$params->{'pluginSQLPlayListDownloadMessage'} = 'You have to specify a template directory before you can download playlists';
 	}
@@ -298,7 +299,7 @@ sub handleWebList {
 		$params->{'pluginSQLPlayListError'} = "ERROR!!! Cannot find DynamicPlayList plugin, please make sure you have installed and enabled at least DynamicPlayList 1.3"
 	}
 	$params->{'pluginSQLPlayListVersion'} = $PLUGINVERSION;
-	return Slim::Web::HTTP::filltemplatefile($htmlTemplate, $params);
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_list.html', $params);
 }
 
 sub isPluginsInstalled {
@@ -307,7 +308,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
+			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
 		}
 	}
 	return $enabledPlugin;
@@ -433,7 +434,7 @@ sub handleWebTestParameters {
 		}
 		
 		my $parameter = $playlist->{'parameters'}->{$parameterId};
-		debugMsg("Getting values for: ".$parameter->{'name'}."\n");
+		$log->debug("Getting values for: ".$parameter->{'name'}."\n");
 		my @parameterValues = ();
 		addParameterValues($client,\@parameterValues,$parameter);
 		my %currentParameter = (
@@ -456,7 +457,7 @@ sub addParameterValues {
 	my $listRef = shift;
 	my $parameter = shift;
 	
-	debugMsg("Getting values for ".$parameter->{'name'}." of type ".$parameter->{'type'}."\n");
+	$log->debug("Getting values for ".$parameter->{'name'}." of type ".$parameter->{'type'}."\n");
 	my $sql = undef;
 	if(lc($parameter->{'type'}) eq 'album') {
 		$sql = "select id,title from albums order by titlesort";
@@ -491,7 +492,7 @@ sub addParameterValues {
 					}
 				}
 			}else {
-				debugMsg("Error, invalid parameter value: $value\n");
+				$log->warn("Error, invalid parameter value: $value\n");
 			}
 		}
 	}elsif(lc($parameter->{'type'}) eq 'custom') {
@@ -501,7 +502,7 @@ sub addParameterValues {
 				my $parameter = $client->param('sqlplaylist_parameter_'.$i);
 				my $value = $parameter->{'id'};
 				my $parameterid = "\'PlaylistParameter".$i."\'";
-				debugMsg("Replacing ".$parameterid." with ".$value."\n");
+				$log->debug("Replacing ".$parameterid." with ".$value."\n");
 				$sql =~ s/$parameterid/$value/g;
 			}
 		}
@@ -511,9 +512,9 @@ sub addParameterValues {
 		my $dbh = getCurrentDBH();
     	eval {
 			my $sth = $dbh->prepare( $sql );
-			debugMsg("Executing value list: $sql\n");
+			$log->debug("Executing value list: $sql\n");
 			$sth->execute() or do {
-	            debugMsg("Error executing: $sql\n");
+	            $log->warn("Error executing: $sql\n");
 	            $sql = undef;
 			};
 			if(defined($sql)) {
@@ -533,7 +534,7 @@ sub addParameterValues {
 					);
 				  	push @$listRef, \%listitem;
 			  	}
-			  	debugMsg("Added ".scalar(@$listRef)." items to value list\n");
+			  	$log->debug("Added ".scalar(@$listRef)." items to value list\n");
 			}
 			$sth->finish();
 		};
@@ -704,70 +705,22 @@ sub getFunctions {
 }
 
 sub checkDefaults {
-	my $prefVal = Slim::Utils::Prefs::get('plugin_sqlplaylist_playlist_directory');
+	my $prefVal = $prefs->get('playlist_directory');
 	if (! defined $prefVal) {
 		# Default to standard playlist directory
-		my $dir=Slim::Utils::Prefs::get('playlistdir');
-		debugMsg("Defaulting plugin_sqlplaylist_playlist_directory to:$dir\n");
-		Slim::Utils::Prefs::set('plugin_sqlplaylist_playlist_directory', $dir);
+		my $dir=$serverPrefs->get('playlistdir');
+		$log->debug("Defaulting plugin_sqlplaylist_playlist_directory to:$dir\n");
+		$prefs->set('playlist_directory', $dir);
 	}
 
-	$prefVal = Slim::Utils::Prefs::get('plugin_sqlplaylist_showmessages');
+	$prefVal = $prefs->get('download_url');
 	if (! defined $prefVal) {
 		# Default to not show debug messages
-		debugMsg("Defaulting plugin_sqlplaylist_showmessages to 0\n");
-		Slim::Utils::Prefs::set('plugin_sqlplaylist_showmessages', 0);
-	}
-	$prefVal = Slim::Utils::Prefs::get('plugin_sqlplaylist_download_url');
-	if (! defined $prefVal) {
-		# Default to not show debug messages
-		debugMsg("Defaulting plugin_sqlplaylist_download_url\n");
-		Slim::Utils::Prefs::set('plugin_sqlplaylist_download_url', 'http://erland.homeip.net/datacollection/services/DataCollection');
+		$log->debug("Defaulting plugin_sqlplaylist_download_url\n");
+		$prefs->set('download_url', 'http://erland.homeip.net/datacollection/services/DataCollection');
 	}
 }
 
-sub setupGroup
-{
-	my %setupGroup =
-	(
-	 PrefOrder => ['plugin_sqlplaylist_playlist_directory','plugin_sqlplaylist_template_directory','plugin_sqlplaylist_showmessages'],
-	 GroupHead => string('PLUGIN_SQLPLAYLIST_SETUP_GROUP'),
-	 GroupDesc => string('PLUGIN_SQLPLAYLIST_SETUP_GROUP_DESC'),
-	 GroupLine => 1,
-	 GroupSub  => 1,
-	 Suppress_PrefSub  => 1,
-	 Suppress_PrefLine => 1
-	);
-	my %setupPrefs =
-	(
-	plugin_sqlplaylist_showmessages => {
-			'validate'     => \&Slim::Utils::Validate::trueFalse
-			,'PrefChoose'  => string('PLUGIN_SQLPLAYLIST_SHOW_MESSAGES')
-			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_SHOW_MESSAGES')
-			,'options' => {
-					 '1' => string('ON')
-					,'0' => string('OFF')
-				}
-			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_showmessages"); }
-		},		
-	plugin_sqlplaylist_playlist_directory => {
-			'validate' => \&Slim::Utils::Validate::isDir
-			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
-			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY')
-			,'PrefSize' => 'large'
-			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_playlist_directory"); }
-		},
-	plugin_sqlplaylist_template_directory => {
-			'validate' => \&Slim::Utils::Validate::isDir
-			,'PrefChoose' => string('PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY')
-			,'changeIntro' => string('PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY')
-			,'PrefSize' => 'large'
-			,'currentValue' => sub { return Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory"); }
-		},
-	);
-	getConfigManager()->initWebAdminMethods();
-	return (\%setupGroup,\%setupPrefs);
-}
 sub replaceParametersInSQL {
 	my $sql = shift;
 	my $parameters = shift;
@@ -784,7 +737,7 @@ sub replaceParametersInSQL {
 				$value='';
 			}
 			my $parameterid = "\'$parameterType".$parameter->{'id'}."\'";
-			debugMsg("Replacing ".$parameterid." with ".$value."\n");
+			$log->debug("Replacing ".$parameterid." with ".$value."\n");
 			$sql =~ s/$parameterid/$value/g;
 		}
 	}
@@ -848,7 +801,7 @@ sub getInternalParameters {
 	);
 	my $activeLibrary = 0;
 	if(isPluginsInstalled($client,'MultiLibrary::Plugin')) {
-		$activeLibrary = $client->prefGet('plugin_multilibrary_activelibraryno');
+		$activeLibrary = $multiLibraryPrefs->client($client)->get('activelibraryno');
 		if(!defined($activeLibrary)) {
 			$activeLibrary = 0;
 		}
@@ -890,19 +843,19 @@ sub executeSQLForPlaylist {
 	}
 	my $noRepeat = getPlaylistOption($playlist,'DontRepeatTracks');
 	if(defined($contentType)) {
-		debugMsg("Executing SQL for content type: $contentType\n");
+		$log->debug("Executing SQL for content type: $contentType\n");
 	}
 	for my $sql (split(/[\n\r]/,$sqlstatements)) {
     		eval {
 			my $sth = $dbh->prepare( $sql );
-			debugMsg("Executing: $sql\n");
+			$log->debug("Executing: $sql\n");
 			$sth->execute() or do {
-				debugMsg("Error executing: $sql\n");
+				$log->warn("Error executing: $sql\n");
 				$sql = undef;
 			};
 
 		        if ($sql =~ /^\(*SELECT+/oi) {
-				debugMsg("Executing and collecting: $sql\n");
+				$log->warn("Executing and collecting: $sql\n");
 				my $url;
 				$sth->bind_col( 1, \$url);
 				while( $sth->fetch() ) {
@@ -910,7 +863,7 @@ sub executeSQLForPlaylist {
 				 	for my $track (@$tracks) {
 						$trackno++;
 						if(!$limit || $trackno<=$limit) {
-							debugMsg("Adding: ".($track->url)."\n");
+							$log->debug("Adding: ".($track->url)."\n");
 							push @result, $track;
 						}
 					}
@@ -1068,7 +1021,7 @@ sub getDynamicPlayLists {
 sub getNextDynamicPlayListTracks {
 	my ($client,$dynamicplaylist,$limit,$offset,$parameters) = @_;
 	
-	debugMsg("Getting tracks for: ".$dynamicplaylist->{'id'}."\n");
+	$log->debug("Getting tracks for: ".$dynamicplaylist->{'id'}."\n");
 	my $playlist = getPlayList($client,$dynamicplaylist->{'id'});
 	my $result = getTracksForPlaylist($client,$playlist,$limit,$offset,$parameters);
 	
@@ -1141,303 +1094,6 @@ sub unescape {
         $in =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 
         return $in;
-}
-
-# A wrapper to allow us to uniformly turn on & off debug messages
-sub debugMsg
-{
-	my $message = join '','SQLPlayList: ',@_;
-	msg ($message) if (Slim::Utils::Prefs::get("plugin_sqlplaylist_showmessages"));
-}
-
-sub strings {
-	return <<EOF;
-PLUGIN_SQLPLAYLIST
-	EN	SQL Playlist
-	DA	SQL Playlist
-
-PLUGIN_SQLPLAYLIST_DISABLED
-	EN	SQL Playlist Stopped
-	DA	SQL Playlist stoppet
-
-PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS
-	EN	Now Playing will show
-	DA	Aktiv playliste vil vise
-
-PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS
-	EN	upcoming songs and
-	DA	kommende sange og
-
-PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
-	EN	recently played songs.
-	DA	fornylig afspillede sange.
-
-PLUGIN_SQLPLAYLIST_SETUP_GROUP
-	EN	SQL PlayList
-	DA	SQL Playlist
-
-PLUGIN_SQLPLAYLIST_SETUP_GROUP_DESC
-	EN	SQL PlayList is a smart playlist plugins based on SQL queries
-	DA	SQL Playlist er et plugin til smarte playlister, baseret på SQL forespørgsler
-
-PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
-	EN	Playlist directory
-	DA	Playliste folder
-
-PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
-	EN	Template directory
-	DA	Skabelon folder
-
-PLUGIN_SQLPLAYLIST_SHOW_MESSAGES
-	EN	Show debug messages
-	DA	Vis fejlfindings beskeder
-
-PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
-	EN	Number of tracks
-	DA	Antal spor
-
-PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
-	EN	Number of old tracks
-	DA	Antal gamle spor
-
-SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY
-	EN	Playlist directory
-	DA	Playliste folder
-
-SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY
-	EN	Template directory
-	DA	Skabelon folder
-
-SETUP_PLUGIN_SQLPLAYLIST_SHOWMESSAGES
-	EN	Debugging
-	DA	Fejlfinding
-
-SETUP_PLUGIN_SQLPLAYLIST_NUMBER_OF_TRACKS
-	EN	Number of tracks
-	DA	Antal spor
-
-SETUP_PLUGIN_SQLPLAYLIST_NUMBER_OF_OLD_TRACKS
-	EN	Number of old tracks
-	DA	Antal gamle spor
-
-PLUGIN_SQLPLAYLIST_BEFORE_NUM_TRACKS
-	EN	Now Playing will show
-	DA	Aktiv playlist vil vise
-
-PLUGIN_SQLPLAYLIST_AFTER_NUM_TRACKS
-	EN	upcoming songs and
-	DA	kommende sange og
-
-PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
-	EN	recently played songs.
-	DA	fornylig afspillede sange.
-
-PLUGIN_SQLPLAYLIST_CHOOSE_BELOW
-	EN	Choose a playlist with music from your library:
-	DA	Vælg en playliste med musik fra din samling:
-
-PLUGIN_SQLPLAYLIST_CONTEXT_CHOOSE_BELOW
-	EN	Choose a playlist with music from your library related to
-	DA	Vælg en playliste med musik fra din samling relateret til:
-
-PLUGIN_SQLPLAYLIST_PLAYING
-	EN	Playing
-	DA	Afspiller
-
-PLUGIN_SQLPLAYLIST_PRESS_RIGHT
-	EN	Press RIGHT to stop adding songs
-	DA	Tryk HØJRE for at stoppe med at tilføje sange
-
-PLUGIN_SQLPLAYLIST_GENERAL_HELP
-	EN	You can add or remove songs from your mix at any time. To stop adding songs, clear your playlist or click to
-	DA	Du kan tilføje eller fjerne sange fra dit mix til enhver tid. For at stoppe med at tilføje sange, ryd playlisten eller klik for at
-
-PLUGIN_SQLPLAYLIST_DISABLE
-	EN	Stop adding songs
-	DA	Stop med at tilføje sange
-
-PLUGIN_SQLPLAYLIST_CONTINUOUS_MODE
-	EN	Add new items when old ones finish
-	DA	Tilføj nye sange når de gamle er færdige
-
-PLUGIN_SQLPLAYLIST_NOW_PLAYING_FAILED
-	EN	Failed 
-	DA	Fejlet
-
-PLUGIN_SQLPLAYLIST_EDIT_ITEM
-	EN	Edit
-	DA	Rediger
-
-PLUGIN_SQLPLAYLIST_NEW_ITEM
-	EN	Create new playlist
-	DA	Opret en ny playliste
-
-PLUGIN_SQLPLAYLIST_NEW_ITEM_TYPES_TITLE
-	EN	Select type of playlist
-	DA	Vælg type af playliste
-
-PLUGIN_SQLPLAYLIST_EDIT_ITEM_DATA
-	EN	SQL Query
-	DA	SQL forespørgsel
-
-PLUGIN_SQLPLAYLIST_EDIT_ITEM_NAME
-	EN	Playlist Name
-	DA	Playliste navn
-
-PLUGIN_SQLPLAYLIST_EDIT_ITEM_FILENAME
-	EN	Filename
-	DA	Filnavn
-
-PLUGIN_SQLPLAYLIST_EDIT_PLAYLIST_GROUPS
-	EN	Groups
-	DA	Grupper
-
-PLUGIN_SQLPLAYLIST_REMOVE_ITEM
-	EN	Delete
-	DA	Slet
-
-PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION
-	EN	Are you sure you want to delete this playlist ?
-	DA	Er du sikker på at du vil slette denne playliste ?
-
-PLUGIN_SQLPLAYLIST_REMOVE_ITEM_TYPE_QUESTION
-	EN	Removing a playlist type might cause problems later if it is used in existing playlists, are you really sure you want to delete this playlist type ?
-
-PLUGIN_SQLPLAYLIST_TESTPLAYLIST
-	EN	Test
-	DA	Test
-
-PLUGIN_SQLPLAYLIST_SAVE
-	EN	Save
-	DA	Gem
-
-PLUGIN_SQLPLAYLIST_SAVEPLAY
-	EN	Save &amp; Play
-	DA	Gem &amp; afspil
-
-PLUGIN_SQLPLAYLIST_NEXT
-	EN	Next
-	DA	Næste
-
-PLUGIN_SQLPLAYLIST_NEXTPLAY
-	EN	Next &amp; Play
-	DA	Næste &amp; afspil
-
-PLUGIN_SQLPLAYLIST_TEST_CHOOSE_PARAMETERS
-	EN	This playlist requires parameters, please select values
-	DA	Denne playliste kræver parametre, vælg venligst nogle værdier
-
-PLUGIN_SQLPLAYLIST_ITEMTYPE
-	EN	Customize SQL
-	DA	Tilpas SQL
-	
-PLUGIN_SQLPLAYLIST_ITEMTYPE_SIMPLE
-	EN	Use predefined
-	DA	Brug foruddefineret
-
-PLUGIN_SQLPLAYLIST_ITEMTYPE_ADVANCED
-	EN	Customize SQL
-	DA	Tilpas SQL
-
-PLUGIN_SQLPLAYLIST_NEW_ITEM_PARAMETERS_TITLE
-	EN	Please enter playlist parameters
-	DA	Angiv venligst playliste parametre
-
-PLUGIN_SQLPLAYLIST_EDIT_ITEM_PARAMETERS_TITLE
-	EN	Please enter playlist parameters
-	DA	Angiv venligst playliste parametre
-
-PLUGIN_SQLPLAYLIST_LOGIN_USER
-	EN	Username
-
-PLUGIN_SQLPLAYLIST_LOGIN_PASSWORD
-	EN	Password
-
-PLUGIN_SQLPLAYLIST_LOGIN_FIRSTNAME
-	EN	First name
-
-PLUGIN_SQLPLAYLIST_LOGIN_LASTNAME
-	EN	Last name
-
-PLUGIN_SQLPLAYLIST_LOGIN_EMAIL
-	EN	e-mail
-
-PLUGIN_SQLPLAYLIST_ANONYMOUSLOGIN
-	EN	Anonymous
-
-PLUGIN_SQLPLAYLIST_LOGIN
-	EN	Login
-
-PLUGIN_SQLPLAYLIST_REGISTERLOGIN
-	EN	Register &amp; Login
-
-PLUGIN_SQLPLAYLIST_REGISTER_TITLE
-	EN	Register a new user
-
-PLUGIN_SQLPLAYLIST_LOGIN_TITLE
-	EN	Login
-
-PLUGIN_SQLPLAYLIST_DOWNLOAD_ITEMS
-	EN	Download more playlists
-
-PLUGIN_SQLPLAYLIST_PUBLISH_ITEM
-	EN	Publish
-
-PLUGIN_SQLPLAYLIST_PUBLISH
-	EN	Publish
-
-PLUGIN_SQLPLAYLIST_PUBLISHPARAMETERS_TITLE
-	EN	Please specify information about the playlist
-
-PLUGIN_SQLPLAYLIST_PUBLISH_NAME
-	EN	Name
-
-PLUGIN_SQLPLAYLIST_PUBLISH_DESCRIPTION
-	EN	Description
-
-PLUGIN_SQLPLAYLIST_PUBLISH_ID
-	EN	Unique identifier
-
-PLUGIN_SQLPLAYLIST_LASTCHANGED
-	EN	Last changed
-
-PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE
-	EN	Thanks for choosing to publish your playlist. The advantage of publishing a playlist is that other users can use it and it will also be used for ideas of new functionallity in the SQLPlayList plugin. Publishing a playlist is also a great way of improving the functionality in the SQLPlayList plugin by showing the developer what types of playlists you use, besides those already included with the plugin.
-
-PLUGIN_SQLPLAYLIST_REGISTERMESSAGE
-	EN	You can choose to publish your playlist either anonymously or by registering a user and login. The advantage of registering is that other people will be able to see that you have published the playlist, you will get credit for it and you will also be sure that no one else can update or change your published playlist. The e-mail adress will only be used to contact you if I have some questions to you regarding one of your playlists, it will not show up on any web pages. If you already have registered a user, just hit the Login button.
-
-PLUGIN_SQLPLAYLIST_LOGINMESSAGE
-	EN	You can choose to publish your playlist either anonymously or by registering a user and login. The advantage of registering is that other people will be able to see that you have published the playlist, you will get credit for it and you will also be sure that no one else can update or change your published playlist. Hit the &quot;Register &amp; Login&quot; button if you have not previously registered.
-
-PLUGIN_SQLPLAYLIST_PUBLISHMESSAGE_DESCRIPTION
-	EN	It is important that you enter a good description of your playlist, describe what your playlist do and if it is based on one of the existing playlists it is a good idea to mention this and describe which extensions you have made. <br><br>It is also a good idea to try to make the &quot;Unique identifier&quot; as uniqe as possible as this will be used for filename when downloading the playlist. This is especially important if you have choosen to publish your playlist anonymously as it can easily be overwritten if the identifier is not unique. Please try to not use spaces and language specific characters in the unique identifier since these could cause problems on some operating systems.
-
-PLUGIN_SQLPLAYLIST_REFRESH_DOWNLOADED_ITEMS
-	EN	Download last version of existing playlists
-
-PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE_WARNING
-	EN	A playlist type with that name already exists, please change the name or select to overwrite the existing playlist type
-
-PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_OVERWRITE
-	EN	Overwrite existing
-
-PLUGIN_SQLPLAYLIST_PUBLISH_OVERWRITE
-	EN	Overwrite existing
-
-PLUGIN_SQLPLAYLIST_DOWNLOAD_TEMPLATE_NAME
-	EN	Unique identifier
-
-PLUGIN_SQLPLAYLIST_EDIT_ITEM_OVERWRITE
-	EN	Overwrite existing
-
-PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION
-	EN	This operation will download latest version of all playlists, this might take some time. Please note that this will overwrite any local changes you have made in built-in or previously downloaded playlist types. Are you sure you want to continue ?
-
-PLUGIN_SQLPLAYLIST_REFRESH_PLAYLISTS
-	EN	Refresh playlists
-EOF
-
 }
 
 1;

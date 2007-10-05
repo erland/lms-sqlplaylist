@@ -27,15 +27,14 @@ use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
 use Data::Dumper;
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback listMethod dataMethod pluginId contentType templateContentParser contentParser) );
+__PACKAGE__->mk_classaccessors( qw(logHandler listMethod dataMethod pluginId contentType templateContentParser contentParser) );
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
 	my $self = {
-		'debugCallback' => $parameters->{'debugCallback'},
-		'errorCallback' => $parameters->{'errorCallback'},
+		'logHandler' => $parameters->{'logHandler'},
 		'listMethod' => $parameters->{'listMethod'},
 		'dataMethod' => $parameters->{'dataMethod'},
 		'pluginId' => $parameters->{'pluginId'},
@@ -55,7 +54,7 @@ sub readFromPlugins {
 	my $globalcontext = shift;
 
 	no strict 'refs';
-	my @enabledplugins = Slim::Utils::PluginManager::enabledPlugins();
+	my @enabledplugins = Slim::Utils::PluginManager->enabledPlugins();
 	
 	my %excludePluginsHash = ();
 	if($excludePlugins) {
@@ -74,13 +73,13 @@ sub readFromPlugins {
 		if($excludePluginsHash{$plugin}) {
 			next;
 		}
-		if(UNIVERSAL::can("Plugins::$plugin",$self->listMethod)) {
-			$self->debugCallback->("Calling ".$self->listMethod." for: $plugin\n");
-			my $pluginItems = eval { &{"Plugins::${plugin}::".$self->listMethod}($client) };
+		if(UNIVERSAL::can("$plugin",$self->listMethod)) {
+			$self->logHandler->debug("Calling ".$self->listMethod." for: $plugin\n");
+			my $pluginItems = eval { &{"${plugin}::".$self->listMethod}($client) };
 			if ($@) {
-				$self->debugCallback->("Error calling ".$self->listMethod." from $plugin: $@\n");
+				$self->logHandler->warn("Error calling ".$self->listMethod." from $plugin: $@\n");
 			}
-			$self->debugCallback->("Got ".scalar(@$pluginItems)." items from $plugin\n");
+			$self->logHandler->debug("Got ".scalar(@$pluginItems)." items from $plugin\n");
 			for my $item (@$pluginItems) {
 				my $itemData = $item->{$self->contentType};
 				my $itemId = $item->{'id'};
@@ -99,19 +98,19 @@ sub readFromPlugins {
 							if($encoding ne 'utf8') {
 								$itemData = Slim::Utils::Unicode::latin1toUTF8($itemData);
 								$itemData = Slim::Utils::Unicode::utf8on($itemData);
-								$self->debugCallback->("Loading $itemId configuration from $plugin and converting from latin1\n");
+								$self->logHandler->debug("Loading $itemId configuration from $plugin and converting from latin1\n");
 							}else {
 								$itemData = Slim::Utils::Unicode::utf8decode($itemData,'utf8');
-								$self->debugCallback->("Loading $itemId configuration from $plugin without conversion with encoding ".$encoding."\n");
+								$self->logHandler->debug("Loading $itemId configuration from $plugin without conversion with encoding ".$encoding."\n");
 							}
 						}
 						my $errorMsg = $self->templateContentParser->parse($client,$itemId,$itemData,$items,$globalcontext,\%localcontext);
 						if($errorMsg) {
-		                			$self->errorCallback->("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
+		                			$self->logHandler->warn("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
 						}elsif(defined($items->{$itemId})) {
 							$items->{$itemId}->{'id'} = $itemId;
 							$items->{$itemId}->{lc($self->pluginId).'_plugin_'.$self->contentType}=$item;
-							$items->{$itemId}->{lc($self->pluginId).'_plugin'} = "Plugins::${plugin}";
+							$items->{$itemId}->{lc($self->pluginId).'_plugin'} = "${plugin}";
 						}
 					}
 				}else {
@@ -122,23 +121,23 @@ sub readFromPlugins {
 							if($encoding ne 'utf8') {
 								$itemData = Slim::Utils::Unicode::latin1toUTF8($itemData);
 								$itemData = Slim::Utils::Unicode::utf8on($itemData);
-								$self->debugCallback->("Loading $itemId configuration from $plugin and converting from latin1\n");
+								$self->logHandler->debug("Loading $itemId configuration from $plugin and converting from latin1\n");
 							}else {
 								$itemData = Slim::Utils::Unicode::utf8decode($itemData,'utf8');
-								$self->debugCallback->("Loading $itemId configuration from $plugin without conversion with encoding ".$encoding."\n");
+								$self->logHandler->debug("Loading $itemId configuration from $plugin without conversion with encoding ".$encoding."\n");
 							}
 						}
 						$errorMsg = $self->contentParser->parse($client,$itemId,$itemData,$items,$globalcontext,\%localcontext);
 					}
 					if(defined($errorMsg)) {
-	                			$self->errorCallback->("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
+	                			$self->logHandler->warn("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
 					}else {
 						if($plugin =~ /^([^:]+)::.*$/) {
 							$itemId = lc($1)."_".$item->{'id'};
 						}
 						$items->{$itemId}->{'id'} = $itemId;
 						$items->{$itemId}->{lc($self->pluginId).'_plugin_'.$self->contentType}=$item;
-						$items->{$itemId}->{lc($self->pluginId).'_plugin'} = "Plugins::${plugin}";
+						$items->{$itemId}->{lc($self->pluginId).'_plugin'} = "${plugin}";
 					}
 				}
 			}
@@ -166,10 +165,10 @@ sub readDataFromPlugin {
 			if($encoding ne 'utf8') {
 				$content = Slim::Utils::Unicode::latin1toUTF8($content);
 				$content = Slim::Utils::Unicode::utf8on($content);
-				$self->debugCallback->("Loading ".($itemData->{'id'}." data from ".$itemData->{lc($self->pluginId).'_plugin'})." and converting from latin1\n");
+				$self->logHandler->debug("Loading ".($itemData->{'id'}." data from ".$itemData->{lc($self->pluginId).'_plugin'})." and converting from latin1\n");
 			}else {
 				$content = Slim::Utils::Unicode::utf8decode($content,'utf8');
-				$self->debugCallback->("Loading ".($itemData->{'id'}." data from ".$itemData->{lc($self->pluginId).'_plugin'})." without conversion with encoding ".$encoding."\n");
+				$self->logHandler->debug("Loading ".($itemData->{'id'}." data from ".$itemData->{lc($self->pluginId).'_plugin'})." without conversion with encoding ".$encoding."\n");
 			}
 		}
 		return $content;
@@ -188,10 +187,10 @@ sub _getPluginContentData {
 	my $itemFileData = undef;
 	no strict 'refs';
 	if(UNIVERSAL::can("$plugin",$self->dataMethod)) {
-		$self->debugCallback->("Calling: $plugin :: ".$self->dataMethod."\n");
+		$self->logHandler->debug("Calling: $plugin :: ".$self->dataMethod."\n");
 		$itemFileData =  eval { &{"${plugin}::".$self->dataMethod}($client,$pluginItem) };
 		if ($@) {
-			$self->debugCallback->("Error retreiving item data from $plugin: $@\n");
+			$self->logHandler->warn("Error retreiving item data from $plugin: $@\n");
 		}
 	}
 	use strict 'refs';

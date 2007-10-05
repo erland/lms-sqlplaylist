@@ -22,6 +22,7 @@ use strict;
 
 use base 'Class::Data::Accessor';
 
+use Slim::Utils::Prefs;
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
@@ -31,17 +32,17 @@ use Data::Dumper;
 use HTML::Entities;
 use Cache::Cache qw( $EXPIRES_NEVER);
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion contentType templateHandler cache cacheName cacheItems) );
+__PACKAGE__->mk_classaccessors( qw(logHandler pluginId pluginVersion contentType templateHandler cache cacheName cacheItems) );
 
 my $utf8filenames = 1;
+my $serverPrefs = preferences('server');
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
 	my $self = {
-		'debugCallback' => $parameters->{'debugCallback'},
-		'errorCallback' => $parameters->{'errorCallback'},
+		'logHandler' => $parameters->{'logHandler'},
 		'pluginId' => $parameters->{'pluginId'},
 		'pluginVersion' => $parameters->{'pluginVersion'},
 		'contentType' => $parameters->{'contentType'},
@@ -96,10 +97,12 @@ sub parseContent {
 
 	my $errorMsg = undef;
         if ( $content ) {
-		my $result = $self->parseContentImplementation($client,$item,$content,$items,$globalcontext,$localcontext);
-		if(defined($result)) {
+		my $result = eval { $self->parseContentImplementation($client,$item,$content,$items,$globalcontext,$localcontext) };
+		if(!$@ && defined($result)) {
+			$self->logHandler->debug("Storing parsed result for $item\n");
 			$items->{$item} = $result;
 		}else {
+			$self->logHandler->debug("Skipping $item: $@\n");
 			$errorMsg = "$@";
 		}
 		# Release content
@@ -107,10 +110,10 @@ sub parseContent {
 	}else {
 		if ($@) {
 			$errorMsg = "Incorrect information in data: $@";
-			$self->errorCallback->("Unable to read configuration:\n$@\n");
+			$self->logHandler->warn("Unable to read configuration:\n$@\n");
 		}else {
 			$errorMsg = "Incorrect information in data";
-			$self->errorCallback->("Unable to to read configuration\n");
+			$self->logHandler->warn("Unable to to read configuration\n");
 		}
 	}
 	return $errorMsg;
@@ -153,20 +156,20 @@ sub parseTemplateContent {
 				$self->cacheItems->{'items'}->{'values_'.$cacheName} = \%entry;
 			}
 		}
-		#$self->debugCallback->(Dumper($valuesXml));
+		#$self->logHandler->debug(Dumper($valuesXml));
 		if ($@) {
 			$errorMsg = "$@";
-			$self->errorCallback->("Failed to parse ".$self->contentType." configuration ($item) because:\n$@\n");
+			$self->logHandler->warn("Failed to parse ".$self->contentType." configuration ($item) because:\n$@\n");
 		}else {
 			my $templateId = lc($valuesXml->{'template'}->{'id'});
 			my $template = $templates->{$templateId};
 			if(!defined($template)) {
-				$self->debugCallback->("Template $templateId not found\n");
+				$self->logHandler->debug("Template $templateId not found\n");
 				undef $content;
 				return undef;
 			}
 			if(!$self->checkTemplateValues($template,$valuesXml,$globalcontext,$localcontext)) {
-				$self->debugCallback->("Ignoring $item due to checkTemplateValues\n");
+				$self->logHandler->debug("Ignoring $item due to checkTemplateValues\n");
 				undef $content;
 				return undef;
 			}
@@ -208,7 +211,7 @@ sub parseTemplateContent {
 							}
 						}
 					}
-					#$self->debugCallback->("Setting: ".$p->{'id'}."=".$value."\n");
+					#$self->logHandler->debug("Setting: ".$p->{'id'}."=".$value."\n");
 					$templateParameters{$p->{'id'}}=$value;
 				}
 				my $librarySupported = 0;
@@ -234,7 +237,7 @@ sub parseTemplateContent {
 										$value='';
 									}
 								}
-								#$self->debugCallback->("Setting default value ".$template->{'id'}." ".$p->{'id'}."=".$value."\n");
+								#$self->logHandler->debug("Setting default value ".$template->{'id'}." ".$p->{'id'}."=".$value."\n");
 								$templateParameters{$p->{'id'}} = $value;
 							}
 							if(defined($p->{'requireplugins'})) {
@@ -251,13 +254,13 @@ sub parseTemplateContent {
 					}
 				}
 				if(!$self->checkTemplateParameters($template,\%templateParameters,$globalcontext,$localcontext)) {
-					$self->debugCallback->("Ignoring $item due to checkTemplateParameters\n");
+					$self->logHandler->debug("Ignoring $item due to checkTemplateParameters\n");
 					undef $content;
 					return undef;
 				}
 				my $templateData = $self->loadTemplate($client,$template,\%templateParameters);
 				if(!defined($templateData)) {
-					$self->debugCallback->("Ignoring $item due to loadTemplate\n");
+					$self->logHandler->debug("Ignoring $item due to loadTemplate\n");
 					undef $content;
 					return undef;
 				}
@@ -281,10 +284,12 @@ sub parseTemplateContent {
 					$self->cacheItems->{'items'}->{'templatecontent_'.$cacheName} = \%entry;
 				}
 			}
-			my $result = $self->parseContentImplementation($client,$item,$itemData,$items,$globalcontext,$localcontext);
-			if(defined($result)) {
+			my $result = eval {$self->parseContentImplementation($client,$item,$itemData,$items,$globalcontext,$localcontext) };
+			if(!$@ && defined($result)) {
+				$self->logHandler->debug("Storing parsed result for $item\n");
 				$items->{$item} = $result;
 			}else {
+				$self->logHandler->debug("Skipping $item: $@\n");
 				$errorMsg = "$@";
 			}
 
@@ -294,7 +299,7 @@ sub parseTemplateContent {
 		}
 	}else {
 		$errorMsg = "Incorrect information in data";
-		$self->errorCallback->("Unable to to read configuration\n");
+		$self->logHandler->warn("Unable to to read configuration\n");
 	}
 	return $errorMsg;
 }
@@ -304,7 +309,7 @@ sub getTemplate {
 	if(!defined($self->templateHandler)) {
 		$self->templateHandler(Template->new({
 	
-	                COMPILE_DIR => catdir( Slim::Utils::Prefs::get('cachedir'), 'templates' ),
+	                COMPILE_DIR => catdir( $serverPrefs->get('cachedir'), 'templates' ),
 	                FILTERS => {
 	                        'string'        => \&Slim::Utils::Strings::string,
 	                        'getstring'     => \&Slim::Utils::Strings::getString,
@@ -355,7 +360,7 @@ sub fillTemplate {
 	$params->{'LOCALE'} = 'utf-8';
 	my $template = $self->getTemplate();
 	if(!$template->process($filename,$params,\$output)) {
-		$self->errorCallback->("ERROR parsing template: ".$template->error()."\n");
+		$self->logHandler->warn("ERROR parsing template: ".$template->error()."\n");
 	}
 	return $output;
 }
@@ -388,7 +393,7 @@ sub isEnabled {
 		if($self->pluginVersion =~ /(\d+)\.(\d+).*/) {
 			my $pluginMajor = $1;
 			my $pluginMinor = $2;
-			if($pluginMajor>=$downloadMajor && $pluginMinor>=$downloadMinor) {
+			if($pluginMajor>$downloadMajor || ($pluginMajor=$downloadMajor && $pluginMinor>=$downloadMinor)) {
 				$include = 1;
 			}else {
 				$include = 0;
@@ -397,7 +402,7 @@ sub isEnabled {
 	}	
 	if(defined($xml->{'database'}) && $include) {
 		$include = 0;
-		my $driver = Slim::Utils::Prefs::get('dbsource');
+		my $driver = $serverPrefs->get('dbsource');
 		$driver =~ s/dbi:(.*?):(.*)$/$1/;
 		if($driver eq $xml->{'database'}) {
 			$include = 1;
@@ -412,7 +417,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
+			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
 		}
 	}
 	return $enabledPlugin;
@@ -455,9 +460,9 @@ sub parseContentImplementation {
 	}else {
 		$xml = eval { 	XMLin($content, forcearray => ["item"], keyattr => []) };
 	}
-	#$self->debugCallback->(Dumper($xml));
+	#$self->logHandler->debug(Dumper($xml));
 	if ($@) {
-		$self->errorCallback->("Failed to parse configuration ($item) because:\n$@\n");
+		$self->logHandler->warn("Failed to parse configuration ($item) because:\n$@\n");
 	}else {
 		if(defined($timestamp) && defined($self->cacheItems)) {
 			my %entry = (
@@ -478,7 +483,7 @@ sub parseContentImplementation {
 			if($self->checkContent($xml,$globalcontext,$localcontext)) {
 		                return $xml->{$self->contentType};
 			}else {
-				$self->debugCallback->("Skipping ".$self->contentType." $item\n");
+				$self->logHandler->debug("Skipping ".$self->contentType." $item\n");
 			}
 		}
 	}

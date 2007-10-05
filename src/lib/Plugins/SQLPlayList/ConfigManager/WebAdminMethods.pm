@@ -21,6 +21,7 @@ package Plugins::SQLPlayList::ConfigManager::WebAdminMethods;
 use strict;
 use base 'Class::Data::Accessor';
 
+use Slim::Utils::Prefs;
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
@@ -35,17 +36,18 @@ use HTML::Entities;
 use Scalar::Util qw(blessed);
 use Data::Dumper;
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension) );
+__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension) );
 
 my $utf8filenames = 1;
+my $serverPrefs = preferences('server');
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
 	my $self = {
-		'debugCallback' => $parameters->{'debugCallback'},
-		'errorCallback' => $parameters->{'errorCallback'},
+		'logHandler' => $parameters->{'logHandler'},
+		'pluginPrefs' => $parameters->{'pluginPrefs'},
 		'pluginId' => $parameters->{'pluginId'},
 		'pluginVersion' => $parameters->{'pluginVersion'},
 		'downloadApplicationId' => $parameters->{'downloadApplicationId'},
@@ -218,7 +220,7 @@ sub webDeleteItemType {
 		my $templateId = $templateId;
 		my $path = catfile($templateDir, $templateId);
 		if(-e $path) {
-			$self->debugCallback->("Deleting: ".$path."\n");
+			$self->logHandler->debug("Deleting: ".$path."\n");
 			unlink($path) or do {
 				warn "Unable to delete file: ".$path.": $! \n";
 			}
@@ -228,7 +230,7 @@ sub webDeleteItemType {
 		$templateId =~ s/$regex1/$regex2/;
 		$path = catfile($templateDir, $templateId);
 		if(-e $path) {
-			$self->debugCallback->("Deleting: ".$path."\n");
+			$self->logHandler->debug("Deleting: ".$path."\n");
 			unlink($path) or do {
 				warn "Unable to delete file: ".$path.": $! \n";
 			}
@@ -334,8 +336,8 @@ sub webPublishLogin {
 	my $params = shift;
 	my $itemId = shift;
 
-	my $username = Slim::Utils::Prefs::get("plugin_".lc($self->pluginId)."_login_user");
-	my $password = Slim::Utils::Prefs::get("plugin_".lc($self->pluginId)."_login_password");
+	my $username = $self->pluginPrefs->get("login_user");
+	my $password = $self->pluginPrefs->get("login_password");
 
 	if(defined($params->{'redirect'})) {
 		$params->{'pluginWebAdminMethodsRedirect'} = $params->{'redirect'};
@@ -402,8 +404,8 @@ sub webPublishItemParameters {
 		}
 		my $answer= eval { SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email); };
 		unless (!defined($answer) || $answer->fault) {
-			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_user",$params->{'username'});
-			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_password",$params->{'password'});
+			$self->pluginPrefs->set("login_user",$params->{'username'});
+			$self->pluginPrefs->set("login_password",$params->{'password'});
 		}else {
 			if(defined($answer)) {
 				$params->{'pluginWebAdminMethodsError'} = niceFault($answer->faultstring);
@@ -415,8 +417,8 @@ sub webPublishItemParameters {
 	}elsif(!$params->{'anonymous'}){
 		my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->loginUser($params->{'username'},$params->{'password'});};
 		unless (!defined($answer) || $answer->fault) {
-			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_user",$params->{'username'});
-			Slim::Utils::Prefs::set("plugin_".lc($self->pluginId)."_login_password",$params->{'password'});
+			$self->pluginPrefs->set("login_user",$params->{'username'});
+			$self->pluginPrefs->set("login_password",$params->{'password'});
 		}else {
 			if(defined($answer)) {
 				$params->{'pluginWebAdminMethodsError'} = niceFault($answer->faultstring);
@@ -794,7 +796,7 @@ sub webNewItem {
 		}
 		$itemData = encode_entities($itemData,"&<>\'\"");
 		if(length($itemData)>10000) {
-			$self->debugCallback->("Warning! Large configuration, ".length($itemData)." characters\n");
+			$self->logHandler->warn("Warning! Large configuration, ".length($itemData)." characters\n");
 		        $params->{'pluginWebAdminMethodsEditItemSizeWarning'} = "This configuration is very large, due to size limitations it might fail when you try to save it<br>Temporary solution: If save fails, click back in web browser and copy the information in the configuration field to a text file and save it to the ".$self->customItemDirectory." directory with a filename with extension .".$self->extension;
 		}
         	$params->{'pluginWebAdminMethodsEditItemData'} = $itemData;
@@ -895,7 +897,7 @@ sub webSaveSimpleItem {
 		}
 		$itemData = encode_entities($itemData,"&<>\'\"");
 		if(length($itemData)>10000) {
-			$self->debugCallback->("Warning! Large configuration, ".length($itemData)." characters\n");
+			$self->logHandler->warn("Warning! Large configuration, ".length($itemData)." characters\n");
 		        $params->{'pluginWebAdminMethodsEditItemSizeWarning'} = "This configuration is very large, due to size limitations it might fail when you try to save it<br>Temporary solution: If save fails, click back in web browser and copy the information in the configuration field to a text file and save it to the ".$self->customItemDirectory." directory with a filename with extension .".$self->extension;
 		}
         	$params->{'pluginWebAdminMethodsEditItemData'} = $itemData;
@@ -1010,7 +1012,7 @@ sub webSaveNewSimpleItem {
 	}else {
 		if($params->{'overwrite'}) {
 			if(-e $customUrl) {
-				$self->debugCallback->("Deleting $url\n");
+				$self->logHandler->debug("Deleting $url\n");
 				unlink($customUrl) or do {
 					warn "Unable to delete file: ".$customUrl.": $! \n";
 				}
@@ -1163,20 +1165,20 @@ sub saveItem
 	}
 
 	if(!($params->{'pluginWebAdminMethodsError'})) {
-		$self->debugCallback->("Opening configuration file: $url\n");
+		$self->logHandler->debug("Opening configuration file: $url\n");
 		open($fh,"> $url") or do {
 	            $params->{'pluginWebAdminMethodsError'} = 'Error saving';
 		};
 	}
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 
-		$self->debugCallback->("Writing to file: $url\n");
+		$self->logHandler->debug("Writing to file: $url\n");
 		my $encoding = Slim::Utils::Unicode::encodingFromString($data);
 		if($encoding eq 'utf8') {
 			$data = Slim::Utils::Unicode::utf8toLatin1($data);
 		}
 		print $fh $data;
-		$self->debugCallback->("Writing to file succeeded\n");
+		$self->logHandler->debug("Writing to file succeeded\n");
 		close $fh;
 	}
 	
@@ -1202,7 +1204,7 @@ sub saveSimpleItem {
 	}
 
 	if(!($params->{'pluginWebAdminMethodsError'})) {
-		$self->debugCallback->("Opening configuration file: $url\n");
+		$self->logHandler->debug("Opening configuration file: $url\n");
 		open($fh,"> $url") or do {
 	            $params->{'pluginWebAdminMethodsError'} = 'Error saving';
 		};
@@ -1252,9 +1254,9 @@ sub saveSimpleItem {
 		if($encoding eq 'utf8') {
 			$data = Slim::Utils::Unicode::utf8toLatin1($data);
 		}
-		$self->debugCallback->("Writing to file: $url\n");
+		$self->logHandler->debug("Writing to file: $url\n");
 		print $fh $data;
-		$self->debugCallback->("Writing to file succeeded\n");
+		$self->logHandler->debug("Writing to file succeeded\n");
 		close $fh;
 	}
 	
@@ -1384,7 +1386,7 @@ sub downloadItem {
 							my $pluginMajor = $1;
 							my $pluginMinor = $2;
 
-							if($pluginMajor>=$downloadMajor && $pluginMinor>=$downloadMinor) {
+							if($pluginMajor>$downloadMajor || ($pluginMajor==$downloadMajor && $pluginMinor>=$downloadMinor)) {
 								$dataToStore{$data->{'type'}} = $content;
 							}else {
 								$incompatibleVersions = 1;
@@ -1417,9 +1419,9 @@ sub downloadItem {
 						$result{'error'} = 'Error saving downloaded item';
 					        return \%result;
 					};
-					$self->debugCallback->("Writing to file: $url\n");
+					$self->logHandler->debug("Writing to file: $url\n");
 					print $fh $dataToStore{$key};
-					$self->debugCallback->("Writing to file succeeded\n");
+					$self->logHandler->debug("Writing to file succeeded\n");
 					close $fh;
 				}
 				$result{'template'} = $customname.'.'.$self->templateExtension;
@@ -1567,9 +1569,9 @@ sub loadTemplateValues {
 	my $content  = $self->contentPluginHandler->readDataFromPlugin($client,$item);
 	if ( $content ) {
 		my $xml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
-		#$self->debugCallback->(Dumper($valuesXml));
+		#$self->logHandler->debug(Dumper($valuesXml));
 		if ($@) {
-			$self->errorCallback->("Failed to parse configuration because:\n$@\n");
+			$self->logHandler->warn("Failed to parse configuration because:\n$@\n");
 		}else {
 			$templateData = $xml->{'template'};
 		}
@@ -1580,9 +1582,9 @@ sub loadTemplateValues {
 		$content = $self->contentTemplateDirectoryHandler->readDataFromDir($dir,$itemId);
 		if(defined($content)) {
 			my $xml = eval { XMLin($content, forcearray => ["parameter","value"], keyattr => []) };
-			#$self->debugCallback->(Dumper($valuesXml));
+			#$self->logHandler->debug(Dumper($valuesXml));
 			if ($@) {
-				$self->errorCallback->("Failed to parse configuration because:\n$@\n");
+				$self->logHandler->warn("Failed to parse configuration because:\n$@\n");
 			}else {
 				$templateData = $xml->{'template'};
 			}
@@ -1600,7 +1602,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			$enabledPlugin = Slim::Utils::PluginManager::enabledPlugin($plugin,$client);
+			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
 		}
 	}
 	return $enabledPlugin;
@@ -1613,7 +1615,8 @@ sub checkWebServiceVersion {
 		$answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->apiVersion();
 	};
 	if ($@) {
-		return "Unable to contact download/publish site";
+		$self->logHandler->warn("Unable to download from: ".$self->downloadUrl.", Error: $@\n");
+		return "Unable to contact download/publish site.";
 	}
 	unless ($answer->fault) {
 		if($answer->result() =~ /^(\d+)\.(\d+)$/) {
@@ -1626,6 +1629,7 @@ sub checkWebServiceVersion {
 			return "This version of ".$self->pluginId." plugin is incompatible with the current download service, please upgrade";
 		}
 	} else {
+		$self->logHandler->warn("Unable to download from: ".$self->downloadUrl.", error: ".$answer->faultstring."\n");
 		return "Unable to contact download/publish site, ".niceFault($answer->faultstring);
 	}
 }
@@ -1636,7 +1640,7 @@ sub getTemplate {
 		$self->template(Template->new({
 	
 	                INCLUDE_PATH => $self->templateDirectories,
-	                COMPILE_DIR => catdir( Slim::Utils::Prefs::get('cachedir'), 'templates' ),
+	                COMPILE_DIR => catdir( $serverPrefs->get('cachedir'), 'templates' ),
 	                FILTERS => {
 	                        'string'        => \&Slim::Utils::Strings::string,
 	                        'getstring'     => \&Slim::Utils::Strings::getString,
@@ -1687,7 +1691,7 @@ sub fillTemplate {
 	$params->{'LOCALE'} = 'utf-8';
 	my $template = $self->getTemplate();
 	if(!$template->process($filename,$params,\$output)) {
-		$self->errorCallback->("ERROR parsing template: ".$template->error()."\n");
+		$self->logHandler->warn("ERROR parsing template: ".$template->error()."\n");
 	}
 	return $output;
 }
@@ -1702,9 +1706,9 @@ sub niceFault {
 
 sub getProxy {
 	my $self = shift;
-        my $proxy = Slim::Utils::Prefs::get('webproxy');
+        my $proxy = $serverPrefs->get('webproxy');
 	if(defined($proxy) && $proxy ne '') {
-		$self->debugCallback->("Connecting through proxy: $proxy\n");
+		$self->logHandler->debug("Connecting through proxy: $proxy\n");
 		return proxy => ['http' => 'http://'.$proxy]
 	}else {
 		return ();

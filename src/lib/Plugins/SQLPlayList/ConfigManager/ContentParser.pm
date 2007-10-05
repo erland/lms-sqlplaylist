@@ -174,7 +174,7 @@ sub parseContentImplementation {
 						&& $playLists->{$playlistid}->{'parameters'}->{$p}->{'name'} eq $parameters{$p}->{'name'}
 						&& defined($playLists->{$playlistid}->{'parameters'}->{$p}->{'value'})) {
 						
-						debugMsg("Use already existing value PlaylistParameter$p=".$playLists->{$playlistid}->{'parameters'}->{$p}->{'value'}."\n");	
+						$self->logHandler->debug("Use already existing value PlaylistParameter$p=".$playLists->{$playlistid}->{'parameters'}->{$p}->{'value'}."\n");	
 						$parameters{$p}->{'value'}=$playLists->{$playlistid}->{'parameters'}->{$p}->{'value'};
 					}
 				}
@@ -204,10 +204,10 @@ sub parseContentImplementation {
 	}else {
 		if ($@) {
 			$errorMsg = "Incorrect information in playlist data: $@";
-			$self->errorCallback->("Unable to read playlist configuration:\n$@\n");
+			$self->logHandler->warn("Unable to read playlist configuration:\n$@\n");
 		}else {
 			$errorMsg = "Incorrect information in playlist data";
-			$self->errorCallback->("Unable to to read playlist configuration\n");
+			$self->logHandler->warn("Unable to to read playlist configuration\n");
 		}
 	}
 	return undef;
@@ -242,8 +242,8 @@ sub parseParameter {
 			);
 			return \%parameter;
 		}else {
-			$self->debugCallback->("Error in parameter: $line\n");
-			$self->debugCallback->("Parameter values: Id=$parameterId, Type=$parameterType, Name=$parameterName, Definition=$parameterDefinition\n");
+			$self->logHandler->warn("Error in parameter: $line\n");
+			$self->logHandler->warn("Parameter values: Id=$parameterId, Type=$parameterType, Name=$parameterName, Definition=$parameterDefinition\n");
 			return undef;
 		}
 	}
@@ -277,8 +277,8 @@ sub parseAction {
 			);
 			return \%action;
 		}else {
-			$self->debugCallback->("Error in action: $line\n");
-			$self->debugCallback->("Action values: Id=$actionId, Type=$actionType, Definition=$actionDefinition\n");
+			$self->logHandler->warn("Error in action: $line\n");
+			$self->logHandler->warn("Action values: Id=$actionId, Type=$actionType, Definition=$actionDefinition\n");
 			return undef;
 		}
 	}
@@ -305,8 +305,8 @@ sub parseOption {
 			);
 			return \%option;
 		}else {
-			$self->debugCallback->("Error in option: $line\n");
-			$self->debugCallback->("Option values: Id=$optionId, Value=$optionValue\n");
+			$self->logHandler->warn("Error in option: $line\n");
+			$self->logHandler->warn("Option values: Id=$optionId, Value=$optionValue\n");
 			return undef;
 		}
 	}

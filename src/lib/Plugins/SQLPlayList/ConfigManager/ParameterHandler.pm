@@ -28,15 +28,14 @@ use Slim::Utils::Strings qw(string);
 use DBI qw(:sql_types);
 use HTML::Entities;
 
-__PACKAGE__->mk_classaccessors( qw(debugCallback errorCallback parameterPrefix criticalErrorCallback) );
+__PACKAGE__->mk_classaccessors( qw(logHandler parameterPrefix criticalErrorCallback) );
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
 	my $self = {
-		'debugCallback' => $parameters->{'debugCallback'},
-		'errorCallback' => $parameters->{'errorCallback'},
+		'logHandler' => $parameters->{'logHandler'},
 		'parameterPrefix' => $parameters->{'parameterPrefix'},
 		'criticalErrorCallback' => $parameters->{'criticalErrorCallback'},
 	};
@@ -180,7 +179,7 @@ sub getValueOfTemplateParameter {
 		}else {
 			$selectedValues = $self->getCheckBoxesQueryParameter($params,$self->parameterPrefix.'_'.$parameter->{'id'});
 		}
-		$self->debugCallback->("Got ".scalar(keys %$selectedValues)." values for ".$parameter->{'id'}."\n");
+		$self->logHandler->debug("Got ".scalar(keys %$selectedValues)." values for ".$parameter->{'id'}."\n");
 		my $values = $parameter->{'values'};
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
@@ -196,7 +195,7 @@ sub getValueOfTemplateParameter {
 				}else {
 					$result .= encode_entities($thisvalue,"&<>\'\"");
 				}
-				$self->debugCallback->("Got ".$parameter->{'id'}."=$thisvalue\n");
+				$self->logHandler->debug("Got ".$parameter->{'id'}."=$thisvalue\n");
 			}
 		}
 		if(!defined($result)) {
@@ -217,7 +216,7 @@ sub getValueOfTemplateParameter {
 				}else {
 					$result = encode_entities($thisvalue,"&<>\'\"");
 				}
-				$self->debugCallback->("Got ".$parameter->{'id'}."=$thisvalue\n");
+				$self->logHandler->debug("Got ".$parameter->{'id'}."=$thisvalue\n");
 				last;
 			}
 		}
@@ -236,14 +235,14 @@ sub getValueOfTemplateParameter {
 			}else {
 				return encode_entities($thisvalue,"&<>\'\"");
 			}
-			$self->debugCallback->("Got ".$parameter->{'id'}."=$thisvalue\n");
+			$self->logHandler->debug("Got ".$parameter->{'id'}."=$thisvalue\n");
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
 				$result = '0';
 			}else {
 				$result = '';
 			}
-			$self->debugCallback->("Got ".$parameter->{'id'}."=$result\n");
+			$self->logHandler->debug("Got ".$parameter->{'id'}."=$result\n");
 		}
 	}
 	return $result;
@@ -264,14 +263,14 @@ sub getXMLValueOfTemplateParameter {
 		}else {
 			$selectedValues = $self->getCheckBoxesQueryParameter($params,$self->parameterPrefix.'_'.$parameter->{'id'});
 		}
-		$self->debugCallback->("Got ".scalar(keys %$selectedValues)." values for ".$parameter->{'id'}." to convert to XML\n");
+		$self->logHandler->debug("Got ".scalar(keys %$selectedValues)." values for ".$parameter->{'id'}." to convert to XML\n");
 		my $values = $parameter->{'values'};
 		for my $item (@$values) {
 			if(defined($selectedValues->{$item->{'id'}})) {
 				$result = $result.'<value>';
 				$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				$result = $result.'</value>';
-				$self->debugCallback->("Got ".$parameter->{'id'}."=".$item->{'value'}."\n");
+				$self->logHandler->debug("Got ".$parameter->{'id'}."=".$item->{'value'}."\n");
 			}
 		}
 		if(!defined($result)) {
@@ -286,7 +285,7 @@ sub getXMLValueOfTemplateParameter {
 				$result = $result.'<value>';
 				$result = $result.encode_entities($item->{'value'},"&<>\'\"");
 				$result = $result.'</value>';
-				$self->debugCallback->("Got ".$parameter->{'id'}."=".$item->{'value'}."\n");
+				$self->logHandler->debug("Got ".$parameter->{'id'}."=".$item->{'value'}."\n");
 				last;
 			}
 		}
@@ -297,14 +296,14 @@ sub getXMLValueOfTemplateParameter {
 		if(defined($params->{$self->parameterPrefix.'_'.$parameter->{'id'}}) && $params->{$self->parameterPrefix.'_'.$parameter->{'id'}} ne '') {
 			my $value = Slim::Utils::Unicode::utf8decode_locale($params->{$self->parameterPrefix.'_'.$parameter->{'id'}});
 			$result = '<value>'.encode_entities($value,"&<>\'\"").'</value>';
-			$self->debugCallback->("Got ".$parameter->{'id'}."=".$value."\n");
+			$self->logHandler->debug("Got ".$parameter->{'id'}."=".$value."\n");
 		}else {
 			if($parameter->{'type'} =~ /.*checkbox$/) {
 				$result = '<value>0</value>';
 			}else {
 				$result = '';
 			}
-			$self->debugCallback->("Got ".$parameter->{'id'}."=".$result."\n");
+			$self->logHandler->debug("Got ".$parameter->{'id'}."=".$result."\n");
 		}
 	}
 	return $result;
@@ -370,14 +369,14 @@ sub getSQLTemplateData {
 			$sql =~ s/^\s+//g;
 			$sql =~ s/\s+$//g;
 			my $sth = $dbh->prepare( $sql );
-			$self->debugCallback->("Executing: $sql\n");
+			$self->logHandler->debug("Executing: $sql\n");
 			$sth->execute() or do {
-				$self->debugCallback->("Error executing: $sql\n");
+				$self->logHandler->warn("Error executing: $sql\n");
 				$sql = undef;
 			};
 	
 			if ($sql =~ /^SELECT+/oi) {
-				$self->debugCallback->("Executing and collecting: $sql\n");
+				$self->logHandler->debug("Executing and collecting: $sql\n");
 				my $id;
 				my $name;
 				my $value;
@@ -412,7 +411,7 @@ sub getFunctionTemplateData {
 		my $object = @params->[0];
 		my $function = @params->[1];
 		if(UNIVERSAL::can($object,$function)) {
-			$self->debugCallback->("Getting values for: $function\n");
+			$self->logHandler->debug("Getting values for: $function\n");
 			no strict 'refs';
 			my $items = eval { &{$object.'::'.$function}() };
 			if( $@ ) {
@@ -424,7 +423,7 @@ sub getFunctionTemplateData {
 			}
 		}
 	}else {
-		$self->debugCallback->("Error getting values for: $data, incorrect number of parameters ".scalar(@params)."\n");
+		$self->logHandler->warn("Error getting values for: $data, incorrect number of parameters ".scalar(@params)."\n");
 	}
 	return \@result;
 }

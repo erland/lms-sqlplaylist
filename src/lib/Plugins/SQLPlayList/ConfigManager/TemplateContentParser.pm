@@ -23,6 +23,7 @@ use base 'Class::Data::Accessor';
 use Plugins::SQLPlayList::ConfigManager::ContentParser;
 our @ISA = qw(Plugins::SQLPlayList::ConfigManager::ContentParser);
 
+use Slim::Utils::Prefs;
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
@@ -31,6 +32,8 @@ use File::Slurp;
 use FindBin qw($Bin);
 
 __PACKAGE__->mk_classaccessors( qw(templatePluginHandler) );
+
+my $prefs = preferences('plugin.sqlplaylist');
 
 sub new {
 	my $class = shift;
@@ -49,7 +52,7 @@ sub loadTemplate {
 	my $template = shift;
 	my $parameters = shift;
 
-	$self->debugCallback->("Searching for template: ".$template->{'id'}."\n");
+	$self->logHandler->debug("Searching for template: ".$template->{'id'}."\n");
 	my $templateFileData = undef;
 	my $doParsing = 1;
 	if(defined($template->{lc($self->pluginId).'_plugin_template'})) {
@@ -61,7 +64,7 @@ sub loadTemplate {
 	}else {
 		my $templateFile = $template->{'id'};
 		$templateFile =~ s/\.sql\.xml$/.sql.template/;
-		my $templateDir = Slim::Utils::Prefs::get("plugin_sqlplaylist_template_directory");
+		my $templateDir = $prefs->get("template_directory");
 		my $path = undef;
 		if (defined $templateDir && -d $templateDir && -e catfile($templateDir,$templateFile)) {
 			$path = catfile($templateDir,$templateFile);
@@ -74,19 +77,19 @@ sub loadTemplate {
 			}
 		}
 		if(defined($path)) {
-			$self->debugCallback->("Reading template: $templateFile\n");
+			$self->logHandler->warn("Reading template: $templateFile\n");
 			$templateFileData = eval { read_file($path) };
 			if ($@) {
-				$self->errorCallback->("Unable to open file: $path\nBecause of:\n$@\n");
+				$self->logHandler->warn("Unable to open file: $path\nBecause of:\n$@\n");
 			}else {
 				my $encoding = Slim::Utils::Unicode::encodingFromString($templateFileData);
 				if($encoding ne 'utf8') {
 					$templateFileData = Slim::Utils::Unicode::latin1toUTF8($templateFileData);
 					$templateFileData = Slim::Utils::Unicode::utf8on($templateFileData);
-					$self->debugCallback->("Loading $templateFile and converting from latin1\n");
+					$self->logHandler->warn("Loading $templateFile and converting from latin1\n");
 				}else {
 					$templateFileData = Slim::Utils::Unicode::utf8decode($templateFileData,'utf8');
-					$self->debugCallback->("Loading $templateFile without conversion with encoding ".$encoding."\n");
+					$self->logHandler->warn("Loading $templateFile without conversion with encoding ".$encoding."\n");
 				}
 			}
 		}
