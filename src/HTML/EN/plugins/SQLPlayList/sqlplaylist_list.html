@@ -5,12 +5,12 @@
 		[% "PLUGIN_SQLPLAYLIST" | string %]
 	</a>
 [% END -%]
+[% IF pluginSQLPlayListNowPlaying != '' %]
 [%- pageHeaderInfo = BLOCK %]
-	[% IF pluginSQLPlayListNowPlaying != '' %]
 		<strong>[% "NOW_PLAYING" | string %]:</strong>
 		<span class="exboldnowplaying">[% pluginSQLPlayListNowPlaying %]</span>
-	[% END %]
 [% END -%]
+[% END %]
 [% PROCESS pageheader.html %]
 
 [%# Following block generates links that submit the form if javascript is enabled.  This allows
@@ -35,12 +35,14 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=[% IF t
 				[% FOREACH playlist IN pluginSQLPlayListPlayLists %]
 					[% BLOCK controls %]
 						[%- IF playlist.customplaylist and !playlist.downloadedplaylist %]
-						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_login.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_PUBLISH_ITEM" | string %]</a>
+						[% WRAPPER cmdlink noTarget=1 cmdtitle="PLUGIN_SQLPLAYLIST_PUBLISH_ITEM" -%]href="[% webroot %]plugins/SQLPlayList/webadminmethods_login.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]"[% END %]
 						[%- END %]
 						[%- IF !playlist.defaultplaylist %]
-						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_removeitem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION" | string %]')">[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM" | string %]</a>
+						[% WRAPPER removelink noTarget=1 -%]<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_removeitem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]" onClick="return confirm('[% "PLUGIN_SQLPLAYLIST_REMOVE_ITEM_QUESTION" | string %]')"[% END %]
 						[%- END %]
-						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% "PLUGIN_SQLPLAYLIST_EDIT_ITEM" | string %]</a>
+						[% WRAPPER editlink noTarget=1 -%]href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]"
+						[%- END %]
+
 						[% PROCESS sqlPlayListLink type=playlist.id addOnly="0" parameters=playlist.parameters %]
 						[% PROCESS sqlPlayListLink type=playlist.id addOnly="1" parameters=playlist.parameters %]
 					[% END %]
