@@ -73,7 +73,7 @@ my $log = Slim::Utils::Log->addLogCategory({
 
 $prefs->migrate(1, sub {
 	$prefs->set('playlist_directory', Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_playlist_directory') || $serverPrefs->get('playlistdir')  );
-	$prefs->set('template_directory',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_template_directory')   || 1  );
+	$prefs->set('template_directory',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_template_directory')   || ''  );
 	$prefs->set('download_url',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_download_url')   || 'http://erland.homeip.net/datacollection/services/DataCollection'  );
 	1;
 });
@@ -214,23 +214,23 @@ sub getConfigManager {
 sub webPages {
 
 	my %pages = (
-		"sqlplaylist_list\.(?:htm|xml)"     => \&handleWebList,
-		"webadminmethods_edititem\.(?:htm|xml)"      => \&handleWebEditPlaylist,
-		"webadminmethods_newitemtypes\.(?:htm|xml)"      => \&handleWebNewPlaylistTypes,
-		"webadminmethods_deleteitemtype\.(?:htm|xml)"      => \&handleWebDeletePlaylistType,
-                "webadminmethods_newitemparameters\.(?:htm|xml)"     => \&handleWebNewPlaylistParameters,
-		"webadminmethods_newitem\.(?:htm|xml)"      => \&handleWebNewPlaylist,
-		"webadminmethods_login\.(?:htm|xml)"      => \&handleWebLogin,
-		"webadminmethods_downloadnewitems\.(?:htm|xml)"      => \&handleWebDownloadNewPlaylists,
-		"webadminmethods_downloaditems\.(?:htm|xml)"      => \&handleWebDownloadPlaylists,
-		"webadminmethods_downloaditem\.(?:htm|xml)"      => \&handleWebDownloadPlaylist,
-		"webadminmethods_publishitemparameters\.(?:htm|xml)"      => \&handleWebPublishPlaylistParameters,
-		"webadminmethods_publishitem\.(?:htm|xml)"      => \&handleWebPublishPlaylist,
-                "webadminmethods_savenewsimpleitem\.(?:htm|xml)"     => \&handleWebSaveNewSimplePlaylist,
-                "webadminmethods_savesimpleitem\.(?:htm|xml)"     => \&handleWebSaveSimplePlaylist,
-		"webadminmethods_saveitem\.(?:htm|xml)"      => \&handleWebSavePlaylist,
-		"webadminmethods_savenewitem\.(?:htm|xml)"      => \&handleWebSaveNewPlaylist,
-		"webadminmethods_removeitem\.(?:htm|xml)"      => \&handleWebRemovePlaylist,
+		"SQLPlayList/sqlplaylist_list\.(?:htm|xml)"     => \&handleWebList,
+		"SQLPlayList/webadminmethods_edititem\.(?:htm|xml)"      => \&handleWebEditPlaylist,
+		"SQLPlayList/webadminmethods_newitemtypes\.(?:htm|xml)"      => \&handleWebNewPlaylistTypes,
+		"SQLPlayList/webadminmethods_deleteitemtype\.(?:htm|xml)"      => \&handleWebDeletePlaylistType,
+                "SQLPlayList/webadminmethods_newitemparameters\.(?:htm|xml)"     => \&handleWebNewPlaylistParameters,
+		"SQLPlayList/webadminmethods_newitem\.(?:htm|xml)"      => \&handleWebNewPlaylist,
+		"SQLPlayList/webadminmethods_login\.(?:htm|xml)"      => \&handleWebLogin,
+		"SQLPlayList/webadminmethods_downloadnewitems\.(?:htm|xml)"      => \&handleWebDownloadNewPlaylists,
+		"SQLPlayList/webadminmethods_downloaditems\.(?:htm|xml)"      => \&handleWebDownloadPlaylists,
+		"SQLPlayList/webadminmethods_downloaditem\.(?:htm|xml)"      => \&handleWebDownloadPlaylist,
+		"SQLPlayList/webadminmethods_publishitemparameters\.(?:htm|xml)"      => \&handleWebPublishPlaylistParameters,
+		"SQLPlayList/webadminmethods_publishitem\.(?:htm|xml)"      => \&handleWebPublishPlaylist,
+                "SQLPlayList/webadminmethods_savenewsimpleitem\.(?:htm|xml)"     => \&handleWebSaveNewSimplePlaylist,
+                "SQLPlayList/webadminmethods_savesimpleitem\.(?:htm|xml)"     => \&handleWebSaveSimplePlaylist,
+		"SQLPlayList/webadminmethods_saveitem\.(?:htm|xml)"      => \&handleWebSavePlaylist,
+		"SQLPlayList/webadminmethods_savenewitem\.(?:htm|xml)"      => \&handleWebSaveNewPlaylist,
+		"SQLPlayList/webadminmethods_removeitem\.(?:htm|xml)"      => \&handleWebRemovePlaylist,
 	);
 
 	for my $page (keys %pages) {
