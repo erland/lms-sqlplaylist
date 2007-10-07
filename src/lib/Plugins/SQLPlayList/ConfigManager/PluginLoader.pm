@@ -84,7 +84,7 @@ sub readFromPlugins {
 				my $itemData = $item->{$self->contentType};
 				my $itemId = $item->{'id'};
 				$itemData->{'id'} = $item->{'id'};
-				if($plugin =~ /^([^:]+)::.*$/) {
+				if($plugin =~ /^.*::([^:]+)::([^:]*?)$/) {
 					$itemId = lc($1)."_".$item->{'id'};
 				}
 				my %localcontext = ();
@@ -132,9 +132,6 @@ sub readFromPlugins {
 					if(defined($errorMsg)) {
 	                			$self->logHandler->warn("Unable to open plugin ".$self->contentType." configuration: $plugin(".$item->{'id'}.")\n$errorMsg\n");
 					}else {
-						if($plugin =~ /^([^:]+)::.*$/) {
-							$itemId = lc($1)."_".$item->{'id'};
-						}
 						$items->{$itemId}->{'id'} = $itemId;
 						$items->{$itemId}->{lc($self->pluginId).'_plugin_'.$self->contentType}=$item;
 						$items->{$itemId}->{lc($self->pluginId).'_plugin'} = "${plugin}";
