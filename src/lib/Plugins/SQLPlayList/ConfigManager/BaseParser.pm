@@ -99,8 +99,16 @@ sub parseContent {
         if ( $content ) {
 		my $result = eval { $self->parseContentImplementation($client,$item,$content,$items,$globalcontext,$localcontext) };
 		if(!$@ && defined($result)) {
-			$self->logHandler->debug("Storing parsed result for $item\n");
-			$items->{$item} = $result;
+			my $timestamp = undef;
+			if(defined($localcontext->{'timestamp'})) {
+				$timestamp = $localcontext->{'timestamp'};
+			}
+			if(!defined($items->{$item}) || !defined($timestamp) || !defined($items->{$item}->{'timestamp'}) || $items->{$item}->{'timestamp'}<=$timestamp) {
+				$self->logHandler->debug("Storing parsed result for $item\n");
+				$items->{$item} = $result;
+			}else {
+				$self->logHandler->debug("Skipping $item, newer entry already loaded\n");
+			}
 		}else {
 			$self->logHandler->debug("Skipping $item: $@\n");
 			$errorMsg = "$@";
@@ -286,8 +294,16 @@ sub parseTemplateContent {
 			}
 			my $result = eval {$self->parseContentImplementation($client,$item,$itemData,$items,$globalcontext,$localcontext) };
 			if(!$@ && defined($result)) {
-				$self->logHandler->debug("Storing parsed result for $item\n");
-				$items->{$item} = $result;
+			my $timestamp = undef;
+				if(defined($localcontext->{'timestamp'})) {
+					$timestamp = $localcontext->{'timestamp'};
+				}
+				if(!defined($items->{$item}) || !defined($timestamp) || !defined($items->{$item}->{'timestamp'}) || $items->{$item}->{'timestamp'}<=$timestamp) {
+					$self->logHandler->debug("Storing parsed result for $item\n");
+					$items->{$item} = $result;
+				}else {
+					$self->logHandler->debug("Skipping $item, newer entry already loaded\n");
+				}
 			}else {
 				$self->logHandler->debug("Skipping $item: $@\n");
 				$errorMsg = "$@";

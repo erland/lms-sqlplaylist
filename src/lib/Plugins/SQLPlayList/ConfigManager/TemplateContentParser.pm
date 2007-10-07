@@ -68,16 +68,23 @@ sub loadTemplate {
 		my $path = undef;
 		if (defined $templateDir && -d $templateDir && -e catfile($templateDir,$templateFile)) {
 			$path = catfile($templateDir,$templateFile);
-		}else {
-			my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
-			for my $plugindir (@pluginDirs) {
-				if( -d catdir($plugindir,"SQLPlayList","Templates") && -e catfile($plugindir,"SQLPlayList","Templates",$templateFile)) {
+		}
+		my @pluginDirs = Slim::Utils::OSDetect::dirsFor('Plugins');
+		for my $plugindir (@pluginDirs) {
+			if( -d catdir($plugindir,"SQLPlayList","Templates") && -e catfile($plugindir,"SQLPlayList","Templates",$templateFile)) {
+				if(defined($path)) {
+					my $prevTimestamp = (stat ($path) )[9];
+					my $thisTimestamp = (stat (catfile($plugindir,"SQLPlayList","Templates",$templateFile)) )[9];
+					if($prevTimestamp<=$thisTimestamp) {
+						$path = catfile($plugindir,"SQLPlayList","Templates",$templateFile);
+					}
+				}else {
 					$path = catfile($plugindir,"SQLPlayList","Templates",$templateFile);
 				}
 			}
 		}
 		if(defined($path)) {
-			$self->logHandler->warn("Reading template: $templateFile\n");
+			$self->logHandler->debug("Reading template: $templateFile\n");
 			$templateFileData = eval { read_file($path) };
 			if ($@) {
 				$self->logHandler->warn("Unable to open file: $path\nBecause of:\n$@\n");
