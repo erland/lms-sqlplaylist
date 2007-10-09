@@ -52,8 +52,6 @@ my $PLUGINVERSION = undef;
 
 my $configManager = undef;
 
-my $supportDownloadError = undef;
-
 my %disable = (
 	'id' => 'disable', 
 	'file' => '', 
@@ -192,17 +190,12 @@ sub initPlugin {
 
 sub getConfigManager {
 	if(!defined($configManager)) {
-		my $templateDir = $prefs->get('template_directory');
-		if(!defined($templateDir) || !-d $templateDir) {
-			$supportDownloadError = 'You have to specify a template directory before you can download playlists';
-		}
 		my %parameters = (
 			'pluginPrefs' => $prefs,
 			'logHandler' => $log,
 			'pluginId' => 'SQLPlayList',
 			'pluginVersion' => $PLUGINVERSION,
 			'downloadApplicationId' => 'SQLPlayList',
-			'supportDownloadError' => $supportDownloadError,
 			'addSqlErrorCallback' => \&addSQLError
 		);
 		$configManager = Plugins::SQLPlayList::ConfigManager::Main->new(\%parameters);
