@@ -26,6 +26,7 @@ our @ISA = qw(Plugins::SQLPlayList::ConfigManager::BaseParser);
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
+use HTML::Entities;
 
 sub new {
 	my $class = shift;
@@ -60,6 +61,7 @@ sub parseContentImplementation {
 
 	my $errorMsg = undef;
         if ( $content ) {
+		decode_entities($content);
 
 		my @playlistDataArray = split(/[\n\r]+/,$content);
 		my $name = undef;
