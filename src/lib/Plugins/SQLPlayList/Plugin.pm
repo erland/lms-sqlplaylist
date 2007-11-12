@@ -75,6 +75,8 @@ $prefs->migrate(1, sub {
 	$prefs->set('download_url',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_download_url')   || 'http://erland.homeip.net/datacollection/services/DataCollection'  );
 	1;
 });
+$prefs->setValidate('dir', 'playlist_directory'  );
+$prefs->setValidate('dir', 'template_directory'  );
 	
 sub getDisplayName {
 	return 'PLUGIN_SQLPLAYLIST';
