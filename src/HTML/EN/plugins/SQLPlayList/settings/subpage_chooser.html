@@ -1,17 +1,15 @@
-<div class="settingSection">
-	<div class="groupHead">[% "SETUP_PLUGIN_SQLPLAYLIST_GROUP" | string | upper %]</div>
-	<div class="groupDesc">[% "SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC" | string %]</div>
-
-	[% IF subpages.size>1 %]
+[% WRAPPER settingGroup title="SETUP_PLUGIN_SQLPLAYLIST_GROUP" desc="" %]
+	<div class="prefDesc">[% "SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC" | string %]</div>
+[% END %]
+[% IF subpages.size>1 %]
+[% WRAPPER settingGroup title="SETUP_PLUGIN_SQLPLAYLIST_SECTION" desc="SETUP_PLUGIN_SQLPLAYLIST_SECTION_DESC" %]
 	<select class="stdedit" name="subpage" id="subpage" onchange="location.href=options[selectedIndex].value">
 		[% FOREACH option = subpages.keys.sort %]
 	
 			<option [% IF subpage == option %]selected[% END %] value="[% subpages.$option %]">[% option | getstring %]</option>
 		[%- END -%]
 	</select>
-	[% END %]
-</div>
-[% IF subpages.size>1 %]
+[% END %]
 <br>
 [% END %]
 

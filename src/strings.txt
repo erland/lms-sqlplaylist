@@ -21,6 +21,12 @@ PLUGIN_SQLPLAYLIST_AFTER_NUM_OLD_TRACKS
 	EN	recently played songs.
 	DA	fornylig afspillede sange.
 
+SETUP_PLUGIN_SQLPLAYLIST_SECTION
+	EN	Settings Section
+
+SETUP_PLUGIN_SQLPLAYLIST_SECTION_DESC
+	EN	Select a settings section
+
 SETUP_PLUGIN_SQLPLAYLIST_GROUP
 	EN	SQL PlayList
 	DA	SQL Playlist
