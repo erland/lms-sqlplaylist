@@ -409,7 +409,7 @@ sub isEnabled {
 		if($self->pluginVersion =~ /(\d+)\.(\d+).*/) {
 			my $pluginMajor = $1;
 			my $pluginMinor = $2;
-			if($pluginMajor>$downloadMajor || ($pluginMajor=$downloadMajor && $pluginMinor>=$downloadMinor)) {
+			if($pluginMajor==$downloadMajor && $pluginMinor>=$downloadMinor) {
 				$include = 1;
 			}else {
 				$include = 0;

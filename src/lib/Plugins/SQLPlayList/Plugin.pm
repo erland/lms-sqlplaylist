@@ -198,7 +198,8 @@ sub getConfigManager {
 			'pluginId' => 'SQLPlayList',
 			'pluginVersion' => $PLUGINVERSION,
 			'downloadApplicationId' => 'SQLPlayList',
-			'addSqlErrorCallback' => \&addSQLError
+			'addSqlErrorCallback' => \&addSQLError,
+			'downloadVersion' => 2,
 		);
 		$configManager = Plugins::SQLPlayList::ConfigManager::Main->new(\%parameters);
 	}

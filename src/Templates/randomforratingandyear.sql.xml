@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<requireplugins>TrackStat</requireplugins>
-	<minpluginversion>1.17</minpluginversion>
+	<minpluginversion>2.0</minpluginversion>
 	<template>
 		<downloadidentifier>7</downloadidentifier>
 		<name>Random for rating/year</name>

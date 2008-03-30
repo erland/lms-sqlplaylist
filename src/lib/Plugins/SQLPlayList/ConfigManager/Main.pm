@@ -33,7 +33,7 @@ use Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods;
 use FindBin qw($Bin);
 use File::Spec::Functions qw(:ALL);
 
-__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId downloadApplicationId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items) );
+__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId downloadApplicationId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items downloadVersion) );
 
 my $prefs = preferences('plugin.sqlplaylist');
 
@@ -48,7 +48,8 @@ sub new {
 		'pluginVersion' => $parameters->{'pluginVersion'},
 		'downloadApplicationId' => $parameters->{'downloadApplicationId'},
 		'supportDownloadError' => $parameters->{'supportDownloadError'},
-		'addSqlErrorCallback' => $parameters->{'addSqlErrorCallback'}
+		'addSqlErrorCallback' => $parameters->{'addSqlErrorCallback'},
+		'downloadVersion' => $parameters->{'downloadVersion'},
 	};
 
 	$self->{'contentDirectoryHandler'} = undef;
@@ -214,7 +215,8 @@ sub initWebAdminMethods {
 		'supportDownloadError' => $internalSupportDownloadError,
 		'webCallbacks' => $self,
 		'webTemplates' => \%webTemplates,
-		'downloadUrl' => $prefs->get("download_url")
+		'downloadUrl' => $prefs->get("download_url"),
+		'downloadVersion' => $self->downloadVersion,
 	);
 	$self->webAdminMethods(Plugins::SQLPlayList::ConfigManager::PlaylistWebAdminMethods->new(\%webAdminMethodsParameters));
 

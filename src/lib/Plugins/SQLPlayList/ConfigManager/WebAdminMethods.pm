@@ -36,7 +36,7 @@ use HTML::Entities;
 use Scalar::Util qw(blessed);
 use Data::Dumper;
 
-__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension) );
+__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension downloadVersion) );
 
 my $utf8filenames = 1;
 my $serverPrefs = preferences('server');
@@ -69,7 +69,8 @@ sub new {
 		'supportDownloadError' => $parameters->{'supportDownloadError'},
 		'webCallbacks' => $parameters->{'webCallbacks'},
 		'webTemplates' => $parameters->{'webTemplates'},
-		'downloadUrl' => $parameters->{'downloadUrl'}
+		'downloadUrl' => $parameters->{'downloadUrl'},
+		'downloadVersion' => $parameters->{'downloadVersion'},
 	};
 	if(defined($parameters->{'utf8filenames'})) {
 		$utf8filenames = $parameters->{'utf8filenames'};
@@ -555,7 +556,7 @@ sub webPublishItem {
 			$publishData .= '</entry>';
 		}
 		if(defined($publishData)) {
-			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->addDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $publishData);};
+			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->addVersionedDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $self->downloadVersion, $publishData);};
 			unless (!defined($answer) || $answer->fault) {
 				return $self->webCallbacks->webEditItems($client,$params);
 			}else {
@@ -589,7 +590,7 @@ sub webDownloadItems {
 		$params->{'pluginWebAdminMethodsError'} = $versionError;
 		return $self->webCallbacks->webNewItemTypes($client,$params);
 	}
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getEntries($self->downloadApplicationId);};
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getVersionedEntries($self->downloadApplicationId,$self->downloadVersion);};
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
 		my $xml = eval { XMLin($result, forcearray => ['collection','entry'], keyattr => []) };
@@ -1340,7 +1341,7 @@ sub downloadItem {
 	my $overwrite = shift;
 	my $onlyOverwrite = shift;
 
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getEntry($id) };
+	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getVersionedEntry($id,$self->downloadVersion) };
 	my %result = ();
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
@@ -1386,7 +1387,7 @@ sub downloadItem {
 							my $pluginMajor = $1;
 							my $pluginMinor = $2;
 
-							if($pluginMajor>$downloadMajor || ($pluginMajor==$downloadMajor && $pluginMinor>=$downloadMinor)) {
+							if($pluginMajor==$downloadMajor && $pluginMinor>=$downloadMinor) {
 								$dataToStore{$data->{'type'}} = $content;
 							}else {
 								$incompatibleVersions = 1;
@@ -1620,7 +1621,7 @@ sub checkWebServiceVersion {
 	}
 	unless ($answer->fault) {
 		if($answer->result() =~ /^(\d+)\.(\d+)$/) {
-			if($1 ne "1") {
+			if($1 ne "1" || $2 lt "1") {
 				return "This version of ".$self->pluginId." plugin is incompatible with the current download service, please upgrade";
 			}else {
 				return undef;
