@@ -10,10 +10,10 @@
   <module>Plugins::SQLPlayList::Plugin</module>
   <optionsURL>plugins/SQLPlayList/settings/basic.html</optionsURL>
   <targetApplication>
-    <id>SlimServer</id>
-    <maxVersion>7.0+</maxVersion>
+    <id>SqueezeCenter</id>
+    <maxVersion>7+</maxVersion>
     <minVersion>7.0a</minVersion>
   </targetApplication>
   <type>2</type>
-  <version>2.0.beta03</version>
+  <version>2.0.beta04</version>
 </extension>
