@@ -491,7 +491,7 @@ sub addParameterValues {
 				$log->warn("Error, invalid parameter value: $value\n");
 			}
 		}
-	}elsif(lc($parameter->{'type'}) eq 'custom') {
+	}elsif(lc($parameter->{'type'}) eq 'custom' || lc($parameter->{'type'}) =~ /^custom(album|artist|year|genre|playlist|track)$/) {
 		if(defined($parameter->{'definition'}) && lc($parameter->{'definition'}) =~ /^select/ ) {
 			$sql = $parameter->{'definition'};
 			for (my $i=1;$i<$parameter->{'id'};$i++) {
