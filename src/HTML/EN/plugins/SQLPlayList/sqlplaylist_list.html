@@ -46,7 +46,7 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=[% IF t
 						[% PROCESS sqlPlayListLink type=playlist.id addOnly="0" parameters=playlist.parameters %]
 						[% PROCESS sqlPlayListLink type=playlist.id addOnly="1" parameters=playlist.parameters %]
 					[% END %]
-					[%- WRAPPER contentitem itemid=loop.index controls='controls' %]
+					[%- WRAPPER contentitem controls='controls' %]
 						<a href="[% webroot %]plugins/SQLPlayList/webadminmethods_edititem.html?item=[% playlist.id |uri %]&player=[% player | uri %][% IF pluginWebAdminMethodsRedirect %]&redirect=[% pluginWebAdminMethodsRedirect %][% END %]">[% playlist.name %]</a>
 					[% END %]
 				[% odd = (not odd) %]
