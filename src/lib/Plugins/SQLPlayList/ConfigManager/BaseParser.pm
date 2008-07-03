@@ -266,6 +266,7 @@ sub parseTemplateContent {
 					undef $content;
 					return undef;
 				}
+				addStandardParameters(\%templateParameters);
 				my $templateData = $self->loadTemplate($client,$template,\%templateParameters);
 				if(!defined($templateData)) {
 					$self->logHandler->debug("Ignoring $item due to loadTemplate\n");
@@ -504,6 +505,12 @@ sub parseContentImplementation {
 		}
 	}
 	return undef;
+}
+
+sub addStandardParameters {
+	my $params = shift;
+
+	$params->{'SqueezeCenterVersion'} = $::VERSION;
 }
 
 sub checkContent {
