@@ -33,7 +33,7 @@
 						<select name="itemparameter_[% parameter.id %]">
 						[%- FOREACH item = parameter.values %]
 							[%- itemid = item.id %]
-							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]">[% item.name | html %]</option>
+							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]" [% IF parameter.value == itemid %]selected[% END %]>[% item.name | html %]</option>
 						[%- END %]
 						</select>
 					</td></tr>
@@ -44,7 +44,7 @@
 						<select name="itemparameter_[% parameter.id %]" multiple size="10">
 						[%- FOREACH item = parameter.values %]
 							[%- itemid = item.id %]
-							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]">[% item.name | html %]</option>
+							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]" [% IF parameter.value == itemid %]selected[% END %]>[% item.name | html %]</option>
 						[%- END %]
 						</select>
 					</td></tr>
