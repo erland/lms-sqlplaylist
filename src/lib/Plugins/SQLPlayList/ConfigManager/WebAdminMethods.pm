@@ -1201,7 +1201,7 @@ sub saveSimpleItem {
 	$regexp =~ s/\./\\./;
 	$regexp = ".*".$regexp."\$";
 	if(!($url =~ /$regexp/)) {
-		$params->{'pluginWebAdminMethodsError'} = "Filename must end with .$self->simpleExtension";
+		$params->{'pluginWebAdminMethodsError'} = "Filename must end with ."$self->simpleExtension;
 	}
 
 	if(!($params->{'pluginWebAdminMethodsError'})) {
