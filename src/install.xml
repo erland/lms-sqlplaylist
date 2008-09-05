@@ -11,7 +11,7 @@
   <optionsURL>plugins/SQLPlayList/settings/basic.html</optionsURL>
   <targetApplication>
     <id>SqueezeCenter</id>
-    <maxVersion>7+</maxVersion>
+    <maxVersion>7.2+</maxVersion>
     <minVersion>7.0a</minVersion>
   </targetApplication>
   <type>2</type>
