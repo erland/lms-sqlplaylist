@@ -4,11 +4,11 @@
 [% PROCESS plugins/SQLPlayList/settings/subpage_chooser.html %]
 
 	[% WRAPPER setting title="SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY" desc="SETUP_PLUGIN_SQLPLAYLIST_PLAYLIST_DIRECTORY_DESC" %]
-		<input type="text" class="stdedit selectFolder" name="playlist_directory" id="playlist_directory" value="[% prefs.playlist_directory %]" size="40">
+		<input type="text" class="stdedit selectFolder" name="pref_playlist_directory" id="playlist_directory" value="[% prefs.playlist_directory %]" size="40">
 	[% END %]
 
 	[% WRAPPER setting title="SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY" desc="SETUP_PLUGIN_SQLPLAYLIST_TEMPLATE_DIRECTORY_DESC" %]
-		<input type="text" class="stdedit selectFolder" name="template_directory" id="template_directory" value="[% prefs.template_directory %]" size="40">
+		<input type="text" class="stdedit selectFolder" name="pref_template_directory" id="template_directory" value="[% prefs.template_directory %]" size="40">
 	[% END %]
 
 [% PROCESS settings/footer.html %]
