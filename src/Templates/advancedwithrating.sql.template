@@ -10,7 +10,7 @@ select tracks.url from tracks
 		tracks.id=multilibrary_track.track and
 		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
 	[%- END %]
-	[%- IF minrating or exactrating or recentlyplayed %]
+	[%- IF minrating or exactrating or recentlyplayed or neverplayed %]
 	join track_statistics on
 		tracks.url=track_statistics.url
 	[%- END %]
@@ -89,6 +89,9 @@ select tracks.url from tracks
 	[%- END %]
 	[%- IF lossless %]
 		and tracks.lossless=1
+	[%- END %]
+	[%- IF neverplayed %]
+		and ifnull(track_statistics.playcount,0)=0
 	[%- END %]
 	[%- IF recentlyplayed %]
 		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])

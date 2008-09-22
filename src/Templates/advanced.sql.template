@@ -26,7 +26,7 @@ select tracks.url from tracks
 	join comments on
 		tracks.id=comments.track and comments.value like [% includedcomment %]
 	[%- END %]
-	[%- IF recentlyplayed %]
+	[%- IF recentlyplayed or neverplayed %]
 	left join track_statistics on
 		tracks.url=track_statistics.url
 	[%- END %]
@@ -83,6 +83,9 @@ select tracks.url from tracks
 	[%- END %]
 	[%- IF lossless %]
 		and tracks.lossless=1
+	[%- END %]
+	[%- IF neverplayed %]
+		and ifnull(track_statistics.playcount,0)=0
 	[%- END %]
 	[%- IF recentlyplayed %]
 		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])

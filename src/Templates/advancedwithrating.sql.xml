@@ -13,6 +13,7 @@
 		<parameter type="text" id="minyear" name="Only include tracks after or equal to this year" value=""/>
 		<parameter type="text" id="maxyear" name="Only include tracks before or equal to this year" value=""/>
 		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
+		<parameter type="checkbox" id="neverplayed" requireplugins="TrackStat::Plugin" name="Only never played songs" value="0"/>
 		<parameter type="optionalsinglelist" id="recentlyplayed" requireplugins="TrackStat::Plugin" name="Ignore songs played recently" value="" data="3600=1 hour,10800=3 hours,21600=6 hours,43200=12 hours,86400=24 hours,604800=1 week,1209600=2 weeks,2419200=4 weeks,7257600=12 weeks"/>
 		<parameter type="text" id="includedcomment" name="Include tracks with COMMENT tag" value="" quotevalue="1"/>
 		<parameter type="text" id="excludedcomment" name="Exclude tracks with COMMENT tag" value="" quotevalue="1"/>
