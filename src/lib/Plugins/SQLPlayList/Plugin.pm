@@ -851,7 +851,7 @@ sub executeSQLForPlaylist {
 			};
 
 		        if ($sql =~ /^\(*SELECT+/oi) {
-				$log->warn("Executing and collecting: $sql\n");
+				$log->debug("Executing and collecting: $sql\n");
 				my $url;
 				$sth->bind_col( 1, \$url);
 				while( $sth->fetch() ) {
