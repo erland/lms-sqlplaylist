@@ -93,10 +93,10 @@ sub loadTemplate {
 				if($encoding ne 'utf8') {
 					$templateFileData = Slim::Utils::Unicode::latin1toUTF8($templateFileData);
 					$templateFileData = Slim::Utils::Unicode::utf8on($templateFileData);
-					$self->logHandler->warn("Loading $templateFile and converting from latin1\n");
+					$self->logHandler->debug("Loading $templateFile and converting from latin1\n");
 				}else {
 					$templateFileData = Slim::Utils::Unicode::utf8decode($templateFileData,'utf8');
-					$self->logHandler->warn("Loading $templateFile without conversion with encoding ".$encoding."\n");
+					$self->logHandler->debug("Loading $templateFile without conversion with encoding ".$encoding."\n");
 				}
 			}
 		}
