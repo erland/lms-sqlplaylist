@@ -30,6 +30,12 @@
 [%- ELSE %]
 -- PlaylistParameter1:playlist:Select playlist:
 [%- END %]
+[%- ELSIF requestfromuser =='decade' %]
+[%- IF library or activelibrary %]
+-- PlaylistParameter1:custom:Select decade:select floor(tracks.year/10)*10,case when tracks.year>0 then concat(floor(tracks.year/10)*10,'s') else 'Unknown' end from tracks,multilibrary_track where tracks.id=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %] and tracks.audio=1 group by floor(tracks.year/10)*10 order by tracks.year desc
+[%- ELSE %]
+-- PlaylistParameter1:custom:Select decade:select floor(tracks.year/10)*10,case when tracks.year>0 then concat(floor(tracks.year/10)*10,'s') else 'Unknown' end from tracks where tracks.audio=1 group by floor(tracks.year/10)*10 order by tracks.year desc
+[%- END %]
 [%- END %]
 [%- IF customskipfilter %]
 -- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
@@ -70,6 +76,8 @@ select tracks.url from tracks
 		and tracks.album='PlaylistParameter1'
 	[%- ELSIF requestfromuser == 'year' %]
 		and tracks.year='PlaylistParameter1'
+	[%- ELSIF requestfromuser == 'decade' %]
+		and tracks.year>='PlaylistParameter1' and tracks.year<('PlaylistParameter1'+10)
 	[%- ELSIF requestfromuser == 'genre' %]
 		and genre_track.genre='PlaylistParameter1'
 	[%- END %]
