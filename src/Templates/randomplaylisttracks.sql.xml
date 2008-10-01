@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<minpluginversion>2.0</minpluginversion>
+	<template>
+		<downloadidentifier>219</downloadidentifier>
+		<name>Random playlist songs</name>
+		<description>Random songs from a saved playlist</description>
+		<parameter type="text" id="playlistname" name="Playlist name" value="Random playlist songs"/>
+		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="optionalsinglelist" id="requestfromuser" name="Request parameter from user" value="" data="album=Album,artist=Artist,decade=Decade,genre=Genre,year=Year"/>
+		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="0"/>
+		<parameter type="optionalsinglelist" id="recentlyplayed" requireplugins="TrackStat::Plugin" name="Ignore songs played recently" value="3600" data="3600=1 hour,10800=3 hours,21600=6 hours,43200=12 hours,86400=24 hours,604800=1 week,1209600=2 weeks,2419200=4 weeks,7257600=12 weeks"/>
+		<parameter type="sqlsinglelist" id="playlist" name="Only songs in playlist" value="" data="select tracks.title,tracks.title,tracks.title from tracks,playlist_track where content_type != 'cpl' and tracks.id=playlist_track.playlist group by tracks.id order by titlesort"/>
+		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
+		<parameter type="checkbox" id="randomordered" name="Play in random order" value="1"/>
+		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
+		<parameter type="functionoptionalsinglelist" id="customskipfilter" requireplugins="CustomSkip::Plugin" name="Custom Skip filter" value="" data="Plugins::CustomSkip::Plugin,getAvailableFilters"/>
+	</template>
+</sqlplaylist>
+
