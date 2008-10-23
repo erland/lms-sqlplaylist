@@ -3,6 +3,7 @@
 	<requireplugins>TrackStat</requireplugins>
 	<minpluginversion>2.2</minpluginversion>
 	<template>
+		<downloadidentifier>220</downloadidentifier>
 		<name>Top rated for decade</name>
 		<description>Random songs with predefined minimum rating with user selectable decade</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Top rated for decade"/>
