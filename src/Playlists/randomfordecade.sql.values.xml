@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<template>
+		<id>randomtracks.sql.xml</id>
+		<parameter type="text" id="playlistname"><value>Random songs for decade</value></parameter>
+		<parameter type="text" id="playlistgroups"><value>Random/For selected</value></parameter>
+		<parameter type="text" id="requestfromuser"><value>decade</value></parameter>
+		<parameter type="text" id="notrepeat"><value>1</value></parameter>
+		<parameter type="text" id="includedgenres" quotevalue="1"></parameter>
+		<parameter type="text" id="excludedgenres" quotevalue="1"></parameter>
+	</template>
+</sqlplaylist>
