@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqlplaylist>
+	<requireplugins>TrackStat</requireplugins>
+	<minpluginversion>2.2</minpluginversion>
+	<template>
+		<name>Top rated for decade</name>
+		<description>Random songs with predefined minimum rating with user selectable decade</description>
+		<parameter type="text" id="playlistname" name="Playlist name" value="Top rated for decade"/>
+		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
+		<parameter type="optionalsinglelist" id="recentlyplayed" requireplugins="TrackStat::Plugin" name="Ignore songs played recently" value="" data="3600=1 hour,10800=3 hours,21600=6 hours,43200=12 hours,86400=24 hours,604800=1 week,1209600=2 weeks,2419200=4 weeks,7257600=12 weeks"/>
+		<parameter type="singlelist" id="minrating" name="Minimum rating" value="0" data="0==0,1=* (10-)=10,2=** (30-)=30,3=*** (50-)=50,4=**** (70-)=70,5=***** (90-)=90"/>
+		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
+		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
+		<parameter type="functionoptionalsinglelist" id="customskipfilter" requireplugins="CustomSkip::Plugin" name="Custom Skip filter" value="" data="Plugins::CustomSkip::Plugin,getAvailableFilters"/>
+		<parameter type="singlelist" id="order" name="Play order" value="byrandom" data="byrandom=By random,byalbum=By album and song number"/>
+	</template>
+</sqlplaylist>
+
