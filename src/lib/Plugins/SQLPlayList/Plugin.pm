@@ -425,7 +425,7 @@ sub handleWebTestParameters {
 			my %value = (
 				'id' => $params->{'sqlplaylist_parameter_'.$i}
 			);
-			$client->param('sqlplaylist_parameter_'.$i,\%value);
+			$client->modeParam('sqlplaylist_parameter_'.$i,\%value);
 			push @parameters,\%webParameter;
 		}
 		
@@ -491,11 +491,11 @@ sub addParameterValues {
 				$log->warn("Error, invalid parameter value: $value\n");
 			}
 		}
-	}elsif(lc($parameter->{'type'}) eq 'custom' || lc($parameter->{'type'}) =~ /^custom(album|artist|year|genre|playlist|track)$/) {
+	}elsif(lc($parameter->{'type'}) eq 'custom' || lc($parameter->{'type'}) =~ /^custom(.+)$/) {
 		if(defined($parameter->{'definition'}) && lc($parameter->{'definition'}) =~ /^select/ ) {
 			$sql = $parameter->{'definition'};
 			for (my $i=1;$i<$parameter->{'id'};$i++) {
-				my $parameter = $client->param('sqlplaylist_parameter_'.$i);
+				my $parameter = $client->modeParam('sqlplaylist_parameter_'.$i);
 				my $value = $parameter->{'id'};
 				my $parameterid = "\'PlaylistParameter".$i."\'";
 				$log->debug("Replacing ".$parameterid." with ".$value."\n");
@@ -859,7 +859,7 @@ sub executeSQLForPlaylist {
 				 	for my $track (@$tracks) {
 						$trackno++;
 						if(!$limit || $trackno<=$limit) {
-							$log->debug("Adding: ".($track->url)."\n");
+							$log->debug("Adding: ".($url)."\n");
 							push @result, $track;
 						}
 					}
@@ -1075,6 +1075,10 @@ sub displayAsHTML {
 	$item->displayAsHTML($form);
 }
 
+sub addSQLError {
+	my $error = shift;
+	$sqlerrors .= $error;
+}
 
 # other people call us externally.
 *escape   = \&URI::Escape::uri_escape_utf8;
