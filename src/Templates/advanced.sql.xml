@@ -7,6 +7,7 @@
 		<description>Advanced playlist with a lot of different options</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Advanced"/>
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="optionalsinglelist" id="requestfromuser" name="Request parameter from user" value="" data="album=Album,artist=Artist,decade=Decade,genre=Genre,playlist=Playlist,year=Year"/>
 		<parameter type="text" id="minlength" name="Min track length (in seconds)" value=""/>
 		<parameter type="text" id="maxlength" name="Max track length (in seconds)" value=""/>
 		<parameter type="text" id="minyear" name="Only include tracks after or equal to this year" value=""/>

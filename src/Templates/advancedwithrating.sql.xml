@@ -8,6 +8,7 @@
 		<description>Advanced playlist with a lot of different options including TrackStat ratings</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Advanced with rating"/>
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="optionalsinglelist" id="requestfromuser" name="Request parameter from user" value="" data="album=Album,artist=Artist,decade=Decade,genre=Genre,playlist=Playlist,year=Year"/>
 		<parameter type="text" id="minlength" name="Min track length (in seconds)" value=""/>
 		<parameter type="text" id="maxlength" name="Max track length (in seconds)" value=""/>
 		<parameter type="text" id="minyear" name="Only include tracks after or equal to this year" value=""/>
@@ -18,6 +19,7 @@
 		<parameter type="text" id="includedcomment" name="Include tracks with COMMENT tag" value="" quotevalue="1"/>
 		<parameter type="text" id="excludedcomment" name="Exclude tracks with COMMENT tag" value="" quotevalue="1"/>
 		<parameter type="singlelist" id="minrating" name="Minimum rating" value="0" data="0==0,1=* (10-)=10,2=** (30-)=30,3=*** (50-)=50,4=**** (70-)=70,5=***** (90-)=90"/>
+		<parameter type="checkbox" id="nullrating" name="Include unrated" value="0"/>
 		<parameter type="singlelist" id="exactrating" name="Exact rating" value="0" data="0==0,1=* (10-29)=20,2=** (30-49)=40,3=*** (50-69)=60,4=**** (70-89)=80,5=***** (90-100)=100"/>
 		<parameter type="sqlcheckboxes" id="includedgenres" name="Include genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
 		<parameter type="sqlcheckboxes" id="excludedgenres" name="Exclude genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
