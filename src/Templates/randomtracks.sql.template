@@ -64,7 +64,7 @@ select tracks.url from tracks
 	[%- END %]
 	[%- IF notrepeat %]
 	left join dynamicplaylist_history on
-		tracks.id=dynamicplaylist_history.id
+		tracks.id=dynamicplaylist_history.id and dynamicplaylist_history.client='PlaylistPlayer'
 	[%- END %]
 	[%- IF recentlyplayed %]
 	left join track_statistics on
