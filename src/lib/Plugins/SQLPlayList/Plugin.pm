@@ -806,6 +806,11 @@ sub getInternalParameters {
 		'id' => 'ActiveLibrary',
 		'value' => $activeLibrary
 	);
+	my %player = (
+		'id' => 'Player',
+		'value' => "'".$client->id."'",
+	);
+	$offsetLimitParameters{'PlaylistPlayer'} = \%player;
 	$offsetLimitParameters{'PlaylistActiveLibrary'} = \%activeLibraryParameter;
 	$offsetLimitParameters{'PlaylistOffset'} = \%offsetParameter;
 	$offsetLimitParameters{'PlaylistLimit'} = \%limitParameter;
