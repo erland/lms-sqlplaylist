@@ -892,7 +892,11 @@ sub getTracksForResult {
 	if(!defined($contentType) || $contentType eq 'track' || $contentType eq '') {
 		my @resultTracks = ();
 		my $track = objectForUrl($item);
-		push @result,$track;
+		if(defined($track)) {
+			push @result,$track;
+		}else {
+			$log->warn("Unable to retrieve track object for $item");
+		}
 	}elsif($contentType eq 'album') {
 		if($noRepeat) {
 			$sql = "select tracks.id from tracks left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and tracks.album=$item group by tracks.id";
