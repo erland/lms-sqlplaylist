@@ -19,21 +19,27 @@
 	<tr><td colspan="3">&nbsp;</td></tr>
 	[%- FOREACH parameter = pluginWebAdminMethodsNewItemParameters %]
 		[% IF !(parameter.type.match('list') or parameter.type.match('checkboxes')) or (parameter.values.size!=0 and !(parameter.values.0.value=='' and parameter.values.size==1))%]
+		[% overrideparameter = 'overrideparameter_' _ parameter.id %]
+		[% IF $overrideparameter != '' %]
+			[% parametervalue = $overrideparameter %]
+		[% ELSE %]
+			[% parametervalue = parameter.value %]
+		[% END %]
 		<tr>
 			<td>[% parameter.name %]</td>
 			<td>&nbsp;&nbsp;&nbsp;</td>
 			<td>
 			[% IF parameter.type == 'text' %]
-				<input type="text" name="itemparameter_[% parameter.id %]" value="[% parameter.value | html %]">
+				<input type="text" name="itemparameter_[% parameter.id %]" value="[% parametervalue | html %]">
 			[% ELSIF parameter.type == 'multilinetext' %]
-				<textarea name="itemparameter_[% parameter.id %]" cols="60" rows="10" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% parameter.value | html %]</textarea>
+				<textarea name="itemparameter_[% parameter.id %]" cols="60" rows="10" style="width:95%;height:100%;" wrap="off" onkeydown="return catchTab(this,event)">[% parametervalue | html %]</textarea>
 			[% ELSIF parameter.type.match('singlelist') %]
 				<table border="0">
 					<tr><td>
 						<select name="itemparameter_[% parameter.id %]">
 						[%- FOREACH item = parameter.values %]
 							[%- itemid = item.id %]
-							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]" [% IF parameter.value == itemid %]selected[% END %]>[% item.name | html %]</option>
+							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]" [% IF parametervalue == itemid %]selected[% END %]>[% item.name | html %]</option>
 						[%- END %]
 						</select>
 					</td></tr>
@@ -44,13 +50,13 @@
 						<select name="itemparameter_[% parameter.id %]" multiple size="10">
 						[%- FOREACH item = parameter.values %]
 							[%- itemid = item.id %]
-							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]" [% IF parameter.value == itemid %]selected[% END %]>[% item.name | html %]</option>
+							<option name="[% itemid %]" id="[% itemid %]" value="[% itemid %]" [% IF parametervalue == itemid %]selected[% END %]>[% item.name | html %]</option>
 						[%- END %]
 						</select>
 					</td></tr>
 				</table>
 			[% ELSIF parameter.type == 'checkbox' %]
-				<input type="checkbox" name="itemparameter_[% parameter.id %]" id="itemparameter_[% parameter.id %]" value="1" [% parameter.value ? "checked" : "" %]>
+				<input type="checkbox" name="itemparameter_[% parameter.id %]" id="itemparameter_[% parameter.id %]" value="1" [% parametervalue ? "checked" : "" %]>
 			[% ELSIF parameter.type.match('checkboxes') %]
 				<table border="0">[% USE table parameter.values, cols=3, pad=0 %]
 					[%- FOREACH itemrow = table.rows %]
@@ -60,7 +66,7 @@
 							[%- IF not loop.first %]
 								<td>[% nbsp = "&nbsp"; nbsp.repeat(10) %]</td>
 							[%- END %]
-							<td><input type="checkbox" name="[% itemid %]" id="[% itemid %]" value="1" [% parameter.value ? "checked" : "" %]>
+							<td><input type="checkbox" name="[% itemid %]" id="[% itemid %]" value="1" [% parametervalue ? "checked" : "" %]>
 							<label for="[% itemid %]">[% item.name | html %]</label></td>
 						[%- END %]
 						</tr>
