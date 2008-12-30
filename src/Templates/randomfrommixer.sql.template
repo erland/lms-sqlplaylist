@@ -1,0 +1,60 @@
+-- PlaylistName:[% playlistname %]
+-- PlaylistGroups:[% playlistgroups %]
+[%- IF customskipfilter %]
+-- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
+-- PlaylistStopAction1:cli:customskip clearsecondaryfilter
+[%- END %]
+select tracks.url from tracks
+	[%- IF library or activelibrary %]
+	join multilibrary_track on
+		tracks.id=multilibrary_track.track and
+		multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %]
+	[%- END %]
+	[%- IF notrepeat %]
+	left join dynamicplaylist_history on
+		tracks.id=dynamicplaylist_history.id and dynamicplaylist_history.client='PlaylistPlayer'
+	[%- END %]
+	[%- IF artist %]
+	join contributor_track on
+		tracks.id=contributor_track.track  
+	join contributors on
+		contributors.id=contributor_track.contributor and
+		contributors.name='[% artist %]'
+	[% END %]
+	[%- IF album %]
+	join albums on
+		tracks.album=albums.id and
+		albums.title='[% album %]'
+	[% END %]
+	[%- IF genre %]
+	join genre_track on
+		tracks.id=genre_track.track  
+	join genres on
+		genres.id=genre_track.genre and
+		genres.name='[% genre %]'
+	[% END %]
+	[%- IF playlist %]
+	join playlist_track on
+		tracks.id=plalist_track.track  
+	join track playlists on
+		playlists.id=playlist_track.playlist and
+		playlists.title='[% playlist %]'
+	[% END %]
+	[%- IF recentlyplayed %]
+	left join track_statistics on
+		tracks.url=track_statistics.url
+	[%- END %]
+	where
+		tracks.audio=1
+		[%- IF yearmin %]
+		and tracks.year >= [% yearmin %]
+		[% END %]
+		[%- IF yearmax %]
+		and tracks.year <= [% yearmax %]
+		[% END %]
+	[%- IF recentlyplayed %]
+		and ifnull(track_statistics.lastplayed,0)<(unix_timestamp()-[% recentlyplayed %])
+	[%- END %]
+	group by tracks.id
+	order by rand()
+	[% IF nooftracks %]limit [% nooftracks %][% END %];

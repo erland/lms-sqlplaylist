@@ -1,5 +1,9 @@
 <SCRIPT>
 <!--
+  [% IF pluginSQLPlayListRedirect %]
+  location.replace("[% webroot %][% pluginSQLPlayListRedirect %]");
+  [% ELSE %]
   location.replace("[% webroot %]plugins/DynamicPlayList/dynamicplaylist_list.html?player=[% player | uri %]");
+  [% END %]
 -->
 </SCRIPT>

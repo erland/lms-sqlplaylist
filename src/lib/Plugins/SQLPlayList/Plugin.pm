@@ -41,7 +41,8 @@ use SOAP::Lite;
 use Plugins::SQLPlayList::Settings;
 
 use Plugins::SQLPlayList::ConfigManager::Main;
-
+use Plugins::SQLPlayList::Template::Reader;
+use Plugins::SQLPlayList::MixHandler;
 use Slim::Schema;
 
 # Information on each clients sqlplaylist
@@ -190,6 +191,20 @@ sub initPlugin {
 	Plugins::SQLPlayList::Settings->new($class);
 }
 
+sub postinitPlugin {
+	if (UNIVERSAL::can("Plugins::CustomBrowse::Plugin","registerMixHandler")) {
+		my %parameters = ();
+		my $mixHandler = Plugins::SQLPlayList::MixHandler->new(\%parameters);
+		Plugins::CustomBrowse::Plugin::registerMixHandler('custombrowse_sqlplaylist',$mixHandler);
+	}
+}
+
+sub shutdownPlugin {
+	if (UNIVERSAL::can("Plugins::CustomBrowse::Plugin","unregisterMixHandler")) {
+		Plugins::CustomBrowse::Plugin::unregisterMixHandler('custombrowse_sqlplaylist');
+	}
+}
+
 sub getConfigManager {
 	if(!defined($configManager)) {
 		my %parameters = (
@@ -211,6 +226,7 @@ sub webPages {
 
 	my %pages = (
 		"SQLPlayList/sqlplaylist_list\.(?:htm|xml)"     => \&handleWebList,
+		"SQLPlayList/newsqlplaylist_redirect\.(?:htm|xml)"	=> \&handleWebNewSQLPlayList,
 		"SQLPlayList/webadminmethods_edititem\.(?:htm|xml)"      => \&handleWebEditPlaylist,
 		"SQLPlayList/webadminmethods_newitemtypes\.(?:htm|xml)"      => \&handleWebNewPlaylistTypes,
 		"SQLPlayList/webadminmethods_deleteitemtype\.(?:htm|xml)"      => \&handleWebDeletePlaylistType,
@@ -296,6 +312,45 @@ sub handleWebList {
 	}
 	$params->{'pluginSQLPlayListVersion'} = $PLUGINVERSION;
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_list.html', $params);
+}
+
+sub handleWebNewSQLPlayList {
+	my ($client, $params) = @_;
+
+	my $url = 'plugins/SQLPlayList/webadminmethods_newitemparameters.html?';
+	if($params->{'type'} eq 'standard') {
+		$url .= 'itemtemplate=randomfrommixer.sql.xml';
+
+		if($params->{'album'}) {
+			my $album = Slim::Schema->resultset('Album')->find($params->{'album'});
+			$url .= '&overrideparameter_album='.$album->title if defined $album;
+		}
+
+		if($params->{'artist'}) {
+			my $contributor = Slim::Schema->resultset('Contributor')->find($params->{'artist'});
+			$url .= '&overrideparameter_artist='.$contributor->name if defined $contributor;
+		}
+
+		if($params->{'year'}) {
+			$url .= '&overrideparameter_year='.$params->{'year'};
+			$url .= '&overrideparameter_yearmin='.$params->{'year'};
+			$url .= '&overrideparameter_yearmax='.$params->{'year'};
+		}
+
+		if($params->{'genre'}) {
+			my $genre = Slim::Schema->resultset('Genre')->find($params->{'genre'});
+			$url .= '&overrideparameter_genre='.$genre->name if defined $genre;
+		}
+
+		if($params->{'playlist'}) {
+			my $playlist = Slim::Schema->resultset('Playlist')->find($params->{'playlist'});
+			$url .= '&overrideparameter_playlist='.$playlist->name if defined $playlist;
+		}
+	}else {
+		$url .= 'itemtemplate=randomtracks.sql.xml';
+	}
+	$params->{'pluginSQLPlayListRedirect'} = $url;
+	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_redirect.html', $params);
 }
 
 sub isPluginsInstalled {
@@ -1033,6 +1088,10 @@ sub getNextDynamicPlayListTracks {
 	return \@{$result};
 }
 
+sub getCustomBrowseMixes {
+	my $client = shift;
+	return Plugins::SQLPlayList::Template::Reader::getTemplates($client,'SQLPlayList',$PLUGINVERSION,'FileCache/CustomBrowse','Mixes','xml','mix');
+}
 
 sub objectForId {
 	my $type = shift;

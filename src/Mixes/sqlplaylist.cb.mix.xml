@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custombrowse>
+	<requiredplugins>SQLPlayList</requiredplugins>
+	<minslimserverversion>7.1</minslimserverversion>
+	<mix>
+		<mixname>Create SQL Playlist</mixname>
+		<mixchecktype>custombrowse_sqlplaylist</mixchecktype>
+		<mixtype>custombrowse_sqlplaylist</mixtype>
+		<miximage>html/images/sqlplaylist_mix.gif</miximage>
+	</mix>
+</custombrowse>
