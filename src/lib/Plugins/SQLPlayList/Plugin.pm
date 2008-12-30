@@ -189,6 +189,12 @@ sub initPlugin {
 	$PLUGINVERSION = Slim::Utils::PluginManager->dataForPlugin($class)->{'version'};
 	checkDefaults();
 	Plugins::SQLPlayList::Settings->new($class);
+	if($prefs->get("enable_web_mixerfunction")) {
+		my %mixerMap = ();
+		$mixerMap{'mixerlink'} = \&mixerlink;
+		Slim::Music::Import->addImporter($class, \%mixerMap);
+	    	Slim::Music::Import->useImporter('Plugins::SQLPlayList::Plugin', 1);
+	}
 }
 
 sub postinitPlugin {
@@ -312,6 +318,62 @@ sub handleWebList {
 	}
 	$params->{'pluginSQLPlayListVersion'} = $PLUGINVERSION;
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_list.html', $params);
+}
+
+sub mixable {
+        my $class = shift;
+        my $item  = shift;
+	my $blessed = blessed($item);
+
+	if(!$blessed) {
+		return undef;
+	}elsif($blessed eq 'Slim::Schema::Year') {
+		return 1;
+	}elsif($blessed eq 'Slim::Schema::Album') {
+		return 1;
+	}elsif($blessed eq 'Slim::Schema::Age') {
+		return 1;
+	}elsif($blessed eq 'Slim::Schema::Contributor' &&  Slim::Schema->variousArtistsObject->id ne $item->id) {
+		return 1;
+	}elsif($blessed eq 'Slim::Schema::Genre') {
+		return 1;
+	}elsif($blessed eq 'Slim::Schema::Playlist') {
+		return 1;
+	}
+        return undef;
+}
+
+sub mixerlink {
+	my $item = shift;
+	my $form = shift;
+	my $descend = shift;
+	
+	my $contextId = undef;
+	my $contextName = undef;
+	my $contextType = undef;
+	if(ref($item) eq 'Slim::Schema::Album' || ref($item) eq 'Slim::Schema::Age') {
+		$contextId = $item->id;
+		$contextType = 'album';
+	}elsif(ref($item) eq 'Slim::Schema::Contributor' &&  Slim::Schema->variousArtistsObject->id ne $item->id) {
+		$contextId = $item->id;
+		$contextType = 'artist';
+	}elsif(ref($item) eq 'Slim::Schema::Genre') {
+		$contextId = $item->id;
+		$contextType = 'genre';
+	}elsif(ref($item) eq 'Slim::Schema::Year') {
+		$contextId = $item->id;
+		$contextType = 'year';
+	}elsif(ref($item) eq 'Slim::Schema::Playlist') {
+		$contextId = $item->id;
+		$contextType = 'playlist';
+	}
+
+	if(defined($contextType) && defined($contextId)) {
+		$form->{'mixercontexttype'} = $contextType;
+		$form->{'mixercontextid'} = $contextId;
+		$form->{'mixerlinks'}{'SQLPLAYLIST'} = "plugins/SQLPlayList/mixerlink.html";
+	}
+	return $form;
 }
 
 sub handleWebNewSQLPlayList {
@@ -769,6 +831,12 @@ sub checkDefaults {
 		# Default to not show debug messages
 		$log->debug("Defaulting plugin_sqlplaylist_download_url\n");
 		$prefs->set('download_url', 'http://erland.homeip.net/datacollection/services/DataCollection');
+	}
+
+	$prefVal = $prefs->get('enable_web_mixerfunction');
+	if(! defined $prefVal) {
+		$log->debug("Defaulting enable_web_mixerfunction\n");
+		$prefs->set('enable_web_mixerfunction', 1);
 	}
 }
 

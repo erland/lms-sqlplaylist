@@ -60,7 +60,7 @@ sub pages {
 }
 
 sub prefs {
-        return ($prefs, qw(playlist_directory template_directory));
+        return ($prefs, qw(playlist_directory template_directory enable_web_mixerfunction));
 }
 
 sub handler {

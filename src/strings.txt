@@ -292,3 +292,12 @@ PLUGIN_SQLPLAYLIST_DOWNLOAD_QUESTION
 PLUGIN_SQLPLAYLIST_REFRESH_PLAYLISTS
 	EN	Refresh playlists
 
+PLUGIN_SQLPLAYLIST_MIX
+	EN	Create SQL Playlist
+
+SETUP_PLUGIN_SQLPLAYLIST_ENABLE_WEB_MIXERFUNCTION
+	EN	Mixer Create SQL Playlist
+
+SETUP_PLUGIN_SQLPLAYLIST_ENABLE_WEB_MIXERFUNCTION_DESC
+	EN	Enable SQL Playlist mixer which is used to create SQL Playlists from browse menus in web interface. May require SqueezeCenter restart.
+

@@ -1,0 +1,6 @@
+[% IF mixeritems %]
+        [%- tmpitem = item -%][%# store item object so we don't lose it for good %]
+        [%- item = mixeritems -%]
+[% END %]
+[% WRAPPER cmdlink cmdimage='sqlplaylist_mix.gif' cmdtitle='PLUGIN_SQLPLAYLIST_MIX' %]href="[% webroot %]plugins/SQLPlayList/newsqlplaylist_redirect.html?type=standard&amp;[% item.mixercontexttype %]=[% item.mixercontextid %]&amp;player=[% playerURI %]" [% IF browserTarget %]target="[% browserTarget %]"[% END %][% END %]
+[%- IF tmpitem; item = tmpitem; END -%]
