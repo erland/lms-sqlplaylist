@@ -44,6 +44,7 @@ use Plugins::SQLPlayList::ConfigManager::Main;
 use Plugins::SQLPlayList::Template::Reader;
 use Plugins::SQLPlayList::MixHandler;
 use Slim::Schema;
+use Scalar::Util qw(blessed);
 
 # Information on each clients sqlplaylist
 my $playLists = undef;
