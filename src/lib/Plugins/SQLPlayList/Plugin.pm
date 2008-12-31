@@ -382,32 +382,39 @@ sub handleWebNewSQLPlayList {
 	my $url = 'plugins/SQLPlayList/webadminmethods_newitemparameters.html?';
 	if($params->{'type'} eq 'standard') {
 		$url .= 'itemtemplate=randomfrommixer.sql.xml';
+		my $playlistname = "selection";
 
-		if($params->{'album'}) {
-			my $album = Slim::Schema->resultset('Album')->find($params->{'album'});
-			$url .= '&overrideparameter_album='.escape($album->title) if defined $album;
-		}
-
-		if($params->{'artist'}) {
-			my $contributor = Slim::Schema->resultset('Contributor')->find($params->{'artist'});
-			$url .= '&overrideparameter_artist='.escape($contributor->name) if defined $contributor;
+		if($params->{'playlist'}) {
+			my $playlist = Slim::Schema->resultset('Playlist')->find($params->{'playlist'});
+			$url .= '&overrideparameter_playlist='.escape($playlist->name) if defined $playlist;
+			$playlistname = $playlist->name;
 		}
 
 		if($params->{'year'}) {
 			$url .= '&overrideparameter_year='.$params->{'year'};
 			$url .= '&overrideparameter_yearmin='.$params->{'year'};
 			$url .= '&overrideparameter_yearmax='.$params->{'year'};
+			$playlistname = $params->{'year'};
 		}
 
 		if($params->{'genre'}) {
 			my $genre = Slim::Schema->resultset('Genre')->find($params->{'genre'});
 			$url .= '&overrideparameter_genre='.escape($genre->name) if defined $genre;
+			$playlistname = $genre->name;
 		}
 
-		if($params->{'playlist'}) {
-			my $playlist = Slim::Schema->resultset('Playlist')->find($params->{'playlist'});
-			$url .= '&overrideparameter_playlist='.escape($playlist->name) if defined $playlist;
+		if($params->{'artist'}) {
+			my $contributor = Slim::Schema->resultset('Contributor')->find($params->{'artist'});
+			$url .= '&overrideparameter_artist='.escape($contributor->name) if defined $contributor;
+			$playlistname = $contributor->name;
 		}
+
+		if($params->{'album'}) {
+			my $album = Slim::Schema->resultset('Album')->find($params->{'album'});
+			$url .= '&overrideparameter_album='.escape($album->title) if defined $album;
+			$playlistname = $album->title;
+		}
+		$url .= '&overrideparameter_playlistname='.escape('Random for '.$playlistname);
 	}else {
 		$url .= 'itemtemplate=randomtracks.sql.xml';
 	}
