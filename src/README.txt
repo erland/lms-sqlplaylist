@@ -36,5 +36,5 @@ This archive should contain the following files:
 4. INSTALLATION AND USAGE
 =========================
 See the official Wiki for more information at:
-http://wiki.erland.homeip.net/index.php/Category:SlimServer
+http://wiki.erland.isaksson.info/index.php/Category:SlimServer
 
