@@ -46,6 +46,9 @@ select tracks.url from tracks
 	[%- END %]
 	where
 		tracks.audio=1
+		[%- IF notrepeat %]
+		and dynamicplaylist_history.id is null
+		[%- END %]
 		[%- IF yearmin %]
 		and tracks.year >= [% yearmin %]
 		[% END %]
