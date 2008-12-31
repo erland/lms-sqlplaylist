@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<template>
-		<name>Random from mixer</name>
-		<description>Random songs for specified selection</description>
+		<downloadidentifier>225</downloadidentifier>
+		<name>Random from selection</name>
+		<description>Random songs from specified selection</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Random from mixer"/>
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
 		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
