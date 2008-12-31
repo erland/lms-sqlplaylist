@@ -385,12 +385,12 @@ sub handleWebNewSQLPlayList {
 
 		if($params->{'album'}) {
 			my $album = Slim::Schema->resultset('Album')->find($params->{'album'});
-			$url .= '&overrideparameter_album='.$album->title if defined $album;
+			$url .= '&overrideparameter_album='.escape($album->title) if defined $album;
 		}
 
 		if($params->{'artist'}) {
 			my $contributor = Slim::Schema->resultset('Contributor')->find($params->{'artist'});
-			$url .= '&overrideparameter_artist='.$contributor->name if defined $contributor;
+			$url .= '&overrideparameter_artist='.escape($contributor->name) if defined $contributor;
 		}
 
 		if($params->{'year'}) {
@@ -401,12 +401,12 @@ sub handleWebNewSQLPlayList {
 
 		if($params->{'genre'}) {
 			my $genre = Slim::Schema->resultset('Genre')->find($params->{'genre'});
-			$url .= '&overrideparameter_genre='.$genre->name if defined $genre;
+			$url .= '&overrideparameter_genre='.escape($genre->name) if defined $genre;
 		}
 
 		if($params->{'playlist'}) {
 			my $playlist = Slim::Schema->resultset('Playlist')->find($params->{'playlist'});
-			$url .= '&overrideparameter_playlist='.$playlist->name if defined $playlist;
+			$url .= '&overrideparameter_playlist='.escape($playlist->name) if defined $playlist;
 		}
 	}else {
 		$url .= 'itemtemplate=randomtracks.sql.xml';
