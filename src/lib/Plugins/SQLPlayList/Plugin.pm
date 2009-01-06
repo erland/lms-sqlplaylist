@@ -660,7 +660,7 @@ sub addParameterValues {
 			$sth->finish();
 		};
 		if( $@ ) {
-		    warn "Database error: $DBI::errstr\n$@\n";
+		    $log->error("Database error: $DBI::errstr\n$@");
 		}		
 	}
 }
@@ -1005,7 +1005,7 @@ sub executeSQLForPlaylist {
 		};
 		if( $@ ) {
 			$sqlerrors .= $DBI::errstr."<br>$@<br>";
-			warn "Database error: $DBI::errstr\n$@\n";
+			$log->error("Database error: $DBI::errstr\n$@");
 		}		
 	}
 	return \@result;
