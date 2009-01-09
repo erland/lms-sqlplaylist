@@ -1168,7 +1168,7 @@ sub saveItem
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 		$self->logHandler->debug("Opening configuration file: $url\n");
 		open($fh,"> $url") or do {
-	            $params->{'pluginWebAdminMethodsError'} = 'Error saving';
+	            $params->{'pluginWebAdminMethodsError'} = 'Error saving: '.$!;
 		};
 	}
 	if(!($params->{'pluginWebAdminMethodsError'})) {
@@ -1207,7 +1207,7 @@ sub saveSimpleItem {
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 		$self->logHandler->debug("Opening configuration file: $url\n");
 		open($fh,"> $url") or do {
-	            $params->{'pluginWebAdminMethodsError'} = 'Error saving';
+	            $params->{'pluginWebAdminMethodsError'} = 'Error saving: '.$!;
 		};
 	}
 	if(!($params->{'pluginWebAdminMethodsError'})) {
@@ -1274,14 +1274,20 @@ sub saveSimpleItem {
 				$parameters = \@parameterArray;
 			}
 			for my $p (@$parameters) {
-				$self->parameterHandler->addValuesToTemplateParameter($p);
-				my $value = $self->parameterHandler->getXMLValueOfTemplateParameter($params,$p);
-				if(defined($value) && $value ne '') {
-					my $valueData = '<data>'.$value.'</data>';
-					my $xmlValue = eval { XMLin($valueData, forcearray => ['value'], keyattr => []) };
-					if(defined($xmlValue)) {
-						$xmlValue->{'id'} = $p->{'id'};
-						push @templateDataParameters,$xmlValue;
+				my $useParameter = 1;
+				if(defined($p->{'requireplugins'})) {
+					$useParameter = isPluginsInstalled($client,$p->{'requireplugins'});
+				}
+				if($useParameter) {
+					$self->parameterHandler->addValuesToTemplateParameter($p);
+					my $value = $self->parameterHandler->getXMLValueOfTemplateParameter($params,$p);
+					if(defined($value) && $value ne '') {
+						my $valueData = '<data>'.$value.'</data>';
+						my $xmlValue = eval { XMLin($valueData, forcearray => ['value'], keyattr => []) };
+						if(defined($xmlValue)) {
+							$xmlValue->{'id'} = $p->{'id'};
+							push @templateDataParameters,$xmlValue;
+						}
 					}
 				}
 			}			
@@ -1417,7 +1423,7 @@ sub downloadItem {
 					}
 					my $fh;
 					open($fh,"> $url") or do {
-						$result{'error'} = 'Error saving downloaded item';
+						$result{'error'} = 'Error saving downloaded item: '.$!;
 					        return \%result;
 					};
 					$self->logHandler->debug("Writing to file: $url\n");
