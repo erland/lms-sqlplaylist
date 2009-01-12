@@ -796,10 +796,6 @@ sub webNewItem {
 			$itemData = $templateFileData;
 		}
 		$itemData = encode_entities($itemData,"&<>\'\"");
-		if(length($itemData)>10000) {
-			$self->logHandler->warn("Warning! Large configuration, ".length($itemData)." characters\n");
-		        $params->{'pluginWebAdminMethodsEditItemSizeWarning'} = "This configuration is very large, due to size limitations it might fail when you try to save it<br>Temporary solution: If save fails, click back in web browser and copy the information in the configuration field to a text file and save it to the ".$self->customItemDirectory." directory with a filename with extension .".$self->extension;
-		}
         	$params->{'pluginWebAdminMethodsEditItemData'} = $itemData;
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $itemFile;
 		$params->{'pluginWebAdminMethodsEditItemFileUnescaped'} = unescape($itemFile);
@@ -897,10 +893,6 @@ sub webSaveSimpleItem {
 			$itemData = $templateFileData;
 		}
 		$itemData = encode_entities($itemData,"&<>\'\"");
-		if(length($itemData)>10000) {
-			$self->logHandler->warn("Warning! Large configuration, ".length($itemData)." characters\n");
-		        $params->{'pluginWebAdminMethodsEditItemSizeWarning'} = "This configuration is very large, due to size limitations it might fail when you try to save it<br>Temporary solution: If save fails, click back in web browser and copy the information in the configuration field to a text file and save it to the ".$self->customItemDirectory." directory with a filename with extension .".$self->extension;
-		}
         	$params->{'pluginWebAdminMethodsEditItemData'} = $itemData;
 		$params->{'pluginWebAdminMethodsEditItemDeleteSimple'} = $params->{'file'};
 		$params->{'pluginWebAdminMethodsEditItemFile'} = $itemFile;
