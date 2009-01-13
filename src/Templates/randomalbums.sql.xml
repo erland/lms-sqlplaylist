@@ -7,6 +7,7 @@
 		<description>Random albums playlist with possibillity to include/exclude genres</description>
 		<parameter type="text" id="playlistname" name="Playlist name" value="Random albums"/>
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
+		<parameter type="optionalsinglelist" id="requestfromuser" name="Request parameter from user" value="" data="artist=Artist,decade=Decade,genre=Genre,playlist=Playlist,year=Year"/>
 		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
 		<parameter type="optionalsinglelist" id="recentlyplayed" requireplugins="TrackStat::Plugin" name="Ignore albums played recently" value="" data="3600=1 hour,10800=3 hours,21600=6 hours,43200=12 hours,86400=24 hours,604800=1 week,1209600=2 weeks,2419200=4 weeks,7257600=12 weeks"/>
 		<parameter type="sqlcheckboxes" id="includedgenres" name="Include genres" value="0" data="select id,name,name from genres order by namesort asc" quotevalue="1"/>
