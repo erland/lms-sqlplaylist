@@ -231,7 +231,7 @@ sub getValueOfTemplateParameter {
 				$thisvalue=quoteValue($thisvalue);
 			}
 			if($parameter->{'quotevalue'}) {
-				return "'".encode_entities($thisvalue,"&<>\'\"").".";
+				return "'".encode_entities($thisvalue,"&<>\'\"")."'";
 			}else {
 				return encode_entities($thisvalue,"&<>\'\"");
 			}
