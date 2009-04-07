@@ -299,6 +299,9 @@ sub readItemConfiguration {
 		my $item = $customItems{$itemId};
 		$localItems{$item->{'id'}} = $item;
 	}
+	for my $key (keys %localItems) {
+		postProcessItem($localItems{$key});
+	}
 
 	if($storeInCache) {
 		$self->items(\%localItems);
@@ -308,6 +311,16 @@ sub readItemConfiguration {
 		'templates' => $self->templates
 	);
 	return \%result;
+}
+
+sub postProcessItem {
+        my $item = shift;
+        
+        if(defined($item->{'name'})) {
+                $item->{'name'} =~ s/\\\\/\\/g;
+                $item->{'name'} =~ s/\\\"/\"/g;
+                $item->{'name'} =~ s/\\\'/\'/g;
+        }
 }
 
 sub changedItemConfiguration {
