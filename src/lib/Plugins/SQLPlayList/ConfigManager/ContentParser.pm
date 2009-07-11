@@ -19,7 +19,7 @@
 package Plugins::SQLPlayList::ConfigManager::ContentParser;
 
 use strict;
-use base 'Class::Data::Accessor';
+use base qw(Slim::Utils::Accessor);
 use Plugins::SQLPlayList::ConfigManager::BaseParser;
 our @ISA = qw(Plugins::SQLPlayList::ConfigManager::BaseParser);
 
@@ -34,7 +34,7 @@ sub new {
 
 	$parameters->{'contentType'} = 'playlist';
 	my $self = $class->SUPER::new($parameters);
-	bless $self,$class;
+	#bless $self,$class;
 	return $self;
 }
 

@@ -20,7 +20,7 @@ package Plugins::SQLPlayList::ConfigManager::ParameterHandler;
 
 use strict;
 
-use base 'Class::Data::Accessor';
+use base qw(Slim::Utils::Accessor);
 
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
@@ -28,18 +28,17 @@ use Slim::Utils::Strings qw(string);
 use DBI qw(:sql_types);
 use HTML::Entities;
 
-__PACKAGE__->mk_classaccessors( qw(logHandler parameterPrefix criticalErrorCallback) );
+__PACKAGE__->mk_accessor( rw => qw(logHandler parameterPrefix criticalErrorCallback) );
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
-	my $self = {
-		'logHandler' => $parameters->{'logHandler'},
-		'parameterPrefix' => $parameters->{'parameterPrefix'},
-		'criticalErrorCallback' => $parameters->{'criticalErrorCallback'},
-	};
-	bless $self,$class;
+	my $self = $class->SUPER::new();
+	$self->logHandler($parameters->{'logHandler'});
+	$self->parameterPrefix($parameters->{'parameterPrefix'});
+	$self->criticalErrorCallback($parameters->{'criticalErrorCallback'});
+
 	return $self;
 }
 

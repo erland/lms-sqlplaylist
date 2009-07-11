@@ -20,7 +20,7 @@ package Plugins::SQLPlayList::ConfigManager::BaseParser;
 
 use strict;
 
-use base 'Class::Data::Accessor';
+use base qw(Slim::Utils::Accessor);
 
 use Slim::Utils::Prefs;
 use Slim::Buttons::Home;
@@ -32,32 +32,37 @@ use Data::Dumper;
 use HTML::Entities;
 use Cache::Cache qw( $EXPIRES_NEVER);
 
-__PACKAGE__->mk_classaccessors( qw(logHandler pluginId pluginVersion contentType templateHandler cache cacheName cacheItems) );
+__PACKAGE__->mk_accessor( rw => qw(logHandler pluginId pluginVersion contentType templateHandler cache cacheName cacheItems) );
 
 my $utf8filenames = 1;
 my $serverPrefs = preferences('server');
-
+my $driver;
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
-	my $self = {
-		'logHandler' => $parameters->{'logHandler'},
-		'pluginId' => $parameters->{'pluginId'},
-		'pluginVersion' => $parameters->{'pluginVersion'},
-		'contentType' => $parameters->{'contentType'},
-		'cacheName' => $parameters->{'cacheName'},
-		'cacheItems' => undef,
-		'cache' => undef,
-		'templateHandler' => undef,
-	};
-	if(defined($self->{'cacheName'})) {
-		$self->{'cache'} = Slim::Utils::Cache->new($self->{'cacheName'})
+	my $self = $class->SUPER::new($parameters);
+	$self->logHandler($parameters->{'logHandler'});
+	$self->pluginId($parameters->{'pluginId'});
+	$self->pluginVersion($parameters->{'pluginVersion'});
+	$self->contentType($parameters->{'contentType'});
+	$self->cacheName($parameters->{'cacheName'});
+	if(defined($self->cacheName)) {
+		$self->cache(Slim::Utils::Cache->new($self->cacheName));
 	}
 	if(defined($parameters->{'utf8filenames'})) {
 		$utf8filenames = $parameters->{'utf8filenames'};
 	}
-	bless $self,$class;
+	#bless $self,$class;
+
+	$driver = $serverPrefs->get('dbsource');
+	$driver =~ s/dbi:(.*?):(.*)$/$1/;
+
+	if(UNIVERSAL::can("Slim::Schema","sourceInformation")) {
+		my ($source,$username,$password);
+		($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
+	}
+
 	return $self;
 }
 
@@ -511,6 +516,11 @@ sub addStandardParameters {
 	my $params = shift;
 
 	$params->{'SqueezeCenterVersion'} = $::VERSION;
+	if($driver eq 'mysql') {
+		$params->{'RANDOMFUNCTION'} = "rand()";
+	}else {
+		$params->{'RANDOMFUNCTION'} = "random()";
+	}
 }
 
 sub checkContent {

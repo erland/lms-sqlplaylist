@@ -20,7 +20,7 @@ package Plugins::SQLPlayList::ConfigManager::DirectoryLoader;
 
 use strict;
 
-use base 'Class::Data::Accessor';
+use base qw(Slim::Utils::Accessor);
 
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
@@ -30,27 +30,23 @@ use File::Slurp;
 use FindBin qw($Bin);
 use Cache::Cache qw( $EXPIRES_NEVER);
 
-__PACKAGE__->mk_classaccessors( qw(logHandler extension includeExtensionInIdentifier identifierExtension parser cacheName cache cacheItems) );
+__PACKAGE__->mk_accessor( rw => qw(logHandler extension includeExtensionInIdentifier identifierExtension parser cacheName cache cacheItems) );
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
-	my $self = {
-		'logHandler' => $parameters->{'logHandler'},
-		'extension' => $parameters->{'extension'},
-		'identifierExtension' => $parameters->{'identifierExtension'},
-		'includeExtensionInIdentifier' => $parameters->{'includeExtensionInIdentifier'},
-		'parser' => $parameters->{'parser'},
-		'cacheName' => $parameters->{'cacheName'},
-		'cache' => undef,
-	};
-	$self->{'cacheItems'} = undef;
-	if(defined($self->{'cacheName'})) {
-		$self->{'cache'} = Slim::Utils::Cache->new($self->{'cacheName'})
+	my $self = $class->SUPER::new();
+	$self->logHandler($parameters->{'logHandler'});
+	$self->extension($parameters->{'extension'});
+	$self->identifierExtension($parameters->{'identifierExtension'});
+	$self->includeExtensionInIdentifier($parameters->{'includeExtensionInIdentifier'});
+	$self->parser($parameters->{'parser'});
+	$self->cacheName($parameters->{'cacheName'});
+	if(defined($self->cacheName)) {
+		$self->cache(Slim::Utils::Cache->new($self->cacheName));
 	}
 
-	bless $self,$class;
 	return $self;
 }
 

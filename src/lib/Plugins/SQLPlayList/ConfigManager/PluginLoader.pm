@@ -20,29 +20,28 @@ package Plugins::SQLPlayList::ConfigManager::PluginLoader;
 
 use strict;
 
-use base 'Class::Data::Accessor';
+use base qw(Slim::Utils::Accessor);
 
 use Slim::Buttons::Home;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
 use Data::Dumper;
 
-__PACKAGE__->mk_classaccessors( qw(logHandler listMethod dataMethod pluginId contentType templateContentParser contentParser) );
+__PACKAGE__->mk_accessor( rw => qw(logHandler listMethod dataMethod pluginId contentType templateContentParser contentParser) );
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
-	my $self = {
-		'logHandler' => $parameters->{'logHandler'},
-		'listMethod' => $parameters->{'listMethod'},
-		'dataMethod' => $parameters->{'dataMethod'},
-		'pluginId' => $parameters->{'pluginId'},
-		'contentType' => $parameters->{'contentType'},
-		'contentParser' => $parameters->{'contentParser'},
-		'templateContentParser' => $parameters->{'templateContentParser'}
-	};
-	bless $self,$class;
+	my $self = $class->SUPER::new();
+	$self->logHandler($parameters->{'logHandler'});
+	$self->listMethod($parameters->{'listMethod'});
+	$self->dataMethod($parameters->{'dataMethod'});
+	$self->pluginId($parameters->{'pluginId'});
+	$self->contentType($parameters->{'contentType'});
+	$self->contentParser($parameters->{'contentParser'});
+	$self->templateContentParser($parameters->{'templateContentParser'});
+
 	return $self;
 }
 

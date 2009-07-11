@@ -31,7 +31,7 @@ sub new {
 	my $parameters = shift;
 
 	my $self = $class->SUPER::new($parameters);
-	bless $self,$class;
+	#bless $self,$class;
 	return $self;
 }
 

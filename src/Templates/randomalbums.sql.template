@@ -99,7 +99,7 @@ create temporary table sqlplaylist_random_albums (primary key (album))
 		[%- IF recentlyplayed %]
 		having max(ifnull(track_statistics.lastplayed,0))<(unix_timestamp()-[% recentlyplayed %])
 		[%- END %]
-		order by rand()
+		order by [% RANDOMFUNCTION %]
 		limit 1;
 select tracks.url from tracks
 	[%- IF library or activelibrary %]

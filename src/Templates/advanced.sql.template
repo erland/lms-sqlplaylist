@@ -150,5 +150,5 @@ select tracks.url from tracks
 	[%- IF includedcomment or includedartist or includedgenres or requestfromuser %]
 	group by tracks.id
 	[%- END %]
-	order by rand()
+	order by [% RANDOMFUNCTION %]
 	[% IF nooftracks %]limit [% nooftracks %][% END %];

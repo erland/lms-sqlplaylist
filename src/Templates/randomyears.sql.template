@@ -48,7 +48,7 @@ create temporary table sqlplaylist_random_years (primary key (year))
 		[%- IF recentlyplayed %]
 		having max(ifnull(track_statistics.lastplayed,0))<(unix_timestamp()-[% recentlyplayed %])
 		[%- END %]
-		order by rand()
+		order by [% RANDOMFUNCTION %]
 		limit 1;
 select tracks.url from tracks
 	join sqlplaylist_random_years 
@@ -85,6 +85,6 @@ select tracks.url from tracks
 							genres.name in ([% excludedgenres %]))
 	[%- END %]
 	group by tracks.id
-	order by sqlplaylist_random_years.year,rand()
+	order by sqlplaylist_random_years.year,[% RANDOMFUNCTION %]
 	[% IF nooftracks %]limit [% nooftracks %][% END %];
 drop temporary table sqlplaylist_random_years;

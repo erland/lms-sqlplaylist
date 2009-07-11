@@ -253,7 +253,11 @@ sub webPages {
 	);
 
 	for my $page (keys %pages) {
-		Slim::Web::HTTP::addPageFunction($page, $pages{$page});
+		if(UNIVERSAL::can("Slim::Web::Pages","addPageFunction")) {
+			Slim::Web::Pages->addPageFunction($page, $pages{$page});
+		}else {
+			Slim::Web::HTTP::addPageFunction($page, $pages{$page});
+		}
 	}
 
 	Slim::Web::Pages->addPageLinks("plugins", { 'PLUGIN_SQLPLAYLIST' => 'plugins/SQLPlayList/sqlplaylist_list.html' });
@@ -429,7 +433,11 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
+			if(UNIVERSAL::can("Slim::Utils::PluginManager","isEnabled")) {
+				$enabledPlugin = Slim::Utils::PluginManager->isEnabled($plugin);
+			}else {
+				$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
+			}
 		}
 	}
 	return $enabledPlugin;

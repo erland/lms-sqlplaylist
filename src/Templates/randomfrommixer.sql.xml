@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
+	<minpluginversion>2.5</minpluginversion>
 	<template>
 		<downloadidentifier>225</downloadidentifier>
 		<name>Random from selection</name>

@@ -7,5 +7,5 @@
 select url from tracks 
 	where
 		audio=1
-	order by rand()
+	order by [% RANDOMFUNCTION %]
 	[% IF nooftracks %]limit [% nooftracks %][% END %];

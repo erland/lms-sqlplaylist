@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
-	<minpluginversion>2.2</minpluginversion>
+	<minpluginversion>2.5</minpluginversion>
 	<template>
 		<downloadidentifier>10</downloadidentifier>
 		<name>Random Years</name>

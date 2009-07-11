@@ -88,7 +88,7 @@ select tracks.url from tracks
 	group by tracks.id
 	[%- END %]
 	[% IF randomordered %]
-	order by rand()
+	order by [% RANDOMFUNCTION %]
 	[% ELSIF playlist %]
 	order by playlist_track.position asc
 	[% ELSE %]

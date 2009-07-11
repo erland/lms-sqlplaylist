@@ -19,7 +19,7 @@
 package Plugins::SQLPlayList::ConfigManager::WebAdminMethods;
 
 use strict;
-use base 'Class::Data::Accessor';
+use base qw(Slim::Utils::Accessor);
 
 use Slim::Utils::Prefs;
 use Slim::Buttons::Home;
@@ -36,50 +36,58 @@ use HTML::Entities;
 use Scalar::Util qw(blessed);
 use Data::Dumper;
 
-__PACKAGE__->mk_classaccessors( qw(logHandler pluginPrefs pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension downloadVersion) );
+__PACKAGE__->mk_accessor( rw => qw(logHandler pluginPrefs pluginId pluginVersion downloadApplicationId extension simpleExtension contentPluginHandler templatePluginHandler contentDirectoryHandler contentTemplateDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler parameterHandler contentParser templateDirectories itemDirectories customTemplateDirectory customItemDirectory supportDownload supportDownloadError webCallbacks webTemplates downloadUrl template templateExtension templateDataExtension downloadVersion) );
 
 my $utf8filenames = 1;
 my $serverPrefs = preferences('server');
+my $driver;
 
 sub new {
 	my $class = shift;
 	my $parameters = shift;
 
-	my $self = {
-		'logHandler' => $parameters->{'logHandler'},
-		'pluginPrefs' => $parameters->{'pluginPrefs'},
-		'pluginId' => $parameters->{'pluginId'},
-		'pluginVersion' => $parameters->{'pluginVersion'},
-		'downloadApplicationId' => $parameters->{'downloadApplicationId'},
-		'extension' => $parameters->{'extension'},
-		'simpleExtension' => $parameters->{'simpleExtension'},
-		'contentPluginHandler' => $parameters->{'contentPluginHandler'},
-		'templatePluginHandler' => $parameters->{'templatePluginHandler'},
-		'contentDirectoryHandler' => $parameters->{'contentDirectoryHandler'},
-		'contentTemplateDirectoryHandler' => $parameters->{'contentTemplateDirectoryHandler'},
-		'templateDirectoryHandler' => $parameters->{'templateDirectoryHandler'},
-		'templateDataDirectoryHandler' => $parameters->{'templateDataDirectoryHandler'},
-		'parameterHandler' => $parameters->{'parameterHandler'},
-		'contentParser' => $parameters->{'contentParser'},
-		'templateDirectories' => $parameters->{'templateDirectories'},
-		'itemDirectories' => $parameters->{'itemDirectories'},
-		'customTemplateDirectory' => $parameters->{'customTemplateDirectory'},
-		'customItemDirectory' => $parameters->{'customItemDirectory'},
-		'supportDownload' => $parameters->{'supportDownload'},
-		'supportDownloadError' => $parameters->{'supportDownloadError'},
-		'webCallbacks' => $parameters->{'webCallbacks'},
-		'webTemplates' => $parameters->{'webTemplates'},
-		'downloadUrl' => $parameters->{'downloadUrl'},
-		'downloadVersion' => $parameters->{'downloadVersion'},
-	};
+	my $self = $class->SUPER::new($parameters);
+	$self->logHandler($parameters->{'logHandler'});
+	$self->pluginPrefs($parameters->{'pluginPrefs'});
+	$self->pluginId($parameters->{'pluginId'});
+	$self->pluginVersion($parameters->{'pluginVersion'});
+	$self->downloadApplicationId($parameters->{'downloadApplicationId'});
+	$self->extension($parameters->{'extension'});
+	$self->simpleExtension($parameters->{'simpleExtension'});
+	$self->contentPluginHandler($parameters->{'contentPluginHandler'});
+	$self->templatePluginHandler($parameters->{'templatePluginHandler'});
+	$self->contentDirectoryHandler($parameters->{'contentDirectoryHandler'});
+	$self->contentTemplateDirectoryHandler($parameters->{'contentTemplateDirectoryHandler'});
+	$self->templateDirectoryHandler($parameters->{'templateDirectoryHandler'});
+	$self->templateDataDirectoryHandler($parameters->{'templateDataDirectoryHandler'});
+	$self->parameterHandler($parameters->{'parameterHandler'});
+	$self->contentParser($parameters->{'contentParser'});
+	$self->templateDirectories($parameters->{'templateDirectories'});
+	$self->itemDirectories($parameters->{'itemDirectories'});
+	$self->customTemplateDirectory($parameters->{'customTemplateDirectory'});
+	$self->customItemDirectory($parameters->{'customItemDirectory'});
+	$self->supportDownload($parameters->{'supportDownload'});
+	$self->supportDownloadError($parameters->{'supportDownloadError'});
+	$self->webCallbacks($parameters->{'webCallbacks'});
+	$self->webTemplates($parameters->{'webTemplates'});
+	$self->downloadUrl($parameters->{'downloadUrl'});
+	$self->downloadVersion($parameters->{'downloadVersion'});
+
 	if(defined($parameters->{'utf8filenames'})) {
 		$utf8filenames = $parameters->{'utf8filenames'};
 	}
 
-	$self->{'template'} = undef;
-	$self->{'templateExtension'} = $parameters->{'templateDirectoryHandler'}->extension;
-	$self->{'templateDataExtension'} = $parameters->{'templateDataDirectoryHandler'}->extension;
-	bless $self,$class;
+	$self->templateExtension($parameters->{'templateDirectoryHandler'}->extension);
+	$self->templateDataExtension($parameters->{'templateDataDirectoryHandler'}->extension);
+
+	$driver = $serverPrefs->get('dbsource');
+	$driver =~ s/dbi:(.*?):(.*)$/$1/;
+
+	if(UNIVERSAL::can("Slim::Schema","sourceInformation")) {
+		my ($source,$username,$password);
+		($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
+	}
+
 	return $self;
 }
 
@@ -778,6 +786,8 @@ sub webNewItem {
 				}
 			}
 		}
+		addStandardParameters(\%templateParameters);
+
 		my $templateFileData = undef;
 		my $doParsing = 1;
 		if(defined($template->{lc($self->templatePluginHandler->pluginId).'_plugin_'.$self->templatePluginHandler->contentType})) {
@@ -874,6 +884,7 @@ sub webSaveSimpleItem {
 				}
 			}
 		}
+		addStandardParameters(\%templateParameters);
 
 		my $templateFileData = undef;
 		my $doParsing = 1;
@@ -923,6 +934,17 @@ sub webSaveSimpleItem {
 			$self->changedItemConfiguration($client,$params);
 			return $self->webCallbacks->webEditItems($client,$params);
 		}
+	}
+}
+
+sub addStandardParameters {
+	my $params = shift;
+
+	$params->{'SqueezeCenterVersion'} = $::VERSION;
+	if($driver eq 'mysql') {
+		$params->{'RANDOMFUNCTION'} = "rand()";
+	}else {
+		$params->{'RANDOMFUNCTION'} = "random()";
 	}
 }
 
@@ -1601,7 +1623,11 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
+			if(UNIVERSAL::can("Slim::Utils::PluginManager","isEnabled")) {
+				$enabledPlugin = Slim::Utils::PluginManager->isEnabled($plugin);
+			}else {
+				$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
+			}
 		}
 	}
 	return $enabledPlugin;

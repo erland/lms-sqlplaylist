@@ -39,7 +39,11 @@ sub new {
 
 	if(!defined($default) || !$default) {
 		if ($class->can('page') && $class->can('handler')) {
-			Slim::Web::HTTP::addPageFunction($class->page, $class);
+			if(UNIVERSAL::can("Slim::Web::Pages","addPageFunction")) {
+				Slim::Web::Pages->addPageFunction($class->page, $class);
+			}else {
+				Slim::Web::HTTP::addPageFunction($class->page, $class);
+			}
 		}
 	}else {
 		$class->SUPER::new();

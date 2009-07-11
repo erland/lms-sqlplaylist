@@ -10,10 +10,10 @@
   <module>Plugins::SQLPlayList::Plugin</module>
   <optionsURL>plugins/SQLPlayList/settings/basic.html</optionsURL>
   <targetApplication>
-    <id>SqueezeCenter</id>
+    <id>Squeezebox Server</id>
     <maxVersion>*</maxVersion>
-    <minVersion>7.1.0</minVersion>
+    <minVersion>7.4.0</minVersion>
   </targetApplication>
   <type>2</type>
-  <version>2.4</version>
+  <version>2.5pre1</version>
 </extension>

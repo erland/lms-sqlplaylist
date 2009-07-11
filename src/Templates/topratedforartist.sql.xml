@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqlplaylist>
 	<requireplugins>TrackStat</requireplugins>
-	<minpluginversion>2.2</minpluginversion>
+	<minpluginversion>2.5</minpluginversion>
 	<template>
 		<downloadidentifier>13</downloadidentifier>
 		<name>Top rated for artist</name>

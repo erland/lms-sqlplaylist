@@ -32,7 +32,7 @@ sub new {
 
 	$parameters->{'contentType'} = 'template';
 	my $self = $class->SUPER::new($parameters);
-	bless $self,$class;
+
 	return $self;
 }
 
