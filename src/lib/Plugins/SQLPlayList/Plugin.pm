@@ -62,6 +62,8 @@ my %disable = (
 	'fulltext' => ''
 );
 
+my $driver;
+
 my $prefs = preferences('plugin.sqlplaylist');
 my $multiLibraryPrefs = preferences('plugin.multilibrary');
 my $serverPrefs = preferences('server');
@@ -188,6 +190,14 @@ sub initPlugin {
 	my $class = shift;
 	$class->SUPER::initPlugin(@_);
 	$PLUGINVERSION = Slim::Utils::PluginManager->dataForPlugin($class)->{'version'};
+	$driver = $serverPrefs->get('dbsource');
+	$driver =~ s/dbi:(.*?):(.*)$/$1/;
+    
+	if(UNIVERSAL::can("Slim::Schema","sourceInformation")) {
+		my ($source,$username,$password);
+		($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
+	}
+
 	checkDefaults();
 	Plugins::SQLPlayList::Settings->new($class);
 	if($prefs->get("enable_web_mixerfunction")) {
@@ -1043,7 +1053,11 @@ sub getTracksForResult {
 			$sql = "select tracks.id from tracks where tracks.album=$item group by tracks.id";
 		}
 		if($limit) {
-			$sql .= " order by rand() limit $limit";
+			if($driver eq 'mysql') {
+				$sql .= " order by rand() limit $limit";
+			}else {
+				$sql .= " order by random() limit $limit";
+			}
 		}else {
 			$sql .= " order by disc,tracknum";
 		}
@@ -1054,7 +1068,11 @@ sub getTracksForResult {
 			$sql = "select tracks.id from tracks join contributor_track on tracks.id=contributor_track.track and contributor_track.role in (1,4,5,6) where contributor_track.contributor=$item group by tracks.id";
 		}
 		if($limit) {
-			 $sql .=" order by rand() limit $limit";
+			if($driver eq 'mysql') {
+				$sql .= " order by rand() limit $limit";
+			}else {
+				$sql .= " order by random() limit $limit";
+			}
 		}else {
 			$sql .= " order by tracks.album,tracks.disc,tracks.tracknum";
 		}
@@ -1065,7 +1083,11 @@ sub getTracksForResult {
 			$sql = "select tracks.id from tracks where tracks.year=$item";
 		}
 		if($limit) {
-			 $sql .=" order by rand() limit $limit";
+			if($driver eq 'mysql') {
+				$sql .= " order by rand() limit $limit";
+			}else {
+				$sql .= " order by random() limit $limit";
+			}
 		}else {
 			$sql .= " order by tracks.year desc,tracks.album,tracks.disc,tracks.tracknum";
 		}
@@ -1076,7 +1098,11 @@ sub getTracksForResult {
 			$sql = "select tracks.id from tracks join genre_track on tracks.id=genre_track.track where genre_track.genre=$item group by tracks.id";
 		}
 		if($limit) {
-			 $sql .=" order by rand() limit $limit";
+			if($driver eq 'mysql') {
+				$sql .= " order by rand() limit $limit";
+			}else {
+				$sql .= " order by random() limit $limit";
+			}
 		}else {
 			$sql .= " order by tracks.album,tracks.disc,tracks.tracknum";
 		}
@@ -1087,7 +1113,11 @@ sub getTracksForResult {
 			$sql = "select tracks.id from tracks join playlist_track on tracks.id=playlist_track.track where playlist_track.playlist=$item group by tracks.id";
 		}
 		if($limit) {
-			 $sql .=" order by rand() limit $limit";
+			if($driver eq 'mysql') {
+				$sql .= " order by rand() limit $limit";
+			}else {
+				$sql .= " order by random() limit $limit";
+			}
 		}else {
 			$sql .= " order by playlist_track.position";
 		}
