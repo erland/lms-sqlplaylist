@@ -90,7 +90,7 @@ create temporary table randomweightedratingshigh select tracks.url from tracks
 	[%- IF includedgenres%]
 	group by tracks.id
 	[%- END %]
-	order by rand()
+	order by [% RANDOM_FUNCTION %]
 	limit [% 100 - percentage %];
 
 create temporary table randomweightedratingscombined as 

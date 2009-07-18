@@ -89,6 +89,6 @@ select tracks.url from tracks
 	[%- IF includedgenres %]
 	group by tracks.id
 	[%- END %]
-	order by sqlplaylist_random_contributors.contributor,rand()
+	order by sqlplaylist_random_contributors.contributor,[% RANDOM_FUNCTION %]
 	[% IF nooftracks %]limit [% nooftracks %][% END %];
 drop temporary table sqlplaylist_random_contributors;
