@@ -1623,11 +1623,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			if(UNIVERSAL::can("Slim::Utils::PluginManager","isEnabled")) {
-				$enabledPlugin = Slim::Utils::PluginManager->isEnabled($plugin);
-			}else {
-				$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
-			}
+			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
 		}
 	}
 	return $enabledPlugin;

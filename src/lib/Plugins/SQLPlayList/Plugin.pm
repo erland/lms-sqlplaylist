@@ -198,6 +198,13 @@ sub initPlugin {
 		($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
 	}
 
+	my $dbh = getCurrentDBH();
+	if($driver eq 'SQLite') {
+		$dbh->func('unix_timestamp', 0, sub {
+			return time();
+		    }, 'create_function');
+	}
+
 	checkDefaults();
 	Plugins::SQLPlayList::Settings->new($class);
 	if($prefs->get("enable_web_mixerfunction")) {
@@ -443,11 +450,7 @@ sub isPluginsInstalled {
 	my $enabledPlugin = 1;
 	foreach my $plugin (split /,/, $pluginList) {
 		if($enabledPlugin) {
-			if(UNIVERSAL::can("Slim::Utils::PluginManager","isEnabled")) {
-				$enabledPlugin = Slim::Utils::PluginManager->isEnabled($plugin);
-			}else {
-				$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
-			}
+			$enabledPlugin = grep(/$plugin/, Slim::Utils::PluginManager->enabledPlugins($client));
 		}
 	}
 	return $enabledPlugin;
