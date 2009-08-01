@@ -30,6 +30,8 @@ use HTML::Entities;
 
 __PACKAGE__->mk_accessor( rw => qw(logHandler parameterPrefix criticalErrorCallback) );
 
+my $newUnicodeHandling = 0;
+
 sub new {
 	my $class = shift;
 	my $parameters = shift;
@@ -38,6 +40,9 @@ sub new {
 	$self->logHandler($parameters->{'logHandler'});
 	$self->parameterPrefix($parameters->{'parameterPrefix'});
 	$self->criticalErrorCallback($parameters->{'criticalErrorCallback'});
+	if(UNIVERSAL::can("Slim::Utils::Unicode","hasEDD")) {
+		$newUnicodeHandling = 1;
+	}
 
 	return $self;
 }
@@ -383,12 +388,21 @@ sub getSQLTemplateData {
 				$sth->bind_col( 2, \$name);
 				$sth->bind_col( 3, \$value);
 				while( $sth->fetch() ) {
-					my %item = (
-						'id' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($id,'utf8')),
-						'name' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($name,'utf8')),
-						'value' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($value,'utf8'))
-					);
-					push @result, \%item;
+					if($newUnicodeHandling) {
+						my %item = (
+							'id' => Slim::Utils::Unicode::utf8decode($id,'utf8'),
+							'name' => Slim::Utils::Unicode::utf8decode($name,'utf8'),
+							'value' => Slim::Utils::Unicode::utf8decode($value,'utf8')
+						);
+						push @result, \%item;
+					}else {
+						my %item = (
+							'id' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($id,'utf8')),
+							'name' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($name,'utf8')),
+							'value' => Slim::Utils::Unicode::utf8on(Slim::Utils::Unicode::utf8decode($value,'utf8'))
+						);
+						push @result, \%item;
+					}
 				}
 			}
 			$sth->finish();
