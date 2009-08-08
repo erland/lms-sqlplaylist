@@ -27,7 +27,7 @@
 [%- END %]
 [%- ELSIF requestfromuser =='playlist' %]
 [%- IF library or activelibrary %]
--- PlaylistParameter1:customplaylist:Select playlist:select tracks.id,tracks.title from tracks join playlist_track on tracks.id=playlist_track.playlist join multilibrary_track on playlist_track.track=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %] group by tracks.id order by tracks.titlesort
+-- PlaylistParameter1:customplaylist:Select playlist:select playlist.id,playlist.title from tracks playlist join playlist_track on playlist.id=playlist_track.playlist join tracks on playlist_track.track=tracks.url join multilibrary_track on tracks.id=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %] group by playlist.id order by playlist.titlesort
 [%- ELSE %]
 -- PlaylistParameter1:playlist:Select playlist:
 [%- END %]
@@ -51,7 +51,7 @@ create temporary table sqlplaylist_random_albums (primary key (album))
 		[%- END %]
 		[%- IF requestfromuser == 'playlist' %]
 		join playlist_track on
-			tracks.id=playlist_track.track and
+			tracks.url=playlist_track.track and
 			playlist_track.playlist='PlaylistParameter1'
 		[%- ELSIF requestfromuser == 'artist' %]
 		join contributor_track on

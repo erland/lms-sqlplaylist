@@ -1111,9 +1111,9 @@ sub getTracksForResult {
 		}
 	}elsif($contentType eq 'playlist') {
 		if($noRepeat) {
-			$sql = "select tracks.id from tracks join playlist_track on tracks.id=playlist_track.track left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and playlist_track.playlist=$item group by tracks.id";
+			$sql = "select tracks.id from tracks join playlist_track on tracks.url=playlist_track.track left join dynamicplaylist_history on tracks.id=dynamicplaylist_history.id where dynamicplaylist_history.id is null and playlist_track.playlist=$item group by tracks.id";
 		}else {
-			$sql = "select tracks.id from tracks join playlist_track on tracks.id=playlist_track.track where playlist_track.playlist=$item group by tracks.id";
+			$sql = "select tracks.id from tracks join playlist_track on tracks.url=playlist_track.track where playlist_track.playlist=$item group by tracks.id";
 		}
 		if($limit) {
 			if($driver eq 'mysql') {

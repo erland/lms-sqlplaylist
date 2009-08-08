@@ -43,7 +43,7 @@ select tracks.url from tracks
 	[%- END %]
 	[%- IF playlist %]
 	join playlist_track on
-		tracks.id=playlist_track.track and
+		tracks.url=playlist_track.track and
 		playlist_track.playlist=(select max(playlist) from playlist_track,tracks where
 						playlist_track.playlist=tracks.id and
 						tracks.title='[% playlist %]'

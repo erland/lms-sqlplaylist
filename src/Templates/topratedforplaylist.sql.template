@@ -11,7 +11,7 @@
 [%- END %]
 select tracks.url from tracks
 	join playlist_track on
-		tracks.id=playlist_track.track and playlist_track.playlist='PlaylistParameter1'
+		tracks.url=playlist_track.track and playlist_track.playlist='PlaylistParameter1'
 	[%- IF library or activelibrary %]
 	join multilibrary_track on
 		tracks.id=multilibrary_track.track and
