@@ -1182,7 +1182,7 @@ sub saveItem
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 		$self->logHandler->debug("Opening configuration file: $url\n");
 		open($fh,"> $url") or do {
-	            $params->{'pluginWebAdminMethodsError'} = 'Error saving: '.$!;
+	            $params->{'pluginWebAdminMethodsError'} = "Error saving $url: ".$!;
 		};
 	}
 	if(!($params->{'pluginWebAdminMethodsError'})) {
@@ -1221,7 +1221,7 @@ sub saveSimpleItem {
 	if(!($params->{'pluginWebAdminMethodsError'})) {
 		$self->logHandler->debug("Opening configuration file: $url\n");
 		open($fh,"> $url") or do {
-	            $params->{'pluginWebAdminMethodsError'} = 'Error saving: '.$!;
+	            $params->{'pluginWebAdminMethodsError'} = "Error saving $url:".$!;
 		};
 	}
 	if(!($params->{'pluginWebAdminMethodsError'})) {
@@ -1437,7 +1437,7 @@ sub downloadItem {
 					}
 					my $fh;
 					open($fh,"> $url") or do {
-						$result{'error'} = 'Error saving downloaded item: '.$!;
+						$result{'error'} = "Error saving downloaded item $url:".$!;
 					        return \%result;
 					};
 					$self->logHandler->debug("Writing to file: $url\n");
