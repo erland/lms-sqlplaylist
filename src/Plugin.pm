@@ -391,8 +391,8 @@ sub mixerlink {
 	}
 
 	if(defined($contextType) && defined($contextId)) {
-		$form->{'mixercontexttype'} = $contextType;
-		$form->{'mixercontextid'} = $contextId;
+		$form->{'sqlmixercontexttype'} = $contextType;
+		$form->{'sqlmixercontextid'} = $contextId;
 		$form->{'mixerlinks'}{'SQLPLAYLIST'} = "plugins/SQLPlayList/mixerlink.html";
 	}
 	return $form;
