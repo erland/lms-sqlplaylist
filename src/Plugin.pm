@@ -76,9 +76,16 @@ my $log = Slim::Utils::Log->addLogCategory({
 $prefs->migrate(1, sub {
 	$prefs->set('playlist_directory', Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_playlist_directory') || $serverPrefs->get('playlistdir')  );
 	$prefs->set('template_directory',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_template_directory')   || ''  );
-	$prefs->set('download_url',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_download_url')   || 'http://erland.homeip.net/datacollection/services/DataCollection'  );
+	$prefs->set('download_url',  Slim::Utils::Prefs::OldPrefs->get('plugin_sqlplaylist_download_url')   || 'http://erland.isaksson.info/datacollection/services/DataCollection'  );
 	1;
 });
+$prefs->migrate(2, sub {
+        my $url = $prefs->get('download_url');
+        if(!defined($url) || $url eq 'http://erland.homeip.net/datacollection/services/DataCollection') {
+                $prefs->set('download_url','http://erland.isaksson.info/datacollection/services/DataCollection');
+        }
+});
+
 $prefs->setValidate('dir', 'playlist_directory'  );
 $prefs->setValidate('dir', 'template_directory'  );
 	
@@ -859,7 +866,7 @@ sub checkDefaults {
 	if (! defined $prefVal) {
 		# Default to not show debug messages
 		$log->debug("Defaulting plugin_sqlplaylist_download_url\n");
-		$prefs->set('download_url', 'http://erland.homeip.net/datacollection/services/DataCollection');
+		$prefs->set('download_url', 'http://erland.isaksson.info/datacollection/services/DataCollection');
 	}
 
 	$prefVal = $prefs->get('enable_web_mixerfunction');

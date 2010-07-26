@@ -411,7 +411,7 @@ sub webPublishItemParameters {
 		if(!defined($email)) {
 			$email = '';
 		}
-		my $answer= eval { SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email); };
+		my $answer= eval { SOAP::Lite->uri('http://erland.isaksson.info/datacollection')->proxy($self->downloadUrl,$self->getProxy())->registerUser($params->{'username'},$params->{'password'},$params->{'firstname'},$params->{'lastname'},$email); };
 		unless (!defined($answer) || $answer->fault) {
 			$self->pluginPrefs->set("login_user",$params->{'username'});
 			$self->pluginPrefs->set("login_password",$params->{'password'});
@@ -424,7 +424,7 @@ sub webPublishItemParameters {
 			return Slim::Web::HTTP::filltemplatefile($self->webTemplates->{'webPublishRegister'}, $params);
 		}
 	}elsif(!$params->{'anonymous'}){
-		my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->loginUser($params->{'username'},$params->{'password'});};
+		my $answer= eval {SOAP::Lite->uri('http://erland.isaksson.info/datacollection')->proxy($self->downloadUrl,$self->getProxy())->loginUser($params->{'username'},$params->{'password'});};
 		unless (!defined($answer) || $answer->fault) {
 			$self->pluginPrefs->set("login_user",$params->{'username'});
 			$self->pluginPrefs->set("login_password",$params->{'password'});
@@ -564,7 +564,7 @@ sub webPublishItem {
 			$publishData .= '</entry>';
 		}
 		if(defined($publishData)) {
-			my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->addVersionedDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $self->downloadVersion, $publishData);};
+			my $answer= eval {SOAP::Lite->uri('http://erland.isaksson.info/datacollection')->proxy($self->downloadUrl,$self->getProxy())->addVersionedDataEntry($params->{'username'},$params->{'password'},$self->downloadApplicationId,0,$overwriteFlag, $self->downloadVersion, $publishData);};
 			unless (!defined($answer) || $answer->fault) {
 				return $self->webCallbacks->webEditItems($client,$params);
 			}else {
@@ -598,7 +598,7 @@ sub webDownloadItems {
 		$params->{'pluginWebAdminMethodsError'} = $versionError;
 		return $self->webCallbacks->webNewItemTypes($client,$params);
 	}
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getVersionedEntries($self->downloadApplicationId,$self->downloadVersion);};
+	my $answer= eval {SOAP::Lite->uri('http://erland.isaksson.info/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getVersionedEntries($self->downloadApplicationId,$self->downloadVersion);};
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
 		my $xml = eval { XMLin($result, forcearray => ['collection','entry'], keyattr => []) };
@@ -1361,7 +1361,7 @@ sub downloadItem {
 	my $overwrite = shift;
 	my $onlyOverwrite = shift;
 
-	my $answer= eval {SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getVersionedEntry($id,$self->downloadVersion) };
+	my $answer= eval {SOAP::Lite->uri('http://erland.isaksson.info/datacollection')->proxy($self->downloadUrl,$self->getProxy())->getVersionedEntry($id,$self->downloadVersion) };
 	my %result = ();
 	unless (!defined($answer) || $answer->fault) {
 		my $result = $answer->result();
@@ -1633,7 +1633,7 @@ sub checkWebServiceVersion {
 	my $self = shift;
 	my $answer = undef;
 	eval {
-		$answer = SOAP::Lite->uri('http://erland.homeip.net/datacollection')->proxy($self->downloadUrl,$self->getProxy())->apiVersion();
+		$answer = SOAP::Lite->uri('http://erland.isaksson.info/datacollection')->proxy($self->downloadUrl,$self->getProxy())->apiVersion();
 	};
 	if ($@) {
 		$self->logHandler->warn("Unable to download from: ".$self->downloadUrl.", Error: $@\n");
