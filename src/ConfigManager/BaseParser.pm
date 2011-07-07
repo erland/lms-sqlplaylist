@@ -213,9 +213,13 @@ sub parseTemplateContent {
 								$value .= ',';
 							}
 							if(!defined($p->{'rawvalue'}) || !$p->{'rawvalue'}) {
-								$v =~ s/\\/\\\\/g;
-								$v =~ s/\"/\\\"/g;
-								$v =~ s/\'/\\\'/g;
+								if($driver eq 'SQLite') {
+									$v =~ s/\'/\'\'/g;
+								}else {
+									$v =~ s/\\/\\\\/g;
+									$v =~ s/\"/\\\"/g;
+									$v =~ s/\'/\\\'/g;
+								}
 							}
 							if($p->{'quotevalue'}) {
 								$value .= "'".encode_entities($v,"&<>")."'";
@@ -360,14 +364,24 @@ sub templateFileURLFromPath {
 		$path = Slim::Utils::Unicode::utf8on($path);
 	}
 	$path = decode_entities($path);
-	$path =~ s/\\\"/\"/g;
-	$path =~ s/\\\'/\'/g;
-	$path =~ s/\\\\/\\/g;
+	if($driver eq 'SQLite') {
+		$path =~ s/\'\'/\'/g;
+	}else {
+		$path =~ s/\\\"/\"/g;
+		$path =~ s/\\\'/\'/g;
+		$path =~ s/\\\\/\\/g;
+	}
 	$path = Slim::Utils::Misc::fileURLFromPath($path);
 	$path = Slim::Utils::Unicode::utf8on($path);
-	$path =~ s/\\/\\\\/g;
-	$path =~ s/%/\\%/g;
-	$path =~ s/\'/\\\'/g;
+	if($driver eq 'SQLite') {
+		$path =~ s/%/\\%/g;
+		$path =~ s/\'/\'\'/g;
+	}else {
+		$path =~ s/\\/\\\\/g;
+		$path =~ s/%/\\%/g;
+		$path =~ s/\"/\\\"/g;
+		$path =~ s/\'/\\\'/g;
+	}
 	$path = encode_entities($path,"&<>\'\"");
 	return $path;
 }

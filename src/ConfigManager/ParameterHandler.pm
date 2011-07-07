@@ -31,6 +31,7 @@ use HTML::Entities;
 __PACKAGE__->mk_accessor( rw => qw(logHandler parameterPrefix criticalErrorCallback) );
 
 my $newUnicodeHandling = 0;
+my $driver = undef;
 
 sub new {
 	my $class = shift;
@@ -43,15 +44,21 @@ sub new {
 	if(UNIVERSAL::can("Slim::Utils::Unicode","hasEDD")) {
 		$newUnicodeHandling = 1;
 	}
+	my ($source,$username,$password);
+	($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
 
 	return $self;
 }
 
 sub quoteValue {
 	my $value = shift;
-	$value =~ s/\\/\\\\/g;
-	$value =~ s/\'/\\\'/g;
-	$value =~ s/\"/\\\"/g;
+	if($driver eq 'SQLite') {
+		$value =~ s/\'/\'\'/g;
+	}else {
+		$value =~ s/\\/\\\\/g;
+		$value =~ s/\'/\\\'/g;
+		$value =~ s/\"/\\\"/g;
+	}
 	return $value;
 }
 

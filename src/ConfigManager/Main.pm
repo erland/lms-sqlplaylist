@@ -35,6 +35,7 @@ use File::Spec::Functions qw(:ALL);
 __PACKAGE__->mk_accessor( rw => qw(logHandler pluginPrefs pluginId downloadApplicationId pluginVersion supportDownloadError contentDirectoryHandler templateContentDirectoryHandler mixDirectoryHandler templateDirectoryHandler templateDataDirectoryHandler contentPluginHandler mixPluginHandler templatePluginHandler parameterHandler templateParser contentParser mixParser templateContentParser webAdminMethods addSqlErrorCallback templates items downloadVersion) );
 
 my $prefs = preferences('plugin.sqlplaylist');
+my $driver;
 
 sub new {
 	my $class = shift;
@@ -50,6 +51,9 @@ sub new {
 	$self->supportDownloadError($parameters->{'supportDownloadError'});
 	$self->addSqlErrorCallback($parameters->{'addSqlErrorCallback'});
 	$self->downloadVersion($parameters->{'downloadVersion'});
+
+	my ($source,$username,$password);
+	($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
 
 	$self->init();
 	return $self;
@@ -295,9 +299,13 @@ sub postProcessItem {
         my $item = shift;
         
         if(defined($item->{'name'})) {
-                $item->{'name'} =~ s/\\\\/\\/g;
-                $item->{'name'} =~ s/\\\"/\"/g;
-                $item->{'name'} =~ s/\\\'/\'/g;
+		if($driver eq 'SQLite') {
+	                $item->{'name'} =~ s/\'\'/\'/g;
+		}else {
+	                $item->{'name'} =~ s/\\\\/\\/g;
+	                $item->{'name'} =~ s/\\\"/\"/g;
+	                $item->{'name'} =~ s/\\\'/\'/g;
+		}
         }
 }
 

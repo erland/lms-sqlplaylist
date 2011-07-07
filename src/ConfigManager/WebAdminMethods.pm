@@ -1690,14 +1690,24 @@ sub fileURLFromPath {
 		$path = Slim::Utils::Unicode::utf8on($path);
 	}
 	$path = decode_entities($path);
-	$path =~ s/\\\\/\\/g;
-	$path =~ s/\\\"/\"/g;
-	$path =~ s/\\\'/\'/g;
+	if($driver eq 'SQLite') {
+		$path =~ s/\'\'/\'/g;
+	}else {
+		$path =~ s/\\\\/\\/g;
+		$path =~ s/\\\"/\"/g;
+		$path =~ s/\\\'/\'/g;
+	}
 	$path = Slim::Utils::Misc::fileURLFromPath($path);
 	$path = Slim::Utils::Unicode::utf8on($path);
-	$path =~ s/\\/\\\\/g;
-	$path =~ s/%/\\%/g;
-	$path =~ s/\'/\\\'/g;
+	if($driver eq 'SQLite') {
+		$path =~ s/%/\\%/g;
+		$path =~ s/\'/\'\'/g;
+	}else {
+		$path =~ s/\\/\\\\/g;
+		$path =~ s/%/\\%/g;
+		$path =~ s/\"/\\\"/g;
+		$path =~ s/\'/\\\'/g;
+	}
 	$path = encode_entities($path,"&<>\'\"");
 	return $path;
 }
