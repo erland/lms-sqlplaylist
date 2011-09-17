@@ -346,6 +346,9 @@ sub handleWebList {
 		$params->{'pluginSQLPlayListError'} = "ERROR!!! Cannot find DynamicPlayList plugin, please make sure you have installed and enabled at least DynamicPlayList 1.3"
 	}
 	$params->{'pluginSQLPlayListVersion'} = $PLUGINVERSION;
+	$params->{'licensemanager'} = isPluginsInstalled($client,'LicenseManagerPlugin');
+	my $request = Slim::Control::Request::executeRequest($client,['licensemanager','validate','application:SQLPlayList']);
+	$params->{'licensed'} = $request->getResult("result");
 	return Slim::Web::HTTP::filltemplatefile('plugins/SQLPlayList/sqlplaylist_list.html', $params);
 }
 
@@ -1166,6 +1169,10 @@ sub getDynamicPlayLists {
 	}
 	
 	my %result = ();
+	my $request = Slim::Control::Request::executeRequest($client,['licensemanager','validate','application:SQLPlayList']);
+	if(!$request->getResult("result")) {
+		return \%result;
+	}
 	
 	foreach my $playlist (sort keys %$playLists) {
 		my $playlistid = "sqlplaylist_".$playlist;

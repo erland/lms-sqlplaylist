@@ -304,3 +304,8 @@ SETUP_PLUGIN_SQLPLAYLIST_ENABLE_WEB_MIXERFUNCTION
 SETUP_PLUGIN_SQLPLAYLIST_ENABLE_WEB_MIXERFUNCTION_DESC
 	EN	Enable SQL Playlist mixer which is used to create SQL Playlists from browse menus in web interface. May require Squeezebox Server restart.
 
+PLUGIN_SQLPLAYLIST_LICENSE_REQUIRED
+	EN	License required, see License Manager plugin for more information
+
+PLUGIN_SQLPLAYLIST_LICENSE_MANAGER_REQUIRED
+	EN	License Manager plugin must be installed

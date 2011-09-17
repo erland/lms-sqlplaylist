@@ -1,5 +1,5 @@
 [% WRAPPER settingGroup title="SETUP_PLUGIN_SQLPLAYLIST_GROUP" desc="" %]
-	<div class="prefDesc">[% "SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC" | string %]<br><br><b><a href="http://erland.isaksson.info/donate" target="_blank">[% "SETUP_PLUGIN_SQLPLAYLIST_DONATE_LINK" | string %]</a></b></div>
+	<div class="prefDesc">[% "SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC" | string %][% IF licensemanager %]<br><br><b><a href="[% webroot %]plugins/LicenseManagerPlugin/settings/basic.html">[% "SETUP_PLUGIN_SQLPLAYLIST_DONATE_LINK" | string %]</a></b>[% END %]</div>
 [% END %]
 [% IF subpages.size>1 %]
 [% WRAPPER settingGroup title="SETUP_PLUGIN_SQLPLAYLIST_SECTION" desc="SETUP_PLUGIN_SQLPLAYLIST_SECTION_DESC" %]

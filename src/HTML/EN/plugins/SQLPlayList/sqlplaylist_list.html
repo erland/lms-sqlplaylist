@@ -24,6 +24,10 @@ href="[% webroot %]plugins/DynamicPlayList/dynamicplaylist_mix.html?type=[% IF t
 		[% WRAPPER contentcontainer %]
 	[% IF player == '' %]
 		<p>[% "NO_PLAYER_FOUND" | string %]</p>
+	[% ELSIF !licensemanager %]
+		<p><b>[% "PLUGIN_SQLPLAYLIST_LICENSE_MANAGER_REQUIRED" | string %]</b></p>
+	[% ELSIF !licensed %]
+		<p><b>[% "PLUGIN_SQLPLAYLIST_LICENSE_REQUIRED" | string %]</b></p>
 	[% ELSE %]
 		<p>[% "PLUGIN_SQLPLAYLIST_CHOOSE_BELOW" | string %]</p>
 
