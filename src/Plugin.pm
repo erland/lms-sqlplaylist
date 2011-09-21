@@ -39,6 +39,7 @@ use HTML::Entities;
 use FindBin qw($Bin);
 use SOAP::Lite;
 use Plugins::SQLPlayList::Settings;
+use POSIX qw(floor);
 
 use Plugins::SQLPlayList::ConfigManager::Main;
 use Plugins::SQLPlayList::Template::Reader;
@@ -209,6 +210,38 @@ sub initPlugin {
 	if($driver eq 'SQLite') {
 		$dbh->func('unix_timestamp', 0, sub {
 			return time();
+		    }, 'create_function');
+		$dbh->func('floor', 1, sub {
+			my ($number) = @_;
+			if(!defined($number)) {
+				$number = 0;
+			}
+			$number = floor($number); 
+			return $number;
+		    }, 'create_function');
+		$dbh->func('floor', 2, sub {
+			my ($number,$decimals) = @_;
+			if(!defined($number)) {
+				$number = 0;
+			}
+			if($decimals>0) {
+				$number =~s/(^\d{1,}\.\d{$decimals})(.*$)/$1/; 
+			}else {
+				$number =~s/(^\d{1,})(.*$)/$1/; 
+			}
+			return $number;
+		    }, 'create_function');
+		$dbh->func('concat', 2, sub {
+			my ($str1, $str2) = @_;
+			return $str1.$str2;
+		    }, 'create_function');
+		$dbh->func('concat', 3, sub {
+			my ($str1, $str2, $str3) = @_;
+			return $str1.$str2.$str3;
+		    }, 'create_function');
+		$dbh->func('concat', 4, sub {
+			my ($str1, $str2, $str3,$str4) = @_;
+			return $str1.$str2.$str3.$str4;
 		    }, 'create_function');
 	}
 
