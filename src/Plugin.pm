@@ -206,43 +206,13 @@ sub initPlugin {
 		($driver,$source,$username,$password) = Slim::Schema->sourceInformation;
 	}
 
-	my $dbh = getCurrentDBH();
 	if($driver eq 'SQLite') {
-		$dbh->func('unix_timestamp', 0, sub {
-			return time();
-		    }, 'create_function');
-		$dbh->func('floor', 1, sub {
-			my ($number) = @_;
-			if(!defined($number)) {
-				$number = 0;
+		Slim::Control::Request::subscribe(sub {
+			if($driver eq 'SQLite') {
+				createSQLiteFunctions();
 			}
-			$number = floor($number); 
-			return $number;
-		    }, 'create_function');
-		$dbh->func('floor', 2, sub {
-			my ($number,$decimals) = @_;
-			if(!defined($number)) {
-				$number = 0;
-			}
-			if($decimals>0) {
-				$number =~s/(^\d{1,}\.\d{$decimals})(.*$)/$1/; 
-			}else {
-				$number =~s/(^\d{1,})(.*$)/$1/; 
-			}
-			return $number;
-		    }, 'create_function');
-		$dbh->func('concat', 2, sub {
-			my ($str1, $str2) = @_;
-			return $str1.$str2;
-		    }, 'create_function');
-		$dbh->func('concat', 3, sub {
-			my ($str1, $str2, $str3) = @_;
-			return $str1.$str2.$str3;
-		    }, 'create_function');
-		$dbh->func('concat', 4, sub {
-			my ($str1, $str2, $str3,$str4) = @_;
-			return $str1.$str2.$str3.$str4;
-		    }, 'create_function');
+	        },[['rescan'],['done']]);
+		createSQLiteFunctions();
 	}
 
 	checkDefaults();
@@ -253,6 +223,45 @@ sub initPlugin {
 		Slim::Music::Import->addImporter($class, \%mixerMap);
 	    	Slim::Music::Import->useImporter('Plugins::SQLPlayList::Plugin', 1);
 	}
+}
+
+sub createSQLiteFunctions() {
+	my $dbh = getCurrentDBH();
+	$dbh->func('unix_timestamp', 0, sub {
+		return time();
+	    }, 'create_function');
+	$dbh->func('floor', 1, sub {
+		my ($number) = @_;
+		if(!defined($number)) {
+			$number = 0;
+		}
+		$number = floor($number); 
+		return $number;
+	    }, 'create_function');
+	$dbh->func('floor', 2, sub {
+		my ($number,$decimals) = @_;
+		if(!defined($number)) {
+			$number = 0;
+		}
+		if($decimals>0) {
+			$number =~s/(^\d{1,}\.\d{$decimals})(.*$)/$1/; 
+		}else {
+			$number =~s/(^\d{1,})(.*$)/$1/; 
+		}
+		return $number;
+	    }, 'create_function');
+	$dbh->func('concat', 2, sub {
+		my ($str1, $str2) = @_;
+		return $str1.$str2;
+	    }, 'create_function');
+	$dbh->func('concat', 3, sub {
+		my ($str1, $str2, $str3) = @_;
+		return $str1.$str2.$str3;
+	    }, 'create_function');
+	$dbh->func('concat', 4, sub {
+		my ($str1, $str2, $str3,$str4) = @_;
+		return $str1.$str2.$str3.$str4;
+	    }, 'create_function');
 }
 
 sub postinitPlugin {
