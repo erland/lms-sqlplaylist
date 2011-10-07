@@ -42,8 +42,8 @@
 -- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
 -- PlaylistStopAction1:cli:customskip clearsecondaryfilter
 [%- END %]
-create temporary table sqlplaylist_random_albums (primary key (album)) 
-	select tracks.album from tracks
+create temporary table sqlplaylist_random_albums [% IF MySQL %](primary key (album))[% ELSE %]as[% END %]
+	select tracks.album as album from tracks
 		[%- IF library or activelibrary %]
 		join multilibrary_track on
 			tracks.id=multilibrary_track.track and
@@ -139,4 +139,4 @@ select tracks.url from tracks
 	group by tracks.id
 	[%- END %]
 	order by sqlplaylist_random_albums.album,tracks.tracknum;
-drop temporary table sqlplaylist_random_albums;
+drop [% IF MySQL %]temporary[% END %] table sqlplaylist_random_albums;

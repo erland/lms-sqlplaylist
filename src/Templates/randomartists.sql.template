@@ -5,8 +5,8 @@
 -- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
 -- PlaylistStopAction1:cli:customskip clearsecondaryfilter
 [%- END %]
-create temporary table sqlplaylist_random_contributors (primary key (contributor)) 
-	select contributor_track.contributor from tracks
+create temporary table sqlplaylist_random_contributors [% IF MySQL %](primary key (contributor))[% ELSE %]as [% END %]
+	select contributor_track.contributor as contributor from tracks
 		join contributor_track
 			on tracks.id=contributor_track.track and contributor_track.role in (1,5)
 		[%- IF library or activelibrary %]
@@ -91,4 +91,4 @@ select tracks.url from tracks
 	[%- END %]
 	order by sqlplaylist_random_contributors.contributor,[% RANDOMFUNCTION %]
 	[% IF nooftracks %]limit [% nooftracks %][% END %];
-drop temporary table sqlplaylist_random_contributors;
+drop [% IF MySQL %]temporary[% END %] table sqlplaylist_random_contributors;

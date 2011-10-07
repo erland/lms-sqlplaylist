@@ -4,7 +4,7 @@
 -- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
 -- PlaylistStopAction1:cli:customskip clearsecondaryfilter
 [%- END %]
-create temporary table randomweightedratingslow select tracks.url from tracks
+create temporary table randomweightedratingslow as select tracks.url as url from tracks
 	[%- IF library or activelibrary %]
 	join multilibrary_track on
 		tracks.id=multilibrary_track.track and
@@ -49,7 +49,7 @@ create temporary table randomweightedratingslow select tracks.url from tracks
 	limit [% percentage %];
 
 
-create temporary table randomweightedratingshigh select tracks.url from tracks
+create temporary table randomweightedratingshigh as select tracks.url as url from tracks
 	[%- IF library or activelibrary %]
 	join multilibrary_track on
 		tracks.id=multilibrary_track.track and
@@ -63,7 +63,7 @@ create temporary table randomweightedratingshigh select tracks.url from tracks
 	[%- END %]
 	[%- IF notrepeat %]
 	left join dynamicplaylist_history on
-		tracks.id=dynamicplaylist_history.id
+		tracks.id=dynamicplaylist_history.id and dynamicplaylist_history.client='PlaylistPlayer'
 	[%- END %]
 	left join track_statistics on
 		tracks.url=track_statistics.url
@@ -71,7 +71,7 @@ create temporary table randomweightedratingshigh select tracks.url from tracks
 		audio=1
 		and track_statistics.rating>=50
 	[%- IF notrepeat %]
-		and dynamicplaylist_history.id is null and dynamicplaylist_history.client='PlaylistPlayer'
+		and dynamicplaylist_history.id is null
 	[%- END %]
 	[%- IF includedgenres %]
 		and genres.name in ([% includedgenres %])
