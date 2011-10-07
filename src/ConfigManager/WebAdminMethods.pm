@@ -942,8 +942,10 @@ sub addStandardParameters {
 
 	$params->{'SqueezeCenterVersion'} = $::VERSION;
 	if($driver eq 'mysql') {
+		$params->{'MySQL'} = 1;
 		$params->{'RANDOMFUNCTION'} = "rand()";
 	}else {
+		$params->{'SQLite'} = 1;
 		$params->{'RANDOMFUNCTION'} = "random()";
 	}
 }
