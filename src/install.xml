@@ -4,7 +4,7 @@
   <creator>Erland Isaksson</creator>
   <defaultState>enabled</defaultState>
   <description>SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC</description>
-  <email>erland_i@hotmail.com</email>
+  <email>erland@isaksson.info</email>
   <homepageURL>http://wiki.erland.isaksson.info</homepageURL>
   <id>ED8D4FA4-7169-11DC-ACA7-9D5635810EEF</id>
   <module>Plugins::SQLPlayList::Plugin</module>
