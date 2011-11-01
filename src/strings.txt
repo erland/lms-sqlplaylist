@@ -36,7 +36,7 @@ SETUP_PLUGIN_SQLPLAYLIST_GROUP_DESC
 	DA	SQL Playlist er et plugin til smarte playlister, baseret på SQL forespørgsler.
 
 SETUP_PLUGIN_SQLPLAYLIST_DONATE_LINK
-	EN	Click here to donate
+	EN	You have a valid license
 
 PLUGIN_SQLPLAYLIST_SHOW_MESSAGES
 	EN	Show debug messages
