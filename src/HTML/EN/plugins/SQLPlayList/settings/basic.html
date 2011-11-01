@@ -16,11 +16,13 @@
 			<input type="text" class="stdedit selectFolder" name="pref_template_directory" id="template_directory" value="[% prefs.template_directory %]" size="40">
 		[% END %]
 
+		[% IF supportsMixers %]
 		[% WRAPPER setting title="SETUP_PLUGIN_SQLPLAYLIST_ENABLE_WEB_MIXERFUNCTION" desc="SETUP_PLUGIN_SQLPLAYLIST_ENABLE_WEB_MIXERFUNCTION_DESC" %]
 			<select name="pref_enable_web_mixerfunction">
 				<option value="1" [% IF prefs.enable_web_mixerfunction %]selected[% END %]>[% "YES" | string %]</option>
 				<option value="0" [% IF NOT prefs.enable_web_mixerfunction %]selected[% END %]>[% "NO" | string %]</option>
 			</select>
+		[% END %]
 		[% END %]
 	[% END %]
 

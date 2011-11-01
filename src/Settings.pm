@@ -60,7 +60,11 @@ sub pages {
 }
 
 sub prefs {
-        return ($prefs, qw(playlist_directory template_directory enable_web_mixerfunction));
+	if($::VERSION lt '7.6') {
+	        return ($prefs, qw(playlist_directory template_directory enable_web_mixerfunction));
+	}else {
+	        return ($prefs, qw(playlist_directory template_directory));
+	}
 }
 
 sub handler {

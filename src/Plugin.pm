@@ -217,7 +217,7 @@ sub initPlugin {
 
 	checkDefaults();
 	Plugins::SQLPlayList::Settings->new($class);
-	if($prefs->get("enable_web_mixerfunction")) {
+	if($prefs->get("enable_web_mixerfunction") && $::VERSION lt '7.6') {
 		my %mixerMap = ();
 		$mixerMap{'mixerlink'} = \&mixerlink;
 		Slim::Music::Import->addImporter($class, \%mixerMap);
