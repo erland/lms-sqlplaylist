@@ -9,7 +9,7 @@
 		<parameter type="text" id="playlistname" name="Playlist name" value="Top rated for genre"/>
 		<parameter type="text" id="playlistgroups" name="Groups" value=""/>
 		<parameter type="checkbox" id="notrepeat" name="Do not repeat tracks within same playlist" value="1"/>
-		<parameter type="optionalsinglelist" id="recentlyplayed" requireplugins="TrackStat::Plugin" name="Ignore songs played recently" value="" data="3600=1 hour,10800=3 hours,21600=6 hours,43200=12 hours,86400=24 hours,604800=1 week,1209600=2 weeks,2419200=4 weeks,7257600=12 weeks"/>
+		<parameter type="optionalsinglelist" id="recentlyplayed" requireplugins="TrackStat::Plugin" name="Ignore songs played recently" value="" data="3600=1 hour,10800=3 hours,21600=6 hours,43200=12 hours,86400=24 hours,604800=1 week,1209600=2 weeks,2419200=4 weeks,7257600=12 weeks,15768000=6 months,31536000=1 year"/>
 		<parameter type="singlelist" id="minrating" name="Minimum rating" value="0" data="0==0,1=* (10-)=10,2=** (30-)=30,3=*** (50-)=50,4=**** (70-)=70,5=***** (90-)=90"/>
 		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
 		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
