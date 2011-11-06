@@ -100,13 +100,13 @@ sub addValuesToTemplateParameter {
 		for my $value (@values){
 			my @idName = split(/=/,$value);
 			my %listValue = (
-				'id' => @idName->[0],
-				'name' => @idName->[1]
+				'id' => @idName[0],
+				'name' => @idName[1]
 			);
 			if(scalar(@idName)>2) {
-				$listValue{'value'} = @idName->[2];
+				$listValue{'value'} = @idName[2];
 			}else {
-				$listValue{'value'} = @idName->[0];
+				$listValue{'value'} = @idName[0];
 			}
 			push @listValues, \%listValue;
 		}
@@ -428,8 +428,8 @@ sub getFunctionTemplateData {
     	my @params = split(/\,/,$data);
 	my @result =();
 	if(scalar(@params)==2) {
-		my $object = @params->[0];
-		my $function = @params->[1];
+		my $object = @params[0];
+		my $function = @params[1];
 		if(UNIVERSAL::can($object,$function)) {
 			$self->logHandler->debug("Getting values for: $function\n");
 			no strict 'refs';
