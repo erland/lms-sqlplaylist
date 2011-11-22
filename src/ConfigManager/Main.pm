@@ -65,10 +65,11 @@ sub init {
 			'pluginId' => $self->pluginId,
 			'pluginVersion' => $self->pluginVersion,
 			'logHandler' => $self->logHandler,
+			'cacheName' => "PluginCache/SQLPlayList",
 		);
-		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Templates";
+		$parserParameters{'cachePrefix'} = "PluginCache/SQLPlayList/Templates";
 		$self->templateParser(Plugins::SQLPlayList::ConfigManager::TemplateParser->new(\%parserParameters));
-		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Playlists";
+		$parserParameters{'cachePrefix'} = "PluginCache/SQLPlayList/Playlists";
 		$self->contentParser(Plugins::SQLPlayList::ConfigManager::ContentParser->new(\%parserParameters));
 
 		my %parameters = (
@@ -80,7 +81,8 @@ sub init {
 
 		my %directoryHandlerParameters = (
 			'logHandler' => $self->logHandler,
-			'cacheName' => "FileCache/SQLPlayList/".$self->pluginVersion."/Files",
+			'cacheName' => "PluginCache/SQLPlayList",
+			'cachePrefix' => "PluginCache/SQLPlayList/Files",
 		);
 		$directoryHandlerParameters{'extension'} = "sql.xml";
 		$directoryHandlerParameters{'parser'} = $self->contentParser;
@@ -102,6 +104,7 @@ sub init {
 		my %pluginHandlerParameters = (
 			'logHandler' => $self->logHandler,
 			'pluginId' => $self->pluginId,
+			'pluginVersion' => $self->pluginVersion,
 		);
 
 		$pluginHandlerParameters{'listMethod'} = "getSQLPlayListTemplates";
@@ -112,7 +115,7 @@ sub init {
 		$self->templatePluginHandler(Plugins::SQLPlayList::ConfigManager::PluginLoader->new(\%pluginHandlerParameters));
 
 		$parserParameters{'templatePluginHandler'} = $self->templatePluginHandler;
-		$parserParameters{'cacheName'} = "FileCache/SQLPlayList/".$self->pluginVersion."/Playlists";
+		$parserParameters{'cachePrefix'} = "PluginCache/SQLPlayList/Playlists";
 		$self->templateContentParser(Plugins::SQLPlayList::ConfigManager::TemplateContentParser->new(\%parserParameters));
 
 		$directoryHandlerParameters{'extension'} = "sql.values.xml";

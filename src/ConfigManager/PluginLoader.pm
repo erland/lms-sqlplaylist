@@ -27,7 +27,7 @@ use Slim::Utils::Misc;
 use Slim::Utils::Strings qw(string);
 use Data::Dumper;
 
-__PACKAGE__->mk_accessor( rw => qw(logHandler listMethod dataMethod pluginId contentType templateContentParser contentParser) );
+__PACKAGE__->mk_accessor( rw => qw(logHandler listMethod dataMethod pluginId pluginVersion contentType templateContentParser contentParser) );
 
 sub new {
 	my $class = shift;
@@ -38,6 +38,7 @@ sub new {
 	$self->listMethod($parameters->{'listMethod'});
 	$self->dataMethod($parameters->{'dataMethod'});
 	$self->pluginId($parameters->{'pluginId'});
+	$self->pluginVersion($parameters->{'pluginVersion'});
 	$self->contentType($parameters->{'contentType'});
 	$self->contentParser($parameters->{'contentParser'});
 	$self->templateContentParser($parameters->{'templateContentParser'});
@@ -74,7 +75,7 @@ sub readFromPlugins {
 		}
 		if(UNIVERSAL::can("$plugin",$self->listMethod)) {
 			$self->logHandler->debug("Calling ".$self->listMethod." for: $plugin\n");
-			my $pluginItems = eval { &{"${plugin}::".$self->listMethod}($client) };
+			my $pluginItems = eval { &{"${plugin}::".$self->listMethod}($client,$self->pluginVersion) };
 			if ($@) {
 				$self->logHandler->warn("Error calling ".$self->listMethod." from $plugin: $@\n");
 			}

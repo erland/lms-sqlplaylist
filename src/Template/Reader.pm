@@ -51,8 +51,10 @@ sub getTemplates {
 	my $cacheName = undef;;
 	my $cache = undef;
 	if($cachePrefix) {
-		$cacheName = $cachePrefix."/".$mainPlugin."/".$pluginVersion."/".$directory;
-		$cache = Slim::Utils::Cache->new($cacheName);
+		$cacheName = $cachePrefix."/".$mainPlugin."/".$directory;
+		my $cacheVersion = $pluginVersion;
+		$cacheVersion =~ s/^.*\.([^\.]+)$/$1/;
+		$cache = Slim::Utils::Cache->new($cachePrefix, $cacheVersion);
 	}
 
 	my @result = ();

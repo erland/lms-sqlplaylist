@@ -353,7 +353,9 @@ sub handleWebList {
 	# Pass on the current pref values and now playing info
 	if(!defined($params->{'donotrefresh'})) {
 		if(defined($params->{'cleancache'}) && $params->{'cleancache'}) {
-			my $cache = Slim::Utils::Cache->new("FileCache/SQLPlayList");
+			my $cacheVersion = $PLUGINVERSION;
+			$cacheVersion =~ s/^.*\.([^\.]+)$/\1/;
+			my $cache = Slim::Utils::Cache->new("PluginCache/SQLPlayList",$cacheVersion);
 			$cache->clear();
 		}
 		initPlayLists($client);
@@ -1263,7 +1265,8 @@ sub getNextDynamicPlayListTracks {
 
 sub getCustomBrowseMixes {
 	my $client = shift;
-	return Plugins::SQLPlayList::Template::Reader::getTemplates($client,'SQLPlayList',$PLUGINVERSION,'FileCache/CustomBrowse','Mixes','xml','mix');
+	my $pluginVersion = shift;
+	return Plugins::SQLPlayList::Template::Reader::getTemplates($client,'SQLPlayList',$pluginVersion,'PluginCache/CustomBrowse','Mixes','xml','mix');
 }
 
 sub objectForId {
