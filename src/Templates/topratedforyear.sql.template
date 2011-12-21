@@ -1,7 +1,7 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
 [% IF library or activelibrary %]
--- PlaylistParameter1:custom:Select year:select id,id from years join multilibrary_year on years.id=multilibrary_year.year and multilibrary_year.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %] where years.id is not null order by years.id desc
+-- PlaylistParameter1:custom:Select year:select id,case when id>0 then id else 'Unknown' end from years join multilibrary_year on years.id=multilibrary_year.year and multilibrary_year.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %] where years.id is not null order by years.id desc
 [%- ELSE %]
 -- PlaylistParameter1:year:Select year:
 [%- END %]

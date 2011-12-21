@@ -1,7 +1,7 @@
 -- PlaylistName:[% playlistname %]
 -- PlaylistGroups:[% playlistgroups %]
 -- PlaylistParameter1:list:Select rating:20:* (10-29),40:** (30-49),60:*** (50-69),80:**** (70-89),100:***** (90-100)
--- PlaylistParameter2:custom:Select genre:select genres.id,genres.name from tracks join genre_track on tracks.id=genre_track.track join genres on genre_track.genre=genres.id [% IF library or activelibrary %]join multilibrary_track on tracks.id=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %][% END %] left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating>=('PlaylistParameter1'-10) and track_statistics.rating<('PlaylistParameter1'+10) group by genres.id order by genres.namesort
+-- PlaylistParameter2:custom:Select genre:select genres.id,genres.name,substr(genres.namesort,1,1) from tracks join genre_track on tracks.id=genre_track.track join genres on genre_track.genre=genres.id [% IF library or activelibrary %]join multilibrary_track on tracks.id=multilibrary_track.track and multilibrary_track.library=[% IF activelibrary %]'PlaylistActiveLibrary'[% ELSE %][% library %][% END %][% END %] left join track_statistics on tracks.url=track_statistics.url where tracks.audio=1 and track_statistics.rating>=('PlaylistParameter1'-10) and track_statistics.rating<('PlaylistParameter1'+10) group by genres.id order by genres.namesort
 [%- IF customskipfilter %]
 -- PlaylistStartAction1:cli:customskip setsecondaryfilter [% customskipfilter %]
 -- PlaylistStopAction1:cli:customskip clearsecondaryfilter
