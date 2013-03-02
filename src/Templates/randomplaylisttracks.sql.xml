@@ -13,6 +13,7 @@
 		<parameter type="sqlsinglelist" id="playlist" name="Only songs in playlist" value="" data="select tracks.title,tracks.title,tracks.title from tracks,playlist_track where content_type != 'cpl' and tracks.id=playlist_track.playlist group by tracks.id order by titlesort"/>
 		<parameter type="checkbox" id="activelibrary" requireplugins="MultiLibrary::Plugin" name="Limit to active library" value=""/>
 		<parameter type="checkbox" id="randomordered" name="Play in random order" value="1"/>
+		<parameter type="checkbox" id="leastplayedfirst" name="Play least played first" requireplugins="TrackStat::Plugin" value=""/>
 		<parameter type="sqloptionalsinglelist" id="library" requireplugins="MultiLibrary::Plugin" name="Library" value="" data="select id,name,id from multilibrary_libraries"/>
 		<parameter type="functionoptionalsinglelist" id="customskipfilter" requireplugins="CustomSkip::Plugin" name="Custom Skip filter" value="" data="Plugins::CustomSkip::Plugin,getAvailableFilters"/>
 	</template>
