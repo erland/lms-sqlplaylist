@@ -70,9 +70,9 @@ sub prefs {
 sub handler {
 	my ($class, $client, $paramRef) = @_;
 
-	$paramRef->{'licensemanager'} = Plugins::SQLPlayList::Plugin::isPluginsInstalled($client,'LicenseManagerPlugin');
-	my $request = Slim::Control::Request::executeRequest($client,['licensemanager','validate','application:SQLPlayList']);
-	$paramRef->{'licensed'} = $request->getResult("result");
+	$paramRef->{'licensemanager'} = 1; #Plugins::SQLPlayList::Plugin::isPluginsInstalled($client,'LicenseManagerPlugin');
+	#my $request = Slim::Control::Request::executeRequest($client,['licensemanager','validate','application:SQLPlayList']);
+	$paramRef->{'licensed'} = 1; #$request->getResult("result");
 
 	my $result = $class->SUPER::handler($client, $paramRef);
 	if ($paramRef->{'saveSettings'}) {
