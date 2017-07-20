@@ -207,12 +207,18 @@ sub initPlugin {
 	}
 
 	if($driver eq 'SQLite') {
-		Slim::Control::Request::subscribe(sub {
-			if($driver eq 'SQLite') {
-				createSQLiteFunctions();
-			}
-	        },[['rescan'],['done']]);
-		createSQLiteFunctions();
+		if (UNIVERSAL::can(Slim::Utils::OSDetect->getOS()->sqlHelperClass(),"addPostConnectHandler")) {
+			$log->debug("Setting up custom SQL functions in SQLite using 7.9 API");
+			Slim::Utils::OSDetect->getOS()->sqlHelperClass()->addPostConnectHandler($class);
+		}else {
+			$log->debug("Setting up custom SQL functions in SQLite using pre 7.9 API");
+			Slim::Control::Request::subscribe(sub {
+				if($driver eq 'SQLite') {
+					createSQLiteFunctions();
+				}
+	        	},[['rescan'],['done']]);
+			createSQLiteFunctions();
+		}
 	}
 
 	checkDefaults();
@@ -225,8 +231,11 @@ sub initPlugin {
 	}
 }
 
-sub createSQLiteFunctions() {
-	my $dbh = getCurrentDBH();
+sub createSQLiteFunctions {
+	my $dbh = shift;
+	
+	$dbh ||= getCurrentDBH();
+	$log->debug("Setting up custom SQL functions in SQLite");
 	$dbh->func('unix_timestamp', 0, sub {
 		return time();
 	    }, 'create_function');
@@ -262,6 +271,11 @@ sub createSQLiteFunctions() {
 		my ($str1, $str2, $str3,$str4) = @_;
 		return $str1.$str2.$str3.$str4;
 	    }, 'create_function');
+}
+
+sub postDBConnect {
+	my ($class, $dbh) = @_;
+	createSQLiteFunctions($dbh);
 }
 
 sub postinitPlugin {
